@@ -1,0 +1,23 @@
+# Virtual Environment
+/venv
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / Editor specific files
+.vscode/
+.idea/
+*.swp
+
+# Local environment variables
+.env
+
+# Build artifacts
+/build/
+/dist/
+*.egg-info/
+
+favorites.json
