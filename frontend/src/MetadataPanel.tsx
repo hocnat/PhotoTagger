@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-
-import EditableField from "./EditableField";
-import TagInput from "./TagInput";
-import CountryInput from "./CountryInput";
-import MapModal from "./MapModal";
 import { ImageMetadata } from "./types";
+import MapModal from "./MapModal";
+import CountryInput from "./CountryInput";
+
+// MUI Imports
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Divider,
+  CircularProgress,
+  Autocomplete,
+  Chip,
+  Paper,
+} from "@mui/material";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import MapIcon from "@mui/icons-material/Map";
+import SaveIcon from "@mui/icons-material/Save";
 
 interface MetadataPanelProps {
   selectedImageNames: string[];
   folderPath: string;
   getImageUrl: (imageName: string) => string;
-  onRename: (filesToRename: string[]) => void;
 }
 
 // --- Custom Hooks ---
@@ -36,15 +46,12 @@ const useSelectionMetadata = (
           fullPath
         )}`
       ).then((res) =>
-        res.ok
-          ? res.json()
-          : Promise.reject(new Error("Failed to fetch metadata"))
+        res.ok ? res.json() : Promise.reject(new Error("Failed to fetch"))
       );
     });
-
     Promise.all(promises)
-      .then((results: ImageMetadata[]) => setAllMetadata(results))
-      .catch((err) => console.error("Batch metadata fetch error:", err))
+      .then(setAllMetadata)
+      .catch(console.error)
       .finally(() => setIsLoading(false));
   }, [selectedImageNames, folderPath]);
 
@@ -69,7 +76,7 @@ const useMetadataForm = (allMetadata: ImageMetadata[]) => {
     }
 
     const newFormState: Partial<ImageMetadata> = {};
-    const keysToProcess: (keyof ImageMetadata)[] = [
+    const keys: (keyof ImageMetadata)[] = [
       "Keywords",
       "Caption",
       "Author",
@@ -83,17 +90,20 @@ const useMetadataForm = (allMetadata: ImageMetadata[]) => {
       "XMP:Country",
       "XMP:CountryCode",
     ];
-
-    keysToProcess.forEach((key) => {
+    keys.forEach((key) => {
       const firstValue = allMetadata[0]?.[key];
-      const allHaveSameValue = allMetadata.every(
+      const allSame = allMetadata.every(
         (meta) => JSON.stringify(meta[key]) === JSON.stringify(firstValue)
       );
-
-      if (allHaveSameValue) {
-        newFormState[key] = firstValue as any; // Cast to 'any' here is acceptable because the source is 'any'
+      if (allSame) {
+        newFormState[key] =
+          key === "Keywords" && !Array.isArray(firstValue)
+            ? firstValue
+              ? [firstValue]
+              : []
+            : firstValue;
       } else {
-        newFormState[key] = "(Mixed Values)";
+        newFormState[key] = "(Mixed Values)" as any;
       }
     });
 
@@ -113,7 +123,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   selectedImageNames,
   folderPath,
   getImageUrl,
-  onRename,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -131,11 +140,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 
   const handleSave = () => {
     setIsSaving(true);
-    const filesToSave = selectedImageNames.map(
-      (name) => `${folderPath}\\${name}`
-    );
-    const payload = { files: filesToSave, metadata: formState };
-
+    const payload = {
+      files: selectedImageNames.map((name) => `${folderPath}\\${name}`),
+      metadata: formState,
+    };
     fetch("http://localhost:5000/api/save_metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -164,173 +172,333 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 
   const getDateTimeObject = (): Date | null => {
     const dateStr = formState["EXIF:DateTimeOriginal"];
-    if (!dateStr || typeof dateStr !== "string" || dateStr === "(Mixed Values)")
-      return null;
-    try {
-      return new Date(dateStr.replace(/:/, "-").replace(/:/, "-"));
-    } catch (e) {
+    if (
+      !dateStr ||
+      typeof dateStr !== "string" ||
+      dateStr === "(Mixed Values)"
+    ) {
       return null;
     }
+    // Convert to "YYYY-MM-DDTHH:MM:SS"
+    const parsableDateStr =
+      dateStr.substring(0, 10).replace(/:/g, "-") + "T" + dateStr.substring(11);
+
+    const date = new Date(parsableDateStr);
+
+    return isNaN(date.getTime()) ? null : date;
   };
 
   if (selectedImageNames.length === 0) {
     return (
-      <div className="metadata-panel">
-        <p>Select an image to view its metadata.</p>
-      </div>
+      <Box sx={{ p: 2 }}>
+        <Typography>Select an image to view its metadata.</Typography>
+      </Box>
     );
   }
 
-  const previewImageName = selectedImageNames[selectedImageNames.length - 1];
-  const previewImageUrl = getImageUrl(previewImageName);
-
   return (
-    <div className="metadata-panel">
-      <ImagePreview imageUrl={previewImageUrl} imageName={previewImageName} />
-      <div className="metadata-header">
-        <h3>Metadata</h3>
-        <span>{selectedImageNames.length} item(s) selected</span>
-      </div>
-      {isMetadataLoading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="metadata-form">
-          <h4>Content</h4>
-          <EditableField
-            label="Caption / Description"
-            value={formState.Caption ?? ""}
-            onChange={(val) => handleFormChange("Caption", val)}
-          />
-          {Array.isArray(formState.Keywords) ? (
-            <TagInput
-              label="Keywords"
-              value={formState.Keywords}
-              onChange={(val) => handleFormChange("Keywords", val)}
-            />
-          ) : (
-            <EditableField
-              label="Keywords (Mixed Values)"
-              value={formState.Keywords ?? "(Mixed Values)"}
-              onChange={(val) =>
-                handleFormChange(
-                  "Keywords",
-                  val.split(",").map((k) => k.trim())
-                )
-              }
-            />
+    <Box
+      sx={{ p: 2, display: "flex", flexDirection: "column", height: "100%" }}
+    >
+      <Paper elevation={3} sx={{ mb: 2, overflow: "hidden" }}>
+        <ImagePreview
+          imageUrl={getImageUrl(
+            selectedImageNames[selectedImageNames.length - 1]
           )}
-          <hr />
-          <h4>When</h4>
-          <div className="form-row">
-            <div className="editable-field" style={{ flexGrow: 2 }}>
-              <label className="editable-field-label">Date Taken</label>
-              <DatePicker
-                selected={getDateTimeObject()}
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    // Format to "YYYY:MM:DD HH:MM:SS" which ExifTool understands
-                    const year = date.getFullYear();
-                    const month = (date.getMonth() + 1)
-                      .toString()
-                      .padStart(2, "0");
-                    const day = date.getDate().toString().padStart(2, "0");
-                    const hours = date.getHours().toString().padStart(2, "0");
-                    const minutes = date
-                      .getMinutes()
-                      .toString()
-                      .padStart(2, "0");
-                    const seconds = date
-                      .getSeconds()
-                      .toString()
-                      .padStart(2, "0");
-                    const formattedDate = `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
-                    handleFormChange("EXIF:DateTimeOriginal", formattedDate);
-                  } else {
-                    // If the date is cleared, set the value to an empty string
-                    handleFormChange("EXIF:DateTimeOriginal", "");
-                  }
-                }}
-                showTimeSelect
-                timeIntervals={1}
-                timeCaption="Time"
-                dateFormat="yyyy-MM-dd HH:mm:ss"
-                className="editable-field-input"
-                wrapperClassName="date-picker-wrapper"
-              />
-            </div>
-            <EditableField
-              label="Time Zone"
-              value={formState["EXIF:OffsetTimeOriginal"] ?? ""}
-              onChange={(val) =>
-                handleFormChange("EXIF:OffsetTimeOriginal", val)
+        />
+      </Paper>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 1,
+        }}
+      >
+        <Typography variant="h6">Metadata</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {selectedImageNames.length} item(s) selected
+        </Typography>
+      </Box>
+
+      {isMetadataLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box component="form" sx={{ flexGrow: 1, overflowY: "auto", pr: 1 }}>
+          <FormSection title="Content">
+            <TextField
+              label="Caption / Description"
+              variant="outlined"
+              size="small"
+              value={
+                formState.Caption !== "(Mixed Values)"
+                  ? formState.Caption ?? ""
+                  : ""
               }
+              placeholder={
+                formState.Caption === "(Mixed Values)" ? "(Mixed Values)" : ""
+              }
+              onChange={(e) => handleFormChange("Caption", e.target.value)}
             />
-          </div>
-          <hr />
-          <h4>Where</h4>
-          <div className="form-row">
-            <EditableField
-              label="GPS Latitude"
-              value={String(formState.DecimalLatitude ?? "")}
-              onChange={(val) => handleFormChange("DecimalLatitude", val)}
+            <Autocomplete
+              multiple
+              freeSolo
+              options={[]}
+              value={
+                Array.isArray(formState.Keywords) ? formState.Keywords : []
+              }
+              onChange={(e, val) => handleFormChange("Keywords", val)}
+              renderTags={(val, props) =>
+                val.map((opt, i) => (
+                  <Chip
+                    variant="outlined"
+                    label={opt}
+                    {...props({ index: i })}
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Keywords"
+                  variant="outlined"
+                  size="small"
+                  placeholder={
+                    formState.Keywords === "(Mixed Values)"
+                      ? "Overwrite mixed values..."
+                      : "Add..."
+                  }
+                />
+              )}
             />
-            <EditableField
-              label="GPS Longitude"
-              value={String(formState.DecimalLongitude ?? "")}
-              onChange={(val) => handleFormChange("DecimalLongitude", val)}
+          </FormSection>
+
+          <FormSection title="When">
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <DateTimePicker
+                label="Date Taken"
+                value={getDateTimeObject()}
+                onChange={(date) =>
+                  handleFormChange(
+                    "EXIF:DateTimeOriginal",
+                    date
+                      ? `${date.getFullYear()}:${(date.getMonth() + 1)
+                          .toString()
+                          .padStart(2, "0")}:${date
+                          .getDate()
+                          .toString()
+                          .padStart(2, "0")} ${date
+                          .getHours()
+                          .toString()
+                          .padStart(2, "0")}:${date
+                          .getMinutes()
+                          .toString()
+                          .padStart(2, "0")}:${date
+                          .getSeconds()
+                          .toString()
+                          .padStart(2, "0")}`
+                      : ""
+                  )
+                }
+                ampm={false}
+                format="yyyy-MM-dd HH:mm:ss"
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    variant: "outlined",
+                    fullWidth: true,
+                  },
+                }}
+                sx={{ width: "100%" }}
+              />
+              <TextField
+                label="Time Zone"
+                variant="outlined"
+                size="small"
+                value={
+                  formState["EXIF:OffsetTimeOriginal"] !== "(Mixed Values)"
+                    ? formState["EXIF:OffsetTimeOriginal"] ?? ""
+                    : ""
+                }
+                placeholder={
+                  formState["EXIF:OffsetTimeOriginal"] === "(Mixed Values)"
+                    ? "Mixed"
+                    : "+01:00"
+                }
+                onChange={(e) =>
+                  handleFormChange("EXIF:OffsetTimeOriginal", e.target.value)
+                }
+                sx={{ width: 120 }}
+              />
+            </Box>
+          </FormSection>
+
+          <FormSection title="Where">
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                label="GPS Latitude"
+                variant="outlined"
+                size="small"
+                value={
+                  formState.DecimalLatitude !== "(Mixed Values)"
+                    ? formState.DecimalLatitude ?? ""
+                    : ""
+                }
+                placeholder={
+                  formState.DecimalLatitude === "(Mixed Values)"
+                    ? "(Mixed Values)"
+                    : ""
+                }
+                onChange={(e) =>
+                  handleFormChange("DecimalLatitude", e.target.value)
+                }
+              />
+              <TextField
+                label="GPS Longitude"
+                variant="outlined"
+                size="small"
+                value={
+                  formState.DecimalLongitude !== "(Mixed Values)"
+                    ? formState.DecimalLongitude ?? ""
+                    : ""
+                }
+                placeholder={
+                  formState.DecimalLongitude === "(Mixed Values)"
+                    ? "(Mixed Values)"
+                    : ""
+                }
+                onChange={(e) =>
+                  handleFormChange("DecimalLongitude", e.target.value)
+                }
+              />
+            </Box>
+            <Button
+              variant="outlined"
+              startIcon={<MapIcon />}
+              onClick={() => setIsMapOpen(true)}
+              fullWidth
+              sx={{ mt: 1 }}
+            >
+              Select on Map
+            </Button>
+            <TextField
+              label="Sublocation"
+              variant="outlined"
+              size="small"
+              value={
+                formState["XMP:Location"] !== "(Mixed Values)"
+                  ? formState["XMP:Location"] ?? ""
+                  : ""
+              }
+              placeholder={
+                formState["XMP:Location"] === "(Mixed Values)"
+                  ? "(Mixed Values)"
+                  : ""
+              }
+              onChange={(e) => handleFormChange("XMP:Location", e.target.value)}
             />
-          </div>
-          <button
-            type="button"
-            className="button-secondary"
-            style={{ width: "100%", marginBottom: "15px" }}
-            onClick={() => setIsMapOpen(true)}
-          >
-            Select on Map
-          </button>
-          <EditableField
-            label="Sublocation"
-            value={formState["XMP:Location"] ?? ""}
-            onChange={(val) => handleFormChange("XMP:Location", val)}
-          />
-          <EditableField
-            label="City"
-            value={formState["XMP:City"] ?? ""}
-            onChange={(val) => handleFormChange("XMP:City", val)}
-          />
-          <EditableField
-            label="State/Province"
-            value={formState["XMP:State"] ?? ""}
-            onChange={(val) => handleFormChange("XMP:State", val)}
-          />
-          <div className="form-row">
-            <CountryInput
-              label="Country"
-              countryValue={formState["XMP:Country"] ?? ""}
-              onCountryChange={(val) => handleFormChange("XMP:Country", val)}
-              onCodeChange={(val) => handleFormChange("XMP:CountryCode", val)}
+            <TextField
+              label="City"
+              variant="outlined"
+              size="small"
+              value={
+                formState["XMP:City"] !== "(Mixed Values)"
+                  ? formState["XMP:City"] ?? ""
+                  : ""
+              }
+              placeholder={
+                formState["XMP:City"] === "(Mixed Values)"
+                  ? "(Mixed Values)"
+                  : ""
+              }
+              onChange={(e) => handleFormChange("XMP:City", e.target.value)}
             />
-            <EditableField
-              label="Code"
-              value={formState["XMP:CountryCode"] ?? ""}
-              onChange={(val) => handleFormChange("XMP:CountryCode", val)}
+            <TextField
+              label="State/Province"
+              variant="outlined"
+              size="small"
+              value={
+                formState["XMP:State"] !== "(Mixed Values)"
+                  ? formState["XMP:State"] ?? ""
+                  : ""
+              }
+              placeholder={
+                formState["XMP:State"] === "(Mixed Values)"
+                  ? "(Mixed Values)"
+                  : ""
+              }
+              onChange={(e) => handleFormChange("XMP:State", e.target.value)}
             />
-          </div>
-          <hr />
-          <h4>Who</h4>
-          <EditableField
-            label="Author / By-line"
-            value={formState.Author ?? ""}
-            onChange={(val) => handleFormChange("Author", val)}
-          />
-          <button
-            className="button-success"
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <CountryInput
+                label="Country"
+                countryValue={
+                  formState["XMP:Country"] !== "(Mixed Values)"
+                    ? formState["XMP:Country"] ?? ""
+                    : ""
+                }
+                onCountryChange={(val) => handleFormChange("XMP:Country", val)}
+                onCodeChange={(val) => handleFormChange("XMP:CountryCode", val)}
+              />
+              <TextField
+                label="Code"
+                variant="outlined"
+                size="small"
+                value={
+                  formState["XMP:CountryCode"] !== "(Mixed Values)"
+                    ? formState["XMP:CountryCode"] ?? ""
+                    : ""
+                }
+                placeholder={
+                  formState["XMP:CountryCode"] === "(Mixed Values)"
+                    ? "(Mixed)"
+                    : ""
+                }
+                onChange={(e) =>
+                  handleFormChange("XMP:CountryCode", e.target.value)
+                }
+                sx={{ width: 100 }}
+              />
+            </Box>
+          </FormSection>
+
+          <FormSection title="Who">
+            <TextField
+              label="Author / By-line"
+              variant="outlined"
+              size="small"
+              value={
+                formState.Author !== "(Mixed Values)"
+                  ? formState.Author ?? ""
+                  : ""
+              }
+              placeholder={
+                formState.Author === "(Mixed Values)" ? "(Mixed Values)" : ""
+              }
+              onChange={(e) => handleFormChange("Author", e.target.value)}
+            />
+          </FormSection>
+
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
             onClick={handleSave}
             disabled={isSaving || !hasChanges}
+            startIcon={
+              isSaving ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <SaveIcon />
+              )
+            }
+            sx={{ mt: 2 }}
           >
             {isSaving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
+          </Button>
+        </Box>
       )}
       <MapModal
         isOpen={isMapOpen}
@@ -346,21 +514,37 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             : null
         }
       />
-    </div>
+    </Box>
   );
 };
 
-const ImagePreview: React.FC<{
-  imageUrl: string | null;
-  imageName: string | null;
-}> = ({ imageUrl, imageName }) => {
+// --- Helper Components ---
+const ImagePreview: React.FC<{ imageUrl: string | null }> = ({ imageUrl }) => {
   if (!imageUrl)
-    return <div className="image-preview-placeholder">No image selected</div>;
+    return <Box className="image-preview-placeholder">No image selected</Box>;
   return (
-    <div className="image-preview-container">
-      <img src={imageUrl} alt={imageName || ""} className="preview-image" />
-    </div>
+    <Box
+      component="img"
+      src={imageUrl}
+      sx={{ width: "100%", height: 200, objectFit: "contain" }}
+    />
   );
 };
+
+const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({
+  title,
+  children,
+}) => (
+  <>
+    <Divider sx={{ my: 2 }}>
+      <Typography variant="caption" color="text.secondary">
+        {title}
+      </Typography>
+    </Divider>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {children}
+    </Box>
+  </>
+);
 
 export default MetadataPanel;

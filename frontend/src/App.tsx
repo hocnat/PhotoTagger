@@ -1,8 +1,23 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import MetadataPanel from "./MetadataPanel";
-import Notification from "./Notification";
 import { NotificationState } from "./types";
 import "./App.css";
+
+// MUI Imports
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Alert,
+  Snackbar,
+} from "@mui/material";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
 
 // --- Custom Hook ---
 const useImageSelection = (images: string[]) => {
@@ -98,9 +113,9 @@ const App: React.FC = () => {
           ? response.json()
           : response.json().then((err) => Promise.reject(err))
       )
-      .then((data: string[]) => {
-        setImageData({ folder: folderInput, files: data });
-      })
+      .then((data: string[]) =>
+        setImageData({ folder: folderInput, files: data })
+      )
       .catch((err) => {
         setError(err.message || "An error occurred while fetching images.");
         setImageData({ folder: "", files: [] });
@@ -149,13 +164,22 @@ const App: React.FC = () => {
         }));
         setSelectedImages((cs) => cs.map((f) => renameMap[f] || f));
       })
-      .catch((err) => {
+      .catch((err) =>
         setNotification({
           message: `An error occurred during renaming: ${err.message}`,
           type: "error",
-        });
-        console.error("Rename error:", err);
-      });
+        })
+      );
+  };
+
+  const handleNotificationClose = (
+    event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setNotification({ message: "", type: "" });
   };
 
   useEffect(() => {
@@ -165,48 +189,84 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>PhotoTagger</h1>
-      </header>
-      <div className="main-container">
-        <main className="App-main">
-          <div className="folder-input-container">
-            <input
-              type="text"
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        bgcolor: "grey.100",
+      }}
+    >
+      <AppBar position="static">
+        <Toolbar>
+          <PhotoLibraryIcon sx={{ mr: 2 }} />
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            PhotoTagger
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
+        <Box component="main" sx={{ flexGrow: 1, p: 2, overflowY: "auto" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              mb: 2,
+              alignItems: "center",
+              p: 2,
+              bgcolor: "background.paper",
+              borderRadius: 1,
+            }}
+          >
+            <TextField
+              fullWidth
+              label="Image Folder Path"
+              variant="outlined"
+              size="small"
               value={folderInput}
               onChange={(e) => setFolderInput(e.target.value)}
-              placeholder="Enter full path to image folder"
-              className="folder-input"
             />
-            <button
-              className="button-primary"
+            <Button
+              variant="contained"
               onClick={handleFetchImages}
               disabled={isLoading || !folderInput}
+              startIcon={
+                isLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <FolderOpenIcon />
+                )
+              }
             >
-              {isLoading ? "Loading..." : "Load Images"}
-            </button>
-            <button
-              className="button-warning"
+              {isLoading ? "Loading..." : "Load"}
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
               disabled={selectedImages.length === 0}
-              onClick={() => {
-                const filesToRename = selectedImages.map(
-                  (name) => `${imageData.folder}\\${name}`
-                );
-                handleRename(filesToRename);
-              }}
+              onClick={() =>
+                handleRename(
+                  selectedImages.map((name) => `${imageData.folder}\\${name}`)
+                )
+              }
+              startIcon={<DriveFileRenameOutlineIcon />}
             >
-              Rename Selected
-            </button>
-          </div>
+              Rename
+            </Button>
+          </Box>
 
-          {error && <p className="error-message">{error}</p>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-          <div className="image-grid" onClick={handleBackgroundClick}>
+          <Box className="image-grid" onClick={handleBackgroundClick}>
             {imageData.files.map((imageName, index) => {
               const isSelected = selectedImages.includes(imageName);
               return (
-                <div
+                <Box
                   key={imageName}
                   className={`image-card ${isSelected ? "selected" : ""}`}
                   onClick={(e) => handleImageClick(e, imageName, index)}
@@ -222,27 +282,54 @@ const App: React.FC = () => {
                       <span>{imageName.split(".").pop()?.toUpperCase()}</span>
                     </div>
                   )}
-                  <p className="image-name">{imageName}</p>
-                </div>
+                  <Typography
+                    variant="caption"
+                    sx={{ mt: 1, display: "block", wordWrap: "break-word" }}
+                  >
+                    {imageName}
+                  </Typography>
+                </Box>
               );
             })}
-          </div>
-        </main>
-        <aside className="sidebar">
+          </Box>
+        </Box>
+
+        <Box
+          component="aside"
+          sx={{
+            width: 400,
+            minWidth: 350,
+            borderLeft: "1px solid",
+            borderColor: "divider",
+            overflowY: "auto",
+            bgcolor: "background.paper",
+          }}
+        >
           <MetadataPanel
             selectedImageNames={selectedImages}
             folderPath={imageData.folder}
             getImageUrl={getImageUrl}
-            onRename={handleRename}
           />
-        </aside>
-      </div>
-      <Notification
-        message={notification.message}
-        type={notification.type}
-        onClose={() => setNotification({ message: "", type: "" })}
-      />
-    </div>
+        </Box>
+      </Box>
+
+      {!!notification.message && (
+        <Snackbar
+          open={true}
+          autoHideDuration={notification.type === "success" ? 4000 : null}
+          onClose={handleNotificationClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleNotificationClose}
+            severity={notification.type || "info"}
+            sx={{ width: "100%" }}
+          >
+            {notification.message}
+          </Alert>
+        </Snackbar>
+      )}
+    </Box>
   );
 };
 

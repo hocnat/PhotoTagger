@@ -9,6 +9,9 @@ import {
 import "leaflet/dist/leaflet.css";
 import L, { LatLngExpression, LatLng } from "leaflet";
 
+// MUI Imports
+import { Modal, Box, Typography, Button } from "@mui/material";
+
 // Fix for a common Leaflet/React bug where marker icons don't show.
 // @ts-ignore - This is a well-known workaround for a Leaflet/Webpack issue.
 delete L.Icon.Default.prototype._getIconUrl;
@@ -48,6 +51,19 @@ interface MapModalProps {
   initialCoords: Coords | null;
 }
 
+const modalStyle = {
+  position: "absolute" as "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: "90%",
+  maxWidth: 800,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+};
+
 const MapModal: React.FC<MapModalProps> = ({
   isOpen,
   onClose,
@@ -84,37 +100,53 @@ const MapModal: React.FC<MapModalProps> = ({
   const mapZoom = position || initialCoords ? 13 : 5;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h3>Select Location on Map</h3>
-        <MapContainer
-          center={mapCenter}
-          zoom={mapZoom}
-          scrollWheelZoom={true}
-          className="map-container"
+    <Modal open={isOpen} onClose={onClose} aria-labelledby="map-modal-title">
+      <Box sx={modalStyle}>
+        <Typography id="map-modal-title" variant="h6" component="h2">
+          Select Location on Map
+        </Typography>
+
+        <Box
+          sx={{
+            height: "500px",
+            width: "100%",
+            mt: 2,
+            borderRadius: 1,
+            overflow: "hidden",
+          }}
         >
-          <ChangeView center={mapCenter} zoom={mapZoom} />
-          <TileLayer
-            attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapClickHandler onMapClick={setPosition} />
-          {position && <Marker position={position} />}
-        </MapContainer>
-        <div className="modal-actions">
-          <button
-            type="button"
+          <MapContainer
+            center={mapCenter}
+            zoom={mapZoom}
+            scrollWheelZoom={true}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <ChangeView center={mapCenter} zoom={mapZoom} />
+            <TileLayer
+              attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapClickHandler onMapClick={setPosition} />
+            {position && <Marker position={position} />}
+          </MapContainer>
+        </Box>
+
+        <Box
+          sx={{ mt: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}
+        >
+          <Button variant="text" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
             onClick={handleSetLocation}
             disabled={!position}
           >
             Set Location
-          </button>
-          <button type="button" onClick={onClose} className="button-secondary">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
   );
 };
 

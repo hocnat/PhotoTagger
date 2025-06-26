@@ -1,6 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import iso from "iso-3166-1";
-import countryData from "country-list/data.json";
+
+// MUI Imports
+import { TextField, Autocomplete } from "@mui/material";
+
+const countryData = require("country-list/data.json");
+
+interface Country {
+  code: string;
+  name: string;
+}
 
 interface CountryInputProps {
   label: string;
@@ -9,77 +18,54 @@ interface CountryInputProps {
   onCodeChange: (newCode: string) => void;
 }
 
-interface Country {
-  code: string;
-  name: string;
-}
-
 const CountryInput: React.FC<CountryInputProps> = ({
   label,
   countryValue,
   onCountryChange,
   onCodeChange,
 }) => {
-  const [suggestions, setSuggestions] = useState<Country[]>([]);
+  const handleAutocompleteChange = (
+    event: any,
+    newValue: Country | string | null
+  ) => {
+    if (typeof newValue === "string") {
+      onCountryChange(newValue);
+    } else if (newValue) {
+      const alpha2Code = newValue.code;
+      const countryInfo = iso.whereAlpha2(alpha2Code);
+      const alpha3Code = countryInfo ? countryInfo.alpha3 : "";
 
-  const handleCountryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-    onCountryChange(input);
-
-    if (input.trim()) {
-      const filtered = countryData
-        .filter((country) =>
-          country.name.toLowerCase().includes(input.toLowerCase())
-        )
-        .slice(0, 7);
-      setSuggestions(filtered);
+      onCountryChange(newValue.name);
+      onCodeChange(alpha3Code);
     } else {
-      setSuggestions([]);
+      onCountryChange("");
+      onCodeChange("");
     }
   };
 
-  const selectSuggestion = (country: Country) => {
-    const alpha2Code = country.code;
-    const countryInfo = iso.whereAlpha2(alpha2Code);
-    const alpha3Code = countryInfo ? countryInfo.alpha3 : "";
-
-    onCountryChange(country.name);
-    onCodeChange(alpha3Code);
-    setSuggestions([]);
-  };
+  const selectedCountryObject =
+    countryData.find((c: Country) => c.name === countryValue) || null;
 
   return (
-    <div className="editable-field" style={{ position: "relative" }}>
-      <label className="editable-field-label">{label}</label>
-      <input
-        type="text"
-        value={countryValue}
-        onChange={handleCountryInputChange}
-        className="editable-field-input"
-        placeholder="Enter country name..."
-        onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-      />
-      {suggestions.length > 0 && (
-        <ul
-          className="suggestions-list"
-          style={{
-            position: "absolute",
-            width: "100%",
-            top: "100%",
-            zIndex: 11,
-          }}
-        >
-          {suggestions.map((country) => (
-            <li
-              key={country.code}
-              onMouseDown={() => selectSuggestion(country)}
-            >
-              {country.name}
-            </li>
-          ))}
-        </ul>
+    <Autocomplete
+      value={selectedCountryObject}
+      onChange={handleAutocompleteChange}
+      freeSolo
+      getOptionLabel={(option) =>
+        typeof option === "string" ? option : option.name
+      }
+      options={countryData}
+      sx={{ width: "100%" }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={label}
+          variant="outlined"
+          size="small"
+          onChange={(e) => onCountryChange(e.target.value)}
+        />
       )}
-    </div>
+    />
   );
 };
 
