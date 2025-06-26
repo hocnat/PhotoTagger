@@ -226,6 +226,11 @@ const App: React.FC = () => {
               size="small"
               value={folderInput}
               onChange={(e) => setFolderInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleFetchImages();
+                }
+              }}
             />
             <Button
               variant="contained"
