@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { ImageMetadata } from "./types";
+import ImageModal from "./ImageModal";
 import MapModal from "./MapModal";
 import CountryInput from "./CountryInput";
 
@@ -18,6 +19,7 @@ import {
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import MapIcon from "@mui/icons-material/Map";
 import SaveIcon from "@mui/icons-material/Save";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 interface MetadataPanelProps {
   selectedImageNames: string[];
@@ -126,6 +128,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const {
     allMetadata,
@@ -196,17 +199,13 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     );
   }
 
+  const previewImageName =
+    selectedImageNames.length === 1 ? selectedImageNames[0] : null;
+
   return (
     <Box
       sx={{ p: 2, display: "flex", flexDirection: "column", height: "100%" }}
     >
-      <Paper elevation={3} sx={{ mb: 2, overflow: "hidden" }}>
-        <ImagePreview
-          imageUrl={getImageUrl(
-            selectedImageNames[selectedImageNames.length - 1]
-          )}
-        />
-      </Paper>
       <Box
         sx={{
           display: "flex",
@@ -227,6 +226,17 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         </Box>
       ) : (
         <Box component="form" sx={{ flexGrow: 1, overflowY: "auto", pr: 1 }}>
+          {selectedImageNames.length === 1 && (
+            <Button
+              variant="outlined"
+              startIcon={<VisibilityIcon />}
+              onClick={() => setIsPreviewOpen(true)}
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              Show Large Preview
+            </Button>
+          )}
           <FormSection title="Content">
             <TextField
               label="Caption / Description"
@@ -500,6 +510,12 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           </Button>
         </Box>
       )}
+      <ImageModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        imageUrl={previewImageName ? getImageUrl(previewImageName) : null}
+        imageName={previewImageName}
+      />
       <MapModal
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
@@ -519,18 +535,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 };
 
 // --- Helper Components ---
-const ImagePreview: React.FC<{ imageUrl: string | null }> = ({ imageUrl }) => {
-  if (!imageUrl)
-    return <Box className="image-preview-placeholder">No image selected</Box>;
-  return (
-    <Box
-      component="img"
-      src={imageUrl}
-      sx={{ width: "100%", height: 200, objectFit: "contain" }}
-    />
-  );
-};
-
 const FormSection: React.FC<{ title: string; children: React.ReactNode }> = ({
   title,
   children,
