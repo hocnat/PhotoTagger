@@ -73,7 +73,6 @@ def run_exiftool_command(args_list):
 def build_exiftool_args(form_data):
     """Builds a list of ExifTool command-line arguments from form data."""
     args = []
-    logging.debug(f"  [build_exiftool_args] Building args from: {form_data}")
 
     # Map our clean frontend fields to one or more real ExifTool tags
     field_map = {
@@ -138,7 +137,6 @@ def build_exiftool_args(form_data):
         except (ValueError, TypeError):
             pass
 
-    logging.debug(f"  [build_exiftool_args] Generated args: {args}")
     return args
 
 
