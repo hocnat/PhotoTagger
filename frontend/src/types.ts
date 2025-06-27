@@ -1,33 +1,52 @@
-// A special type to represent a field that could have mixed values in the UI
-type Mixable<T> = T | '(Mixed Values)';
-
-// This interface describes the structure of the metadata object
-// we receive from the backend after it has been processed.
-export interface ImageMetadata {
-  // We use [key: string]: any because ExifTool returns many dynamic keys.
-  // This is a flexible way to handle it.
-  [key: string]: any;
-
-  // We can still define the keys we know and care about for type safety.
-  Keywords: Mixable<string[]>;
-  Caption: Mixable<string>;
-  Author: Mixable<string>;
-  
-  "EXIF:DateTimeOriginal"?: Mixable<string>;
-  "EXIF:OffsetTimeOriginal"?: Mixable<string>;
-
-  DecimalLatitude?: Mixable<number>;
-  DecimalLongitude?: Mixable<number>;
-
-  "XMP:Location"?: Mixable<string>;
-  "XMP:City"?: Mixable<string>;
-  "XMP:State"?: Mixable<string>;
-  "XMP:Country"?: Mixable<string>;
-  "XMP:CountryCode"?: Mixable<string>;
+// The structure of a Keyword object used in the form state.
+export interface Keyword {
+  name: string;
+  status: "common" | "partial";
 }
 
-// This interface describes the structure for our notification state.
+// The primary data structure for a single image's metadata from the backend.
+// Note: Keywords from the backend will be a simple string array.
+export interface RawImageMetadata {
+  [key: string]: any;
+  Keywords: string[];
+  Caption: string;
+  Author: string;
+  "EXIF:DateTimeOriginal"?: string;
+  "EXIF:OffsetTimeOriginal"?: string;
+  DecimalLatitude?: number;
+  DecimalLongitude?: number;
+  "XMP:Location"?: string;
+  "XMP:City"?: string;
+  "XMP:State"?: string;
+  "XMP:Country"?: string;
+  "XMP:CountryCode"?: string;
+}
+
+// The structure of our main form state in the UI.
+// Keywords are represented as an array of Keyword objects.
+export interface FormState {
+  Keywords: Keyword[];
+  Caption: string | "(Mixed Values)";
+  Author: string | "(Mixed Values)";
+  "EXIF:DateTimeOriginal"?: string | "(Mixed Values)";
+  "EXIF:OffsetTimeOriginal"?: string | "(Mixed Values)";
+  DecimalLatitude?: number | "(Mixed Values)";
+  DecimalLongitude?: number | "(Mixed Values)";
+  "XMP:Location"?: string | "(Mixed Values)";
+  "XMP:City"?: string | "(Mixed Values)";
+  "XMP:State"?: string | "(Mixed Values)";
+  "XMP:Country"?: string | "(Mixed Values)";
+  "XMP:CountryCode"?: string | "(Mixed Values)";
+}
+
+// The structure for an image file, combining its name and its metadata.
+export interface ImageFile {
+  filename: string;
+  metadata: RawImageMetadata;
+}
+
+// The structure for our notification state.
 export interface NotificationState {
   message: string;
-  type: 'success' | 'error' | '';
+  type: "success" | "error" | "";
 }
