@@ -129,13 +129,25 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isAdditiveKeywords, setIsAdditiveKeywords] = useState(false);
 
   const {
     allMetadata,
     isLoading: isMetadataLoading,
     refetch,
   } = useSelectionMetadata(selectedImageNames, folderPath);
+
   const { formState, setFormState, hasChanges } = useMetadataForm(allMetadata);
+
+  useEffect(() => {
+    if (formState.Keywords === "(Mixed Values)") {
+      setIsAdditiveKeywords(true);
+    } else if (Array.isArray(formState.Keywords)) {
+      if (!hasChanges) {
+        setIsAdditiveKeywords(false);
+      }
+    }
+  }, [formState.Keywords, hasChanges]);
 
   const handleFormChange = (fieldName: keyof ImageMetadata, newValue: any) => {
     setFormState((prevState) => ({ ...prevState, [fieldName]: newValue }));
@@ -143,10 +155,30 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 
   const handleSave = () => {
     setIsSaving(true);
-    const payload = {
-      files: selectedImageNames.map((name) => `${folderPath}\\${name}`),
+    const filesToSave = selectedImageNames.map(
+      (name) => `${folderPath}\\${name}`
+    );
+
+    const payload: {
+      files: string[];
+      metadata: Partial<ImageMetadata>;
+      add_keywords?: string[];
+      is_additive_keywords?: boolean;
+    } = {
+      files: filesToSave,
       metadata: formState,
     };
+
+    // Check if we are in the special additive mode
+    if (isAdditiveKeywords && Array.isArray(formState.Keywords)) {
+      payload.is_additive_keywords = true;
+      payload.add_keywords = formState.Keywords; // Send only the new keywords to be added
+
+      // Create a copy of metadata but without the Keywords field
+      const { Keywords, ...metadataWithoutKeywords } = formState;
+      payload.metadata = metadataWithoutKeywords;
+    }
+
     fetch("http://localhost:5000/api/save_metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -34,7 +34,7 @@ def dms_to_dd(dms, ref):
 
 
 def load_favorites():
-    """Loads favorites from JSON, or creates a default structure."""
+    """Loads favorites from JSON, creating a default structure if it doesn't exist."""
     if not os.path.exists(FAVORITES_PATH):
         return {"keywords": {}}
     try:
@@ -50,41 +50,120 @@ def save_favorites(data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def run_exiftool_command(args_list):
+    """Executes an ExifTool command using a secure temporary file for arguments."""
+    arg_file_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", delete=False, encoding="utf-8", suffix=".txt"
+        ) as f:
+            f.write("\n".join(args_list))
+            arg_file_path = f.name
+
+        # The command now includes all image paths at the end of the argument file
+        command = [EXIFTOOL_PATH, "-overwrite_original", "-@", arg_file_path]
+        subprocess.run(
+            command, capture_output=True, check=True, text=True, encoding="utf-8"
+        )
+    finally:
+        if arg_file_path and os.path.exists(arg_file_path):
+            os.remove(arg_file_path)
+
+
+def build_exiftool_args(form_data):
+    """Builds a list of ExifTool command-line arguments from form data."""
+    args = []
+    logging.debug(f"  [build_exiftool_args] Building args from: {form_data}")
+
+    # Map our clean frontend fields to one or more real ExifTool tags
+    field_map = {
+        "Author": ["-XMP:Creator", "-IPTC:By-line", "-EXIF:Artist"],
+        "Caption": [
+            "-XMP:Description",
+            "-IPTC:Caption-Abstract",
+            "-EXIF:ImageDescription",
+        ],
+    }
+
+    # Process consolidated fields that overwrite multiple tags
+    for form_key, exif_tags in field_map.items():
+        if form_key in form_data and form_data[form_key] != "(Mixed Values)":
+            value = str(form_data[form_key]).strip()
+            for tag in exif_tags:
+                args.append(f"{tag}=")
+            if value:
+                for tag in exif_tags:
+                    args.append(f"{tag}={value}")
+
+    # Process Keywords (always a list in overwrite mode)
+    if "Keywords" in form_data and isinstance(form_data.get("Keywords"), list):
+        args.extend(["-XMP:Subject=", "-IPTC:Keywords="])
+        for keyword in form_data["Keywords"]:
+            clean_keyword = str(keyword).strip()
+            if clean_keyword:
+                args.extend(
+                    [f"-XMP:Subject={clean_keyword}", f"-IPTC:Keywords={clean_keyword}"]
+                )
+
+    # Process simple, direct-mapped tags
+    simple_tags = [
+        "EXIF:DateTimeOriginal",
+        "EXIF:OffsetTimeOriginal",
+        "XMP:Country",
+        "XMP:State",
+        "XMP:City",
+        "XMP:Location",
+        "XMP:CountryCode",
+    ]
+    for tag in simple_tags:
+        if tag in form_data and form_data[tag] != "(Mixed Values)":
+            value = str(form_data[tag]).strip()
+            args.append(f"-{tag}=")
+            if value:
+                args.append(f"-{tag}={value}")
+
+    # Process GPS coordinates
+    if "DecimalLatitude" in form_data and "DecimalLongitude" in form_data:
+        try:
+            lat = float(form_data["DecimalLatitude"])
+            lon = float(form_data["DecimalLongitude"])
+            args.extend(
+                [
+                    f"-EXIF:GPSLatitude={abs(lat)}",
+                    f"-EXIF:GPSLatitudeRef={'N' if lat >= 0 else 'S'}",
+                    f"-EXIF:GPSLongitude={abs(lon)}",
+                    f"-EXIF:GPSLongitudeRef={'E' if lon >= 0 else 'W'}",
+                ]
+            )
+        except (ValueError, TypeError):
+            pass
+
+    logging.debug(f"  [build_exiftool_args] Generated args: {args}")
+    return args
+
+
 # --- API Routes ---
 
 
 @app.route("/api/images")
 def list_images():
-    """Returns a list of image filenames from a given folder path."""
     folder_path = request.args.get("folder")
     if not folder_path or not os.path.isdir(folder_path):
-        return jsonify({"error": "Folder not found or not specified"}), 404
+        return jsonify({"error": "Folder not found"}), 404
     try:
-        supported_extensions = (
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".gif",
-            ".bmp",
-            ".tiff",
-            ".cr2",
+        supported = (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".cr2")
+        return jsonify(
+            [f for f in os.listdir(folder_path) if f.lower().endswith(supported)]
         )
-        image_files = [
-            f
-            for f in os.listdir(folder_path)
-            if f.lower().endswith(supported_extensions)
-        ]
-        return jsonify(image_files)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/image_data")
 def get_image_data():
-    """Serves the raw binary data for a single image file."""
     image_path = request.args.get("path")
     if not image_path or not os.path.isfile(image_path):
-        return jsonify({"error": "Image not found at path"}), 404
+        return jsonify({"error": "Image not found"}), 404
     try:
         directory, filename = os.path.split(image_path)
         return send_from_directory(directory, filename)
@@ -94,20 +173,18 @@ def get_image_data():
 
 @app.route("/api/metadata")
 def get_metadata():
-    """Reads all metadata, consolidating key fields for the frontend."""
     image_path = request.args.get("path")
     if not image_path or not os.path.isfile(image_path):
-        return jsonify({"error": "Image not found at path"}), 404
+        return jsonify({"error": "Image not found"}), 404
     try:
         command = [EXIFTOOL_PATH, "-json", "-G", "-charset", "UTF8", image_path]
         result = subprocess.run(command, capture_output=True, check=True)
         metadata = json.loads(result.stdout.decode("utf-8"))[0]
 
-        metadata["Keywords"] = metadata.get(
-            "XMP:Subject", metadata.get("IPTC:Keywords", [])
+        keywords = metadata.get("XMP:Subject", metadata.get("IPTC:Keywords", []))
+        metadata["Keywords"] = (
+            [keywords] if not isinstance(keywords, list) else keywords
         )
-        if not isinstance(metadata["Keywords"], list):
-            metadata["Keywords"] = [metadata["Keywords"]]
 
         metadata["Author"] = metadata.get(
             "XMP:Creator", metadata.get("IPTC:By-line", metadata.get("EXIF:Artist", ""))
@@ -139,126 +216,83 @@ def get_metadata():
 
 @app.route("/api/save_metadata", methods=["POST"])
 def save_metadata():
-    """Saves metadata to files and updates the favorites list."""
     data = request.get_json()
+
     if not data or "files" not in data or "metadata" not in data:
-        return jsonify({"error": "Invalid request data"}), 400
+        return jsonify({"error": "Invalid request"}), 400
 
     image_paths = data["files"]
     form_data = data["metadata"]
+    is_additive = data.get("is_additive_keywords", False)
+    keywords_to_add_only = data.get("add_keywords", [])
 
-    # --- Update keyword usage history (learning) ---
-    if "Keywords" in form_data and isinstance(form_data.get("Keywords"), list):
+    # --- Learning Logic ---
+    keywords_to_learn = (
+        keywords_to_add_only if is_additive else form_data.get("Keywords", [])
+    )
+    if isinstance(keywords_to_learn, list) and keywords_to_learn:
         favorites = load_favorites()
         keyword_favs = favorites.get("keywords", {})
-        for keyword in form_data["Keywords"]:
-            if isinstance(keyword, str) and (clean_keyword := keyword.strip()):
-                entry = keyword_favs.get(clean_keyword, {"usageCount": 0})
+        for kw in keywords_to_learn:
+            if isinstance(kw, str) and (clean_kw := kw.strip()):
+                entry = keyword_favs.get(clean_kw, {"usageCount": 0})
                 entry["usageCount"] += 1
                 entry["lastUsed"] = datetime.now(timezone.utc).isoformat()
-                keyword_favs[clean_keyword] = entry
+                keyword_favs[clean_kw] = entry
         favorites["keywords"] = keyword_favs
         save_favorites(favorites)
 
-    # --- Prepare arguments for ExifTool ---
-    args_for_file = []
-
-    # Define mappings from our clean frontend fields to one or more real ExifTool tags
-    tag_map = {
-        "Author": ["-XMP:Creator", "-IPTC:By-line", "-EXIF:Artist"],
-        "Caption": [
-            "-XMP:Description",
-            "-IPTC:Caption-Abstract",
-            "-EXIF:ImageDescription",
-        ],
-        "Keywords": ["-XMP:Subject", "-IPTC:Keywords"],
-    }
-
-    for form_key, exif_tags in tag_map.items():
-        if form_key in form_data and form_data[form_key] != "(Mixed Values)":
-            value = form_data[form_key]
-            for tag in exif_tags:
-                args_for_file.append(f"{tag}=")  # Clear existing tag
-            if value:
-                if isinstance(value, list):
-                    for item in value:
-                        if str(item).strip():
-                            for tag in exif_tags:
-                                args_for_file.append(f"{tag}={str(item).strip()}")
-                else:
-                    for tag in exif_tags:
-                        args_for_file.append(f"{tag}={str(value).strip()}")
-
-    # Handle simple, direct-mapped tags
-    simple_tags = [
-        "EXIF:DateTimeOriginal",
-        "EXIF:OffsetTimeOriginal",
-        "XMP:Country",
-        "XMP:State",
-        "XMP:City",
-        "XMP:Location",
-        "XMP:CountryCode",
-    ]
-    for tag in simple_tags:
-        if tag in form_data and form_data[tag] != "(Mixed Values)":
-            value = str(form_data[tag]).strip()
-            args_for_file.append(f"-{tag}=")
-            if value:
-                args_for_file.append(f"-{tag}={value}")
-
-    # Handle special GPS logic
-    if "DecimalLatitude" in form_data and "DecimalLongitude" in form_data:
-        try:
-            lat, lon = float(form_data["DecimalLatitude"]), float(
-                form_data["DecimalLongitude"]
-            )
-            args_for_file.extend(
-                [
-                    f"-EXIF:GPSLatitude={abs(lat)}",
-                    f"-EXIF:GPSLatitudeRef={'N' if lat >= 0 else 'S'}",
-                    f"-EXIF:GPSLongitude={abs(lon)}",
-                    f"-EXIF:GPSLongitudeRef={'E' if lon >= 0 else 'W'}",
-                ]
-            )
-        except (ValueError, TypeError):
-            pass
-
-    if not args_for_file:
-        return jsonify({"message": "No changes to save"})
-
-    # --- Use a temporary file to pass arguments securely ---
-    arg_file_path = None
     try:
-        with tempfile.NamedTemporaryFile(
-            "w", delete=False, encoding="utf-8", suffix=".txt"
-        ) as f:
-            f.write("\n".join(args_for_file))
-            arg_file_path = f.name
+        if is_additive:
+            # In additive mode, we only add keywords and overwrite everything else.
+            for i, image_path in enumerate(image_paths):
+                # Step A: Read existing keywords for this file
+                read_cmd = [
+                    EXIFTOOL_PATH,
+                    "-json",
+                    "-G",
+                    "-XMP:Subject",
+                    "-charset",
+                    "UTF8",
+                    image_path,
+                ]
+                result = subprocess.run(read_cmd, capture_output=True, check=True)
+                current_meta = json.loads(result.stdout.decode("utf-8"))[0]
+                existing_keywords = current_meta.get("XMP:Subject", [])
+                if not isinstance(existing_keywords, list):
+                    existing_keywords = [existing_keywords]
 
-        command = [
-            EXIFTOOL_PATH,
-            "-overwrite_original",
-            "-@",
-            arg_file_path,
-        ] + image_paths
-        subprocess.run(
-            command, capture_output=True, check=True, text=True, encoding="utf-8"
-        )
+                # Step B: Combine with new keywords
+                final_keywords = list(
+                    dict.fromkeys(existing_keywords + keywords_to_add_only)
+                )
+
+                # Step C: Build a complete metadata object for this file
+                metadata_for_this_file = form_data.copy()
+                metadata_for_this_file["Keywords"] = final_keywords
+
+                # Step D: Build arguments and execute for this single file
+                args = build_exiftool_args(metadata_for_this_file)
+                if args:
+                    run_exiftool_command(args + [image_path])
+        else:
+            # --- OVERWRITE MODE ---
+            args = build_exiftool_args(form_data)
+            if args:
+                run_exiftool_command(args + image_paths)
+
         return jsonify({"message": "Metadata saved successfully"})
+
     except Exception as e:
-        stderr = getattr(e, "stderr", "").strip()
+        stderr = getattr(e, "stderr", b"").decode("utf-8", "ignore").strip()
         return (
             jsonify({"error": "ExifTool failed to save", "details": stderr or str(e)}),
             500,
         )
-    finally:
-        if arg_file_path and os.path.exists(arg_file_path):
-            os.remove(arg_file_path)
 
 
 @app.route("/api/suggestions")
 def get_suggestions():
-    """Provides keyword suggestions for the frontend's autocomplete field."""
     query = request.args.get("q", "").lower()
     favorites = load_favorites()
     keywords = favorites.get("keywords", {})
@@ -267,25 +301,21 @@ def get_suggestions():
             keywords, key=lambda k: keywords[k].get("lastUsed", ""), reverse=True
         )
         return jsonify(suggestions[:10])
-    suggestions = [k for k in keywords if k.lower().startswith(query)]
-    return jsonify(suggestions)
+    return jsonify([k for k in keywords if k.lower().startswith(query)])
 
 
 @app.route("/api/rename_files", methods=["POST"])
 def rename_files():
-    """Renames files based on their metadata (YYYYMMDD_HHmmSS_Caption.ext)."""
     data = request.get_json()
     if not data or "files" not in data:
-        return jsonify({"error": "Invalid request data"}), 400
+        return jsonify({"error": "Invalid request"}), 400
 
     image_paths = data["files"]
     rename_results = []
 
     for old_path in image_paths:
         if not os.path.isfile(old_path):
-            rename_results.append(
-                {"original": old_path, "new": old_path, "status": "Error: Not a file"}
-            )
+            rename_results.append({"original": old_path, "status": "Error: Not a file"})
             continue
         try:
             command = [
@@ -298,38 +328,28 @@ def rename_files():
             result = subprocess.run(command, capture_output=True, check=True)
             metadata = json.loads(result.stdout.decode("utf-8"))[0]
 
-            datetime_original_str = metadata.get("DateTimeOriginal")
+            dt_str = metadata.get("DateTimeOriginal")
             caption = metadata.get("Description", "untitled")
-
-            if not datetime_original_str:
+            if not dt_str:
                 rename_results.append(
-                    {
-                        "original": old_path,
-                        "new": old_path,
-                        "status": "Error: No DateTimeOriginal found",
-                    }
+                    {"original": old_path, "status": "Error: No DateTimeOriginal"}
                 )
                 continue
 
             try:
-                dt_object = datetime.strptime(
-                    datetime_original_str, "%Y:%m:%d %H:%M:%S"
-                )
-                timestamp_str = dt_object.strftime("%Y%m%d_%H%M%S")
+                dt_obj = datetime.strptime(dt_str, "%Y:%m:%d %H:%M:%S")
+                ts_str = dt_obj.strftime("%Y%m%d_%H%M%S")
             except ValueError:
-                timestamp_str = datetime_original_str.split(" ")[0].replace(":", "")
+                ts_str = dt_str.split(" ")[0].replace(":", "")
 
             safe_caption = re.sub(r'[\\/*?:"<>|]', "", caption).replace(" ", "_")
-
             directory, old_filename = os.path.split(old_path)
-            original_ext = os.path.splitext(old_filename)[1]
+            name_base, ext_base = os.path.splitext(old_filename)
             extension = (
-                original_ext.upper()
-                if original_ext.lower() == ".cr2"
-                else original_ext.lower()
+                ext_base.upper() if ext_base.lower() == ".cr2" else ext_base.lower()
             )
 
-            new_filename_base = f"{timestamp_str}_{safe_caption}"
+            new_filename_base = f"{ts_str}_{safe_caption}"
             new_path = os.path.join(directory, f"{new_filename_base}{extension}")
 
             counter = 1
@@ -350,16 +370,10 @@ def rename_files():
                 )
             else:
                 rename_results.append(
-                    {
-                        "original": old_filename,
-                        "new": old_filename,
-                        "status": "Skipped (already named correctly)",
-                    }
+                    {"original": old_filename, "new": old_filename, "status": "Skipped"}
                 )
         except Exception as e:
-            rename_results.append(
-                {"original": old_path, "new": old_path, "status": f"Error: {e}"}
-            )
+            rename_results.append({"original": old_path, "status": f"Error: {e}"})
 
     return jsonify(rename_results)
 
