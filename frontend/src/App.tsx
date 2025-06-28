@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
 import { NotificationState } from "./types";
+import { useImageSelection } from "./hooks/useImageSelection";
 import "./App.css";
 
-// MUI Imports
 import {
   Box,
   AppBar,
@@ -14,70 +14,12 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Paper,
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
 
-// --- Custom Hook ---
-const useImageSelection = (images: string[]) => {
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const lastSelectedIndex = useRef<number | null>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-        e.preventDefault();
-        setSelectedImages([...images]);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [images]);
-
-  const handleImageClick = (
-    e: React.MouseEvent,
-    clickedImageName: string,
-    clickedIndex: number
-  ) => {
-    e.stopPropagation();
-    const isSelected = selectedImages.includes(clickedImageName);
-
-    if (e.nativeEvent.shiftKey && lastSelectedIndex.current !== null) {
-      const start = Math.min(lastSelectedIndex.current, clickedIndex);
-      const end = Math.max(lastSelectedIndex.current, clickedIndex);
-      const rangeSelection = images.slice(start, end + 1);
-      const newSelection = new Set([...selectedImages, ...rangeSelection]);
-      setSelectedImages(Array.from(newSelection));
-    } else if (e.nativeEvent.ctrlKey || e.nativeEvent.metaKey) {
-      setSelectedImages(
-        isSelected
-          ? selectedImages.filter((name) => name !== clickedImageName)
-          : [...selectedImages, clickedImageName]
-      );
-      lastSelectedIndex.current = clickedIndex;
-    } else {
-      setSelectedImages(
-        isSelected && selectedImages.length === 1 ? [] : [clickedImageName]
-      );
-      lastSelectedIndex.current = clickedIndex;
-    }
-  };
-
-  const handleBackgroundClick = () => {
-    setSelectedImages([]);
-    lastSelectedIndex.current = null;
-  };
-
-  return {
-    selectedImages,
-    setSelectedImages,
-    handleImageClick,
-    handleBackgroundClick,
-  };
-};
-
-// --- Main App Component ---
 const App: React.FC = () => {
   const [imageData, setImageData] = useState<{
     folder: string;
@@ -101,7 +43,6 @@ const App: React.FC = () => {
   const handleFetchImages = useCallback(() => {
     setIsLoading(true);
     setError("");
-    setSelectedImages([]);
 
     fetch(
       `http://localhost:5000/api/images?folder=${encodeURIComponent(
@@ -121,7 +62,7 @@ const App: React.FC = () => {
         setImageData({ folder: "", files: [] });
       })
       .finally(() => setIsLoading(false));
-  }, [folderInput, setSelectedImages]);
+  }, [folderInput]);
 
   const getImageUrl = (imageName: string): string => {
     const fullPath = `${imageData.folder}\\${imageName}`;
@@ -164,12 +105,12 @@ const App: React.FC = () => {
         }));
         setSelectedImages((cs) => cs.map((f) => renameMap[f] || f));
       })
-      .catch((err) =>
+      .catch((err) => {
         setNotification({
           message: `An error occurred during renaming: ${err.message}`,
           type: "error",
-        })
-      );
+        });
+      });
   };
 
   const handleNotificationClose = (
@@ -205,7 +146,6 @@ const App: React.FC = () => {
           </Typography>
         </Toolbar>
       </AppBar>
-
       <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
         <Box component="main" sx={{ flexGrow: 1, p: 2, overflowY: "auto" }}>
           <Box
@@ -217,6 +157,7 @@ const App: React.FC = () => {
               p: 2,
               bgcolor: "background.paper",
               borderRadius: 1,
+              boxShadow: 1,
             }}
           >
             <TextField
@@ -271,7 +212,8 @@ const App: React.FC = () => {
             {imageData.files.map((imageName, index) => {
               const isSelected = selectedImages.includes(imageName);
               return (
-                <Box
+                <Paper
+                  elevation={isSelected ? 8 : 2}
                   key={imageName}
                   className={`image-card ${isSelected ? "selected" : ""}`}
                   onClick={(e) => handleImageClick(e, imageName, index)}
@@ -289,11 +231,16 @@ const App: React.FC = () => {
                   )}
                   <Typography
                     variant="caption"
-                    sx={{ mt: 1, display: "block", wordWrap: "break-word" }}
+                    sx={{
+                      mt: 1,
+                      p: 0.5,
+                      display: "block",
+                      wordWrap: "break-word",
+                    }}
                   >
                     {imageName}
                   </Typography>
-                </Box>
+                </Paper>
               );
             })}
           </Box>
@@ -308,6 +255,7 @@ const App: React.FC = () => {
             borderColor: "divider",
             overflowY: "auto",
             bgcolor: "background.paper",
+            flexShrink: 0,
           }}
         >
           <MetadataPanel
@@ -329,6 +277,7 @@ const App: React.FC = () => {
             onClose={handleNotificationClose}
             severity={notification.type || "info"}
             sx={{ width: "100%" }}
+            variant="filled"
           >
             {notification.message}
           </Alert>

@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { FormState, ImageFile, RawImageMetadata, Keyword } from "./types";
+import React, { useState } from "react";
+import { FormState, RawImageMetadata, Keyword } from "./types";
+import { useSelectionData } from "./hooks/useSelectionData";
+import { useMetadataForm } from "./hooks/useMetadataForm";
+
 import ImageModal from "./ImageModal";
 import MapModal from "./MapModal";
 import CountryInput from "./CountryInput";
@@ -13,7 +16,6 @@ import {
   CircularProgress,
   Autocomplete,
   Chip,
-  Paper,
 } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import MapIcon from "@mui/icons-material/Map";
@@ -25,115 +27,6 @@ interface MetadataPanelProps {
   folderPath: string;
   getImageUrl: (imageName: string) => string;
 }
-
-const useSelectionData = (selectedImageNames: string[], folderPath: string) => {
-  const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  const refetch = useCallback(() => {
-    if (selectedImageNames.length === 0) {
-      setImageFiles([]);
-      return;
-    }
-    setIsLoading(true);
-    const filesToFetch = selectedImageNames.map(
-      (name) => `${folderPath}\\${name}`
-    );
-
-    fetch(`http://localhost:5000/api/metadata`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files: filesToFetch }),
-    })
-      .then((res) =>
-        res.ok
-          ? res.json()
-          : Promise.reject(new Error("Failed to fetch metadata"))
-      )
-      .then((data: ImageFile[]) => setImageFiles(data))
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, [selectedImageNames, folderPath]);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { imageFiles, isLoading, refetch };
-};
-
-const useMetadataForm = (imageFiles: ImageFile[]) => {
-  const [formState, setFormState] = useState<Partial<FormState>>({});
-  const [originalFormState, setOriginalFormState] = useState<
-    Partial<FormState>
-  >({});
-
-  useEffect(() => {
-    if (imageFiles.length === 0) {
-      setFormState({});
-      setOriginalFormState({});
-      return;
-    }
-
-    const newFormState: Partial<FormState> = {};
-    const simpleKeys: (keyof Omit<FormState, "Keywords">)[] = [
-      "Caption",
-      "Author",
-      "EXIF:DateTimeOriginal",
-      "EXIF:OffsetTimeOriginal",
-      "DecimalLatitude",
-      "DecimalLongitude",
-      "XMP:Location",
-      "XMP:City",
-      "XMP:State",
-      "XMP:Country",
-      "XMP:CountryCode",
-    ];
-
-    simpleKeys.forEach((key) => {
-      const firstValue = imageFiles[0]?.metadata[key];
-      const allSame = imageFiles.every(
-        (file) =>
-          JSON.stringify(file.metadata[key]) === JSON.stringify(firstValue)
-      );
-      (newFormState as any)[key] = allSame ? firstValue : "(Mixed Values)";
-    });
-
-    const allKeywords = new Set<string>();
-    imageFiles.forEach((file) => {
-      (file.metadata.Keywords || []).forEach((kw) => allKeywords.add(kw));
-    });
-
-    const commonKeywords = new Set<string>(
-      imageFiles[0]?.metadata.Keywords || []
-    );
-    for (let i = 1; i < imageFiles.length; i++) {
-      const currentKeywords = new Set<string>(
-        imageFiles[i].metadata.Keywords || []
-      );
-      commonKeywords.forEach((commonKw) => {
-        if (!currentKeywords.has(commonKw)) {
-          commonKeywords.delete(commonKw);
-        }
-      });
-    }
-
-    newFormState.Keywords = Array.from(allKeywords).map((name) => ({
-      name,
-      status: commonKeywords.has(name) ? "common" : "partial",
-    }));
-
-    setFormState(newFormState);
-    setOriginalFormState(newFormState);
-  }, [imageFiles]);
-
-  const hasChanges = useMemo(
-    () => JSON.stringify(formState) !== JSON.stringify(originalFormState),
-    [formState, originalFormState]
-  );
-
-  return { formState, setFormState, hasChanges, originalFormState };
-};
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
   selectedImageNames,
@@ -164,13 +57,13 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       Array.isArray(originalFormState.Keywords)
         ? originalFormState.Keywords
         : []
-    ).map((kw) => kw.name);
+    ).map((kw: Keyword) => kw.name);
     const currentKeywords = (
       Array.isArray(formState.Keywords) ? formState.Keywords : []
-    ).map((kw) => kw.name);
+    ).map((kw: Keyword) => kw.name);
 
-    const addedKeywords = new Set(
-      currentKeywords.filter((kw) => !originalKeywords.includes(kw))
+    const addedKeywords = currentKeywords.filter(
+      (kw) => !originalKeywords.includes(kw)
     );
     const removedKeywords = new Set(
       originalKeywords.filter((kw) => !currentKeywords.includes(kw))
@@ -183,17 +76,13 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       addedKeywords.forEach((kw) => existingKeywords.add(kw));
 
       const finalKeywordsForFile = Array.from(existingKeywords);
-
       const metadata_for_file: Partial<RawImageMetadata> = {};
-
       metadata_for_file.Keywords = finalKeywordsForFile;
 
-      Object.keys(formState).forEach((key) => {
-        if (
-          key !== "Keywords" &&
-          formState[key as keyof FormState] !== "(Mixed Values)"
-        ) {
-          (metadata_for_file as any)[key] = formState[key as keyof FormState];
+      Object.keys(formState).forEach((keyStr) => {
+        const key = keyStr as keyof FormState;
+        if (key !== "Keywords" && formState[key] !== "(Mixed Values)") {
+          (metadata_for_file as any)[key] = formState[key];
         }
       });
 
@@ -204,9 +93,16 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     });
 
     const payload = {
-      files_to_update,
-      keywords_to_learn: Array.from(addedKeywords),
+      files_to_update: files_to_update.filter(
+        (f) => Object.keys(f.metadata).length > 0
+      ),
+      keywords_to_learn: addedKeywords,
     };
+
+    if (payload.files_to_update.length === 0) {
+      setIsSaving(false);
+      return;
+    }
 
     fetch("http://localhost:5000/api/save_metadata", {
       method: "POST",
@@ -342,6 +238,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               freeSolo
               options={keywordSuggestions}
               filterOptions={(x) => x}
+              value={null}
               onInputChange={handleKeywordInputChange}
               onChange={(event, newValue) => {
                 if (typeof newValue === "string" && newValue.trim() !== "") {
@@ -362,7 +259,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                   }
                 }
               }}
-              value={null}
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -373,7 +269,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                 />
               )}
             />
-
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
               {Array.isArray(formState.Keywords) &&
                 formState.Keywords.map((keyword) => (
@@ -461,10 +356,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           <FormSection title="Where">
             <Box sx={{ display: "flex", gap: 2 }}>
               <TextField
+                fullWidth
                 label="GPS Latitude"
                 variant="outlined"
                 size="small"
-                fullWidth
                 value={
                   typeof formState.DecimalLatitude === "number"
                     ? formState.DecimalLatitude
@@ -480,10 +375,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                 }
               />
               <TextField
+                fullWidth
                 label="GPS Longitude"
                 variant="outlined"
                 size="small"
-                fullWidth
                 value={
                   typeof formState.DecimalLongitude === "number"
                     ? formState.DecimalLongitude
@@ -509,10 +404,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               Select on Map
             </Button>
             <TextField
+              fullWidth
               label="Sublocation"
               variant="outlined"
               size="small"
-              fullWidth
               value={
                 typeof formState["XMP:Location"] === "string" &&
                 formState["XMP:Location"] !== "(Mixed Values)"
@@ -527,10 +422,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               onChange={(e) => handleFormChange("XMP:Location", e.target.value)}
             />
             <TextField
+              fullWidth
               label="City"
               variant="outlined"
               size="small"
-              fullWidth
               value={
                 typeof formState["XMP:City"] === "string" &&
                 formState["XMP:City"] !== "(Mixed Values)"
@@ -545,10 +440,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               onChange={(e) => handleFormChange("XMP:City", e.target.value)}
             />
             <TextField
+              fullWidth
               label="State/Province"
               variant="outlined"
               size="small"
-              fullWidth
               value={
                 typeof formState["XMP:State"] === "string" &&
                 formState["XMP:State"] !== "(Mixed Values)"
