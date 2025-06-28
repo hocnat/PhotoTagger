@@ -2,7 +2,9 @@ import os
 import re
 import subprocess
 import tempfile
-from datetime import datetime
+import json
+from io import BytesIO
+from PIL import Image
 
 EXIFTOOL_PATH = "exiftool"
 
@@ -100,3 +102,77 @@ def build_exiftool_args(form_data: dict) -> list[str]:
             pass
 
     return args
+
+
+def get_image_data(file_path: str) -> tuple[bytes | None, str | None]:
+    """
+    Extracts binary image data, handling RAW previews and rotation transparently.
+    Returns a tuple of (image_bytes, mime_type), or (None, None) on failure.
+    """
+    if not os.path.isfile(file_path):
+        return None, None
+
+    _, extension = os.path.splitext(file_path.lower())
+
+    mime_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".bmp": "image/bmp",
+        ".tiff": "image/tiff",
+    }
+
+    if extension in mime_types:
+        try:
+            with open(file_path, "rb") as f:
+                return f.read(), mime_types[extension]
+        except IOError:
+            return None, None
+
+    raw_extensions = [".cr2", ".nef", ".arw", ".dng"]
+    if extension in raw_extensions:
+        try:
+            # First, extract the preview image bytes.
+            preview_command = [EXIFTOOL_PATH, "-PreviewImage", "-b", file_path]
+            preview_result = subprocess.run(
+                preview_command, capture_output=True, check=True
+            )
+            if not preview_result.stdout:
+                return None, None
+
+            # Next, get the orientation tag from the file.
+            # Using -n gets the numerical value, -j gets JSON for easy parsing.
+            orientation_command = [EXIFTOOL_PATH, "-Orientation", "-n", "-j", file_path]
+            orientation_result = subprocess.run(
+                orientation_command, capture_output=True, check=True, text=True
+            )
+            orientation_data = json.loads(orientation_result.stdout)
+            orientation = orientation_data[0].get("Orientation", 1)
+
+            # If orientation is 1 (Normal), no rotation is needed.
+            # This is an important optimization to avoid unnecessary processing.
+            if orientation == 1:
+                return preview_result.stdout, "image/jpeg"
+
+            image = Image.open(BytesIO(preview_result.stdout))
+
+            # Apply the correct rotation based on the EXIF orientation value.
+            orientation_map = {
+                3: Image.Transpose.ROTATE_180,
+                6: Image.Transpose.ROTATE_270,  # Rotated 90 deg CW
+                8: Image.Transpose.ROTATE_90,  # Rotated 270 deg CW
+            }
+
+            if orientation in orientation_map:
+                image = image.transpose(orientation_map[orientation])
+
+            # Save the rotated image to a byte buffer to send in the response.
+            byte_buffer = BytesIO()
+            image.save(byte_buffer, format="JPEG")
+            return byte_buffer.getvalue(), "image/jpeg"
+
+        except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError):
+            return None, None
+
+    return None, None

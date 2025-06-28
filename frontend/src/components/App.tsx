@@ -71,9 +71,6 @@ const App: React.FC = () => {
     )}`;
   };
 
-  const isDisplayable = (imageName: string): boolean =>
-    !imageName.toLowerCase().endsWith(".cr2");
-
   const handleRename = (filesToRename: string[]) => {
     fetch("http://localhost:5000/api/rename_files", {
       method: "POST",
@@ -124,9 +121,9 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (folderInput) {
-      handleFetchImages();
-    }
+    // This effect is intended to run once on mount if a folder path might be
+    // persisted in the future, but currently it does nothing unless folderInput
+    // has a default value.
   }, []);
 
   return (
@@ -218,17 +215,11 @@ const App: React.FC = () => {
                   className={`image-card ${isSelected ? "selected" : ""}`}
                   onClick={(e) => handleImageClick(e, imageName, index)}
                 >
-                  {isDisplayable(imageName) ? (
-                    <img
-                      src={getImageUrl(imageName)}
-                      alt={imageName}
-                      className="thumbnail"
-                    />
-                  ) : (
-                    <div className="file-placeholder">
-                      <span>{imageName.split(".").pop()?.toUpperCase()}</span>
-                    </div>
-                  )}
+                  <img
+                    src={getImageUrl(imageName)}
+                    alt={imageName}
+                    className="thumbnail"
+                  />
                   <Typography
                     variant="caption"
                     sx={{
