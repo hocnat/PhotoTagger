@@ -143,6 +143,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
 
   const {
     imageFiles,
@@ -223,6 +224,24 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         alert(`Error saving metadata: ${err.details || "Unknown error"}`)
       )
       .finally(() => setIsSaving(false));
+  };
+
+  const handleKeywordInputChange = (
+    event: React.SyntheticEvent,
+    newInputValue: string
+  ) => {
+    if (newInputValue.trim()) {
+      fetch(
+        `http://localhost:5000/api/suggestions?q=${encodeURIComponent(
+          newInputValue
+        )}`
+      )
+        .then((res) => res.json())
+        .then((data: string[]) => setKeywordSuggestions(data))
+        .catch((err) => console.error("Suggestion fetch error:", err));
+    } else {
+      setKeywordSuggestions([]);
+    }
   };
 
   const handleLocationSet = (latlng: { lat: number; lng: number }) => {
@@ -320,51 +339,65 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               onChange={(e) => handleFormChange("Caption", e.target.value)}
             />
             <Autocomplete
-              multiple
               freeSolo
-              options={[]}
-              getOptionLabel={(option) =>
-                typeof option === "string" ? option : option.name
-              }
-              isOptionEqualToValue={(option, value) =>
-                option.name === value.name
-              }
-              value={
-                Array.isArray(formState.Keywords) ? formState.Keywords : []
-              }
+              options={keywordSuggestions}
+              filterOptions={(x) => x}
+              onInputChange={handleKeywordInputChange}
               onChange={(event, newValue) => {
-                const newKeywords = newValue.map((item) =>
-                  typeof item === "string"
-                    ? { name: item, status: "common" }
-                    : item
-                );
-                handleFormChange("Keywords", newKeywords);
+                if (typeof newValue === "string" && newValue.trim() !== "") {
+                  const newKeyword: Keyword = {
+                    name: newValue.trim(),
+                    status: "common",
+                  };
+                  const currentKeywords = Array.isArray(formState.Keywords)
+                    ? formState.Keywords
+                    : [];
+                  if (
+                    !currentKeywords.some((kw) => kw.name === newKeyword.name)
+                  ) {
+                    handleFormChange("Keywords", [
+                      ...currentKeywords,
+                      newKeyword,
+                    ]);
+                  }
+                }
               }}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    variant={option.status === "common" ? "filled" : "outlined"}
-                    label={option.name}
-                    size="small"
-                    sx={
-                      option.status === "partial"
-                        ? { fontStyle: "italic", opacity: 0.7 }
-                        : {}
-                    }
-                    {...getTagProps({ index })}
-                  />
-                ))
-              }
+              value={null}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   variant="outlined"
                   size="small"
-                  label="Keywords"
-                  placeholder="Add or edit keywords..."
+                  label="Add Keyword"
+                  placeholder="Type and press Enter..."
                 />
               )}
             />
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
+              {Array.isArray(formState.Keywords) &&
+                formState.Keywords.map((keyword) => (
+                  <Chip
+                    key={keyword.name}
+                    label={keyword.name}
+                    size="small"
+                    variant={
+                      keyword.status === "common" ? "filled" : "outlined"
+                    }
+                    sx={
+                      keyword.status === "partial"
+                        ? { fontStyle: "italic", opacity: 0.8 }
+                        : {}
+                    }
+                    onDelete={() => {
+                      const updatedKeywords = (formState.Keywords || []).filter(
+                        (kw) => kw.name !== keyword.name
+                      );
+                      handleFormChange("Keywords", updatedKeywords);
+                    }}
+                  />
+                ))}
+            </Box>
           </FormSection>
 
           <FormSection title="When">
