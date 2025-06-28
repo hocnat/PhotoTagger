@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
-import { NotificationState } from "../types";
+import { NotificationState, RenameFileResult, ApiError } from "../types";
 import { useImageSelection } from "../hooks/useImageSelection";
 import { useImageLoader } from "../hooks/useImageLoader";
+import * as apiService from "../services/apiService";
 import "../App.css";
 
 import {
@@ -118,13 +119,9 @@ const App: React.FC = () => {
   };
 
   const handleRename = (filesToRename: string[]) => {
-    fetch("http://localhost:5000/api/rename_files", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files: filesToRename }),
-    })
-      .then((res) => res.json())
-      .then((results: { original: string; new: string; status: string }[]) => {
+    apiService
+      .renameFiles(filesToRename)
+      .then((results: RenameFileResult[]) => {
         const successCount = results.filter(
           (r) => r.status === "Renamed"
         ).length;
@@ -134,17 +131,9 @@ const App: React.FC = () => {
             type: "success",
           });
         }
-
-        const renameMap: { [key: string]: string } = {};
-        results.forEach((result) => {
-          if (result.status === "Renamed") {
-            renameMap[result.original] = result.new;
-          }
-        });
-
         loadImages(imageData.folder);
       })
-      .catch((err) => {
+      .catch((err: ApiError) => {
         setNotification({
           message: `An error occurred during renaming: ${err.message}`,
           type: "error",

@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import * as apiService from "../services/apiService";
+import { ApiError } from "../types";
 
 interface ImageData {
   folder: string;
@@ -19,23 +21,15 @@ export const useImageLoader = () => {
       setIsLoading(true);
       setError("");
 
-      fetch(
-        `http://localhost:5000/api/images?folder=${encodeURIComponent(
-          currentFolder
-        )}`
-      )
-        .then((response) =>
-          response.ok
-            ? response.json()
-            : response.json().then((err) => Promise.reject(err))
-        )
-        .then((data: string[]) => {
+      apiService
+        .getImages(currentFolder)
+        .then((data) => {
           setImageData({ folder: currentFolder, files: data });
           if (onDone) {
             onDone(data);
           }
         })
-        .catch((err) => {
+        .catch((err: ApiError) => {
           setError(err.message || "An error occurred while fetching images.");
           setImageData({ folder: "", files: [] });
         })

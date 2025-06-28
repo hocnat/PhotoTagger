@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
-import { FormState, RawImageMetadata, Keyword } from "../types";
-import { useSelectionData } from "./useSelectionDataLoader";
-import { useMetadataForm } from "./useAggregatedMetadata";
+import {
+  FormState,
+  RawImageMetadata,
+  Keyword,
+  SaveMetadataPayload,
+} from "../types";
+import { useSelectionDataLoader } from "./useSelectionDataLoader";
+import { useAggregatedMetadata } from "./useAggregatedMetadata";
+import * as apiService from "../services/apiService";
 
 interface UseMetadataEditorProps {
   selectedImageNames: string[];
@@ -21,10 +27,10 @@ export const useMetadataEditor = ({
     imageFiles,
     isLoading: isMetadataLoading,
     refetch,
-  } = useSelectionData(selectedImageNames, folderPath);
+  } = useSelectionDataLoader(selectedImageNames, folderPath);
 
   const { formState, setFormState, hasChanges, originalFormState } =
-    useMetadataForm(imageFiles);
+    useAggregatedMetadata(imageFiles);
 
   useEffect(() => {
     setIsDirty(hasChanges);
@@ -84,7 +90,7 @@ export const useMetadataEditor = ({
       };
     });
 
-    const payload = {
+    const payload: SaveMetadataPayload = {
       files_to_update: files_to_update.filter(
         (f) => Object.keys(f.metadata).length > 0
       ),
@@ -96,15 +102,9 @@ export const useMetadataEditor = ({
       return;
     }
 
-    fetch("http://localhost:5000/api/save_metadata", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) =>
-        res.ok ? res.json() : res.json().then((err) => Promise.reject(err))
-      )
-      .then(() => refetch()) // On success, refetch data to reset form state
+    apiService
+      .saveMetadata(payload)
+      .then(() => refetch())
       .catch((err) =>
         alert(`Error saving metadata: ${err.details || "Unknown error"}`)
       )
@@ -116,13 +116,9 @@ export const useMetadataEditor = ({
     newInputValue: string
   ) => {
     if (newInputValue.trim()) {
-      fetch(
-        `http://localhost:5000/api/suggestions?q=${encodeURIComponent(
-          newInputValue
-        )}`
-      )
-        .then((res) => res.json())
-        .then((data: string[]) => setKeywordSuggestions(data))
+      apiService
+        .getSuggestions(newInputValue)
+        .then(setKeywordSuggestions)
         .catch((err) => console.error("Suggestion fetch error:", err));
     } else {
       setKeywordSuggestions([]);

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { ImageFile } from "../types";
+import * as apiService from "../services/apiService";
 
-export const useSelectionData = (
+export const useSelectionDataLoader = (
   selectedImageNames: string[],
   folderPath: string
 ) => {
@@ -18,17 +19,9 @@ export const useSelectionData = (
       (name) => `${folderPath}\\${name}`
     );
 
-    fetch(`http://localhost:5000/api/metadata`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files: filesToFetch }),
-    })
-      .then((res) =>
-        res.ok
-          ? res.json()
-          : Promise.reject(new Error("Failed to fetch metadata"))
-      )
-      .then((data: ImageFile[]) => setImageFiles(data))
+    apiService
+      .getMetadataForSelection(filesToFetch)
+      .then(setImageFiles)
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, [selectedImageNames, folderPath]);

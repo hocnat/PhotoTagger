@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { FormState, ImageFile, Keyword } from "../types";
 
-export const useMetadataForm = (imageFiles: ImageFile[]) => {
+export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
   const [formState, setFormState] = useState<Partial<FormState>>({});
   const [originalFormState, setOriginalFormState] = useState<
     Partial<FormState>

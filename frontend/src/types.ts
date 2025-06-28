@@ -1,3 +1,28 @@
+// --- API Payloads and Responses ---
+
+export interface FileUpdatePayload {
+  path: string;
+  metadata: Partial<RawImageMetadata>;
+}
+
+export interface SaveMetadataPayload {
+  files_to_update: FileUpdatePayload[];
+  keywords_to_learn: string[];
+}
+
+export interface RenameFileResult {
+  original: string;
+  new: string;
+  status: string;
+}
+
+export interface ApiError {
+  message: string;
+  details?: any;
+}
+
+// --- Form and State Structures ---
+
 // The structure of a Keyword object used in the form state.
 export interface Keyword {
   name: string;
