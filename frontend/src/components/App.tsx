@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
 import { NotificationState } from "../types";
 import { useImageSelection } from "../hooks/useImageSelection";
+import { useImageLoader } from "../hooks/useImageLoader";
 import "../App.css";
 
 import {
@@ -26,13 +27,6 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
 
 const App: React.FC = () => {
-  const [imageData, setImageData] = useState<{
-    folder: string;
-    files: string[];
-  }>({ folder: "", files: [] });
-  const [folderInput, setFolderInput] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
   const [notification, setNotification] = useState<NotificationState>({
     message: "",
     type: "",
@@ -45,48 +39,37 @@ const App: React.FC = () => {
   }>({ isOpen: false, onConfirm: () => {} });
 
   const {
+    imageData,
+    folderInput,
+    setFolderInput,
+    isLoading,
+    error,
+    loadImages,
+  } = useImageLoader();
+  const {
     selectedImages,
     setSelectedImages,
     handleImageClick,
     handleBackgroundClick,
   } = useImageSelection(imageData.files);
 
-  const fetchImages = useCallback(() => {
-    setIsLoading(true);
-    setError("");
+  const proceedWithLoad = useCallback(() => {
     setSelectedImages([]);
-
-    fetch(
-      `http://localhost:5000/api/images?folder=${encodeURIComponent(
-        folderInput
-      )}`
-    )
-      .then((response) =>
-        response.ok
-          ? response.json()
-          : response.json().then((err) => Promise.reject(err))
-      )
-      .then((data: string[]) => {
-        setImageData({ folder: folderInput, files: data });
-        setIsDirty(false);
-      })
-      .catch((err) => {
-        setError(err.message || "An error occurred while fetching images.");
-        setImageData({ folder: "", files: [] });
-      })
-      .finally(() => setIsLoading(false));
-  }, [folderInput, setSelectedImages]);
+    loadImages(folderInput, () => {
+      setIsDirty(false);
+    });
+  }, [loadImages, folderInput, setSelectedImages]);
 
   const handleFetchImages = useCallback(() => {
     if (isDirty) {
       setConfirmationState({
         isOpen: true,
-        onConfirm: () => fetchImages(),
+        onConfirm: proceedWithLoad,
       });
     } else {
-      fetchImages();
+      proceedWithLoad();
     }
-  }, [isDirty, fetchImages]);
+  }, [isDirty, proceedWithLoad]);
 
   const promptAndHandleImageClick = (
     e: React.MouseEvent,
@@ -121,7 +104,6 @@ const App: React.FC = () => {
         e.returnValue = "";
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -160,11 +142,7 @@ const App: React.FC = () => {
           }
         });
 
-        setImageData((ci) => ({
-          ...ci,
-          files: ci.files.map((f) => renameMap[f] || f),
-        }));
-        setSelectedImages((cs) => cs.map((f) => renameMap[f] || f));
+        loadImages(imageData.folder);
       })
       .catch((err) => {
         setNotification({
@@ -254,7 +232,7 @@ const App: React.FC = () => {
             <Button
               variant="outlined"
               color="secondary"
-              disabled={selectedImages.length === 0}
+              disabled={isLoading || selectedImages.length === 0}
               onClick={() =>
                 handleRename(
                   selectedImages.map((name) => `${imageData.folder}\\${name}`)
