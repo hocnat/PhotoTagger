@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FormState, RawImageMetadata, Keyword } from "../types";
 import { useSelectionData } from "../hooks/useSelectionData";
 import { useMetadataForm } from "../hooks/useMetadataForm";
@@ -26,12 +26,14 @@ interface MetadataPanelProps {
   selectedImageNames: string[];
   folderPath: string;
   getImageUrl: (imageName: string) => string;
+  setIsDirty: (isDirty: boolean) => void;
 }
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
   selectedImageNames,
   folderPath,
   getImageUrl,
+  setIsDirty,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -45,6 +47,10 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   } = useSelectionData(selectedImageNames, folderPath);
   const { formState, setFormState, hasChanges, originalFormState } =
     useMetadataForm(imageFiles);
+
+  useEffect(() => {
+    setIsDirty(hasChanges);
+  }, [hasChanges, setIsDirty]);
 
   const handleFormChange = (fieldName: keyof FormState, newValue: any) => {
     setFormState((prevState) => ({ ...prevState, [fieldName]: newValue }));

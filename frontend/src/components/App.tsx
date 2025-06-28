@@ -15,6 +15,11 @@ import {
   Alert,
   Snackbar,
   Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -33,6 +38,12 @@ const App: React.FC = () => {
     type: "",
   });
 
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmationState, setConfirmationState] = useState<{
+    isOpen: boolean;
+    onConfirm: () => void;
+  }>({ isOpen: false, onConfirm: () => {} });
+
   const {
     selectedImages,
     setSelectedImages,
@@ -40,9 +51,10 @@ const App: React.FC = () => {
     handleBackgroundClick,
   } = useImageSelection(imageData.files);
 
-  const handleFetchImages = useCallback(() => {
+  const fetchImages = useCallback(() => {
     setIsLoading(true);
     setError("");
+    setSelectedImages([]);
 
     fetch(
       `http://localhost:5000/api/images?folder=${encodeURIComponent(
@@ -54,15 +66,67 @@ const App: React.FC = () => {
           ? response.json()
           : response.json().then((err) => Promise.reject(err))
       )
-      .then((data: string[]) =>
-        setImageData({ folder: folderInput, files: data })
-      )
+      .then((data: string[]) => {
+        setImageData({ folder: folderInput, files: data });
+        setIsDirty(false);
+      })
       .catch((err) => {
         setError(err.message || "An error occurred while fetching images.");
         setImageData({ folder: "", files: [] });
       })
       .finally(() => setIsLoading(false));
-  }, [folderInput]);
+  }, [folderInput, setSelectedImages]);
+
+  const handleFetchImages = useCallback(() => {
+    if (isDirty) {
+      setConfirmationState({
+        isOpen: true,
+        onConfirm: () => fetchImages(),
+      });
+    } else {
+      fetchImages();
+    }
+  }, [isDirty, fetchImages]);
+
+  const promptAndHandleImageClick = (
+    e: React.MouseEvent,
+    imageName: string,
+    index: number
+  ) => {
+    if (isDirty) {
+      setConfirmationState({
+        isOpen: true,
+        onConfirm: () => handleImageClick(e, imageName, index),
+      });
+    } else {
+      handleImageClick(e, imageName, index);
+    }
+  };
+
+  const promptAndHandleBackgroundClick = (e: React.MouseEvent) => {
+    if (isDirty) {
+      setConfirmationState({
+        isOpen: true,
+        onConfirm: () => handleBackgroundClick(),
+      });
+    } else {
+      handleBackgroundClick();
+    }
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   const getImageUrl = (imageName: string): string => {
     const fullPath = `${imageData.folder}\\${imageName}`;
@@ -120,11 +184,14 @@ const App: React.FC = () => {
     setNotification({ message: "", type: "" });
   };
 
-  useEffect(() => {
-    // This effect is intended to run once on mount if a folder path might be
-    // persisted in the future, but currently it does nothing unless folderInput
-    // has a default value.
-  }, []);
+  const handleConfirmationClose = () => {
+    setConfirmationState({ isOpen: false, onConfirm: () => {} });
+  };
+
+  const handleConfirmationConfirm = () => {
+    confirmationState.onConfirm();
+    handleConfirmationClose();
+  };
 
   return (
     <Box
@@ -205,7 +272,7 @@ const App: React.FC = () => {
             </Alert>
           )}
 
-          <Box className="image-grid" onClick={handleBackgroundClick}>
+          <Box className="image-grid" onClick={promptAndHandleBackgroundClick}>
             {imageData.files.map((imageName, index) => {
               const isSelected = selectedImages.includes(imageName);
               return (
@@ -213,7 +280,9 @@ const App: React.FC = () => {
                   elevation={isSelected ? 8 : 2}
                   key={imageName}
                   className={`image-card ${isSelected ? "selected" : ""}`}
-                  onClick={(e) => handleImageClick(e, imageName, index)}
+                  onClick={(e) =>
+                    promptAndHandleImageClick(e, imageName, index)
+                  }
                 >
                   <img
                     src={getImageUrl(imageName)}
@@ -250,9 +319,11 @@ const App: React.FC = () => {
           }}
         >
           <MetadataPanel
+            key={selectedImages.join("-")}
             selectedImageNames={selectedImages}
             folderPath={imageData.folder}
             getImageUrl={getImageUrl}
+            setIsDirty={setIsDirty}
           />
         </Box>
       </Box>
@@ -274,6 +345,22 @@ const App: React.FC = () => {
           </Alert>
         </Snackbar>
       )}
+
+      <Dialog open={confirmationState.isOpen} onClose={handleConfirmationClose}>
+        <DialogTitle>Unsaved Changes</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You have unsaved changes. Are you sure you want to proceed without
+            saving?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleConfirmationClose}>Cancel</Button>
+          <Button onClick={handleConfirmationConfirm} color="primary" autoFocus>
+            Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
