@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
-import { NotificationState } from "./types";
-import { useImageSelection } from "./hooks/useImageSelection";
-import "./App.css";
+import { NotificationState } from "../types";
+import { useImageSelection } from "../hooks/useImageSelection";
+import "../App.css";
 
 import {
   Box,

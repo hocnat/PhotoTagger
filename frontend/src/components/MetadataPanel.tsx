@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { FormState, RawImageMetadata, Keyword } from "./types";
-import { useSelectionData } from "./hooks/useSelectionData";
-import { useMetadataForm } from "./hooks/useMetadataForm";
+import { FormState, RawImageMetadata, Keyword } from "../types";
+import { useSelectionData } from "../hooks/useSelectionData";
+import { useMetadataForm } from "../hooks/useMetadataForm";
 
 import ImageModal from "./ImageModal";
 import MapModal from "./MapModal";
