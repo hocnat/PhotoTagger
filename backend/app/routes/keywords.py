@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.services.keyword_service import (
-    load_keyword_favorites,
-)
+from app.services.keyword_service import load_keyword_favorites
+from app.services.sorting_service import smart_sort
 
 keywords_bp = Blueprint("keywords_bp", __name__)
 
@@ -13,14 +12,6 @@ def get_keyword_suggestions():
     keywords_data = load_keyword_favorites()
     keywords_map = keywords_data.get("keywords", {})
 
-    if not query:
-        # If the query is empty, suggest the most recently used keywords.
-        suggestions = sorted(
-            keywords_map,
-            key=lambda k: keywords_map[k].get("lastUsed", ""),
-            reverse=True,
-        )
-        return jsonify(suggestions[:10])
+    sorted_suggestions = smart_sort(keywords_map, query)
 
-    # Otherwise, return keywords that start with the query string.
-    return jsonify([k for k in keywords_map if k.lower().startswith(query)])
+    return jsonify(sorted_suggestions[:10])

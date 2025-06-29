@@ -26,15 +26,15 @@ export const useLocationPresets = () => {
     fetchPresets();
   }, [fetchPresets]);
 
+  const trackUsage = (presetId: string) => {
+    apiService.trackLocationPresetUsage(presetId).catch(console.error);
+  };
+
   const addPreset = async (name: string, data: LocationPresetData) => {
     try {
-      const newPreset = await apiService.saveLocationPreset(name, data);
-      setPresets((currentPresets) =>
-        [...currentPresets, newPreset].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        )
-      );
+      await apiService.saveLocationPreset(name, data);
       showNotification(`Location preset "${name}" saved.`, "success");
+      fetchPresets();
     } catch (err) {
       const apiErr = err as ApiError;
       showNotification(`Failed to save preset: ${apiErr.message}`, "error");
@@ -42,5 +42,5 @@ export const useLocationPresets = () => {
     }
   };
 
-  return { presets, isLoading, addPreset };
+  return { presets, isLoading, addPreset, trackUsage };
 };

@@ -35,7 +35,7 @@ def learn_keywords(keywords_to_learn: list[str]):
 
     for kw in keywords_to_learn:
         if isinstance(kw, str) and (clean_kw := kw.strip()):
-            entry = keyword_map.get(clean_kw, {"usageCount": 0})
+            entry = keyword_map.get(clean_kw, {"usageCount": 0, "lastUsed": None})
             entry["usageCount"] += 1
             entry["lastUsed"] = datetime.now(timezone.utc).isoformat()
             keyword_map[clean_kw] = entry

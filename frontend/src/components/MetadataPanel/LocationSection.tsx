@@ -33,7 +33,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
-  const { presets, addPreset } = useLocationPresets();
+  const { presets, addPreset, trackUsage } = useLocationPresets();
 
   const handleOpenSaveDialog = () => {
     setPresetName("");
@@ -96,6 +96,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           onChange={(event, newValue: LocationPreset | null) => {
             if (newValue) {
               applyLocationPreset(newValue.data);
+              trackUsage(newValue.id);
             }
           }}
           renderInput={(params) => (
@@ -105,7 +106,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         <IconButton
           onClick={handleOpenSaveDialog}
           disabled={!locationFieldsPopulated}
-          title="Save current location as a favorite"
+          title="Save current location as a preset"
         >
           <BookmarkAddIcon />
         </IconButton>

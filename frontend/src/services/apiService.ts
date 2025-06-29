@@ -90,3 +90,11 @@ export const saveLocationPreset = (
     body: JSON.stringify({ name, data }),
   }).then((response) => handleResponse<LocationPreset>(response));
 };
+
+export const trackLocationPresetUsage = (
+  presetId: string
+): Promise<LocationPreset> => {
+  return fetch(`${API_BASE_URL}/locations/${presetId}/track_usage`, {
+    method: "PUT",
+  }).then((response) => handleResponse<LocationPreset>(response));
+};

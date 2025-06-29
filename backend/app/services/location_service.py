@@ -41,3 +41,27 @@ def add_location_preset(name: str, preset_data: dict) -> dict:
     presets.append(new_preset)
     save_location_presets(presets)
     return new_preset
+
+
+def update_location_preset_usage(preset_id: str) -> dict | None:
+    """
+    Finds a preset by its ID, increments its usage count, updates its
+    last used timestamp, and saves the updated list.
+    """
+    presets = load_location_presets()
+    preset_to_update = None
+
+    for preset in presets:
+        if preset.get("id") == preset_id:
+            preset_to_update = preset
+            break
+
+    if not preset_to_update:
+        return None
+
+    preset_to_update["useCount"] = preset_to_update.get("useCount", 0) + 1
+    preset_to_update["lastUsed"] = datetime.now(timezone.utc).isoformat()
+
+    save_location_presets(presets)
+
+    return preset_to_update
