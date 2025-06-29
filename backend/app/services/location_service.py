@@ -1,9 +1,8 @@
-import json
 import os
+import json
 import uuid
 from datetime import datetime, timezone
-
-LOCATIONS_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "locations.json")
+from config import LOCATIONS_PATH
 
 
 def load_location_presets() -> list[dict]:

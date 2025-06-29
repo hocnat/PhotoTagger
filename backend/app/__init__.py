@@ -16,11 +16,13 @@ def create_app():
     from .routes.locations import locations_bp
     from .routes.metadata import metadata_bp
     from .routes.tools import tools_bp
+    from .routes.settings import settings_bp
 
     app.register_blueprint(files_bp, url_prefix="/api")
     app.register_blueprint(keywords_bp, url_prefix="/api")
     app.register_blueprint(locations_bp, url_prefix="/api")
     app.register_blueprint(metadata_bp, url_prefix="/api")
     app.register_blueprint(tools_bp, url_prefix="/api")
+    app.register_blueprint(settings_bp, url_prefix="/api")
 
     return app

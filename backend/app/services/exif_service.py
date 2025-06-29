@@ -5,8 +5,8 @@ import tempfile
 import json
 from io import BytesIO
 from PIL import Image
-
-EXIFTOOL_PATH = "exiftool"
+from config import EXIFTOOL_PATH
+from app.services.settings_service import get_setting
 
 
 def dms_to_dd(dms: str, ref: str) -> float | None:
@@ -130,7 +130,7 @@ def get_image_data(file_path: str) -> tuple[bytes | None, str | None]:
         except IOError:
             return None, None
 
-    raw_extensions = [".cr2", ".nef", ".arw", ".dng"]
+    raw_extensions = get_setting("powerUser.rawExtensions", [])
     if extension in raw_extensions:
         try:
             # First, extract the preview image bytes.

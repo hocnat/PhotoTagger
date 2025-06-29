@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta, timezone
-
-RECENCY_BONUS = 100  # A large score bonus for recently used items
-RECENCY_DAYS = 7  # The time window in days to be considered "recent"
+from app.services.settings_service import get_setting
 
 
 def smart_sort(items_map: dict, query: str) -> list:
@@ -17,8 +15,11 @@ def smart_sort(items_map: dict, query: str) -> list:
     Returns:
         A sorted list of item names (the keys of the input map).
     """
+    recency_bonus = get_setting("powerUser.sorting.recencyBonus", 100)
+    recency_days = get_setting("powerUser.sorting.recencyDays", 7)
+
     now = datetime.now(timezone.utc)
-    recency_threshold = now - timedelta(days=RECENCY_DAYS)
+    recency_threshold = now - timedelta(days=recency_days)
 
     # 1. Filter the items based on the query.
     filtered_items = {
@@ -41,7 +42,7 @@ def smart_sort(items_map: dict, query: str) -> list:
                 last_used_date = datetime.fromisoformat(last_used_str)
 
                 if last_used_date > recency_threshold:
-                    bonus = RECENCY_BONUS
+                    bonus = recency_bonus
             except (ValueError, TypeError):
                 # Handle cases where lastUsed is not a valid date string.
                 pass

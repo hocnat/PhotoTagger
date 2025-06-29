@@ -4,14 +4,11 @@ import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import App from "./components/App";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { NotificationProvider } from "./context/NotificationContext"; // Import the provider
+import { NotificationProvider } from "./context/NotificationContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import "./index.css";
 
-const theme = createTheme({
-  palette: {
-    mode: "light",
-  },
-});
+const theme = createTheme({ palette: { mode: "light" } });
 
 const rootElement = document.getElementById("root");
 if (rootElement) {
@@ -21,10 +18,11 @@ if (rootElement) {
       <ThemeProvider theme={theme}>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <NotificationProvider>
-            {" "}
-            {/* Wrap the App */}
-            <CssBaseline />
-            <App />
+            <SettingsProvider>
+              {" "}
+              <CssBaseline />
+              <App />
+            </SettingsProvider>
           </NotificationProvider>
         </LocalizationProvider>
       </ThemeProvider>

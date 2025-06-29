@@ -47,6 +47,30 @@ export interface LocationPreset {
   data: LocationPresetData;
 }
 
+// --- App Settings Types ---
+export interface ExtensionRule {
+  extension: string;
+  casing: "lowercase" | "uppercase";
+}
+export interface AppSettings {
+  appBehavior: {
+    startupMode: "last" | "fixed";
+    fixedPath: string;
+    lastOpenedFolder: string | null;
+  };
+  renameSettings: {
+    pattern: string;
+    extensionRules: ExtensionRule[];
+  };
+  powerUser: {
+    rawExtensions: string[];
+    sorting: {
+      recencyBonus: number;
+      recencyDays: number;
+    };
+  };
+}
+
 // --- Form and State Structures ---
 
 export interface Keyword {

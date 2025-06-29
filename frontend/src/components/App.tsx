@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import MetadataPanel from "./MetadataPanel";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { RenameDialog } from "./RenameDialog";
+import { SettingsDialog } from "./SettingsDialog";
 import { useImageSelection } from "../hooks/useImageSelection";
 import { useImageLoader } from "../hooks/useImageLoader";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
@@ -18,10 +19,12 @@ import {
   CircularProgress,
   Alert,
   Paper,
+  IconButton,
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 /**
  * Calculates the number of columns in the image grid by inspecting the
@@ -38,9 +41,7 @@ const getGridColumnCount = (): number => {
 
   const firstCardTop = cards[0].getBoundingClientRect().top;
   for (let i = 1; i < cards.length; i++) {
-    if (cards[i].getBoundingClientRect().top !== firstCardTop) {
-      return i;
-    }
+    if (cards[i].getBoundingClientRect().top !== firstCardTop) return i;
   }
 
   return cards.length;
@@ -48,6 +49,7 @@ const getGridColumnCount = (): number => {
 
 const App: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const {
     imageData,
@@ -57,6 +59,7 @@ const App: React.FC = () => {
     error,
     loadImages,
   } = useImageLoader();
+
   const {
     selectedImages,
     setSelectedImages,
@@ -70,6 +73,7 @@ const App: React.FC = () => {
     handleConfirm: handleUnsavedChangesConfirm,
     handleClose: handleUnsavedChangesClose,
   } = useUnsavedChanges(isDirty);
+
   const {
     openRenameDialog,
     isRenamePreviewLoading,
@@ -125,8 +129,7 @@ const App: React.FC = () => {
         }
 
         if (newIndex >= 0 && newIndex !== currentIndex) {
-          const newSelectedImage = imageData.files[newIndex];
-          promptAction(() => setSelectedImages([newSelectedImage]));
+          promptAction(() => setSelectedImages([imageData.files[newIndex]]));
         }
       }
     };
@@ -135,12 +138,8 @@ const App: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedImages, imageData.files, promptAction, setSelectedImages]);
 
-  const getImageUrl = (imageName: string): string => {
-    const fullPath = `${imageData.folder}\\${imageName}`;
-    return `http://localhost:5000/api/image_data?path=${encodeURIComponent(
-      fullPath
-    )}`;
-  };
+  const getImageUrl = (imageName: string): string =>
+    `${imageData.folder}\\${imageName}`;
 
   return (
     <Box
@@ -157,6 +156,9 @@ const App: React.FC = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             PhotoTagger
           </Typography>
+          <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
+            <SettingsIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
       <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
@@ -244,11 +246,14 @@ const App: React.FC = () => {
                   className={cardClassName}
                   id={`image-card-${index}`}
                   onClick={(e) => {
+                    e.stopPropagation();
                     promptAction(() => handleImageClick(e, imageName, index));
                   }}
                 >
                   <img
-                    src={getImageUrl(imageName)}
+                    src={`http://localhost:5000/api/image_data?path=${encodeURIComponent(
+                      getImageUrl(imageName)
+                    )}`}
                     alt={imageName}
                     className="thumbnail"
                   />
@@ -295,6 +300,10 @@ const App: React.FC = () => {
         onClose={handleUnsavedChangesClose}
       />
       <RenameDialog {...renameDialogProps} />
+      <SettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </Box>
   );
 };

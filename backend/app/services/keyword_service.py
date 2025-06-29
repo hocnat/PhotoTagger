@@ -1,8 +1,7 @@
-import json
 import os
+import json
 from datetime import datetime, timezone
-
-KEYWORDS_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "keywords.json")
+from config import KEYWORDS_PATH
 
 
 def load_keyword_favorites() -> dict:
