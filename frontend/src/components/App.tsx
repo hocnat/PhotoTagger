@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
-import { RenameFileResult, ApiError } from "../types";
+import { RenameFileResult, ApiError, RenamePreviewItem } from "../types";
 import { useImageSelection } from "../hooks/useImageSelection";
 import { useImageLoader } from "../hooks/useImageLoader";
 import { useNotification } from "../hooks/useNotification";
@@ -22,10 +22,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  List,
+  ListItem,
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 const App: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
@@ -33,6 +36,12 @@ const App: React.FC = () => {
     isOpen: boolean;
     onConfirm: () => void;
   }>({ isOpen: false, onConfirm: () => {} });
+
+  const [isRenameConfirmOpen, setIsRenameConfirmOpen] = useState(false);
+  const [isRenamePreviewLoading, setIsRenamePreviewLoading] = useState(false);
+  const [renamePreviewData, setRenamePreviewData] = useState<
+    RenamePreviewItem[]
+  >([]);
 
   const { showNotification } = useNotification();
 
@@ -60,10 +69,7 @@ const App: React.FC = () => {
 
   const handleFetchImages = useCallback(() => {
     if (isDirty) {
-      setConfirmationState({
-        isOpen: true,
-        onConfirm: proceedWithLoad,
-      });
+      setConfirmationState({ isOpen: true, onConfirm: proceedWithLoad });
     } else {
       proceedWithLoad();
     }
@@ -115,7 +121,33 @@ const App: React.FC = () => {
     )}`;
   };
 
-  const handleRename = (filesToRename: string[]) => {
+  const handleOpenRenameDialog = () => {
+    const filesToPreview = selectedImages.map(
+      (name) => `${imageData.folder}\\${name}`
+    );
+    setIsRenamePreviewLoading(true);
+    apiService
+      .getRenamePreview(filesToPreview)
+      .then((data) => {
+        setRenamePreviewData(data);
+        setIsRenameConfirmOpen(true);
+      })
+      .catch((err: ApiError) => {
+        showNotification(
+          `Error fetching rename preview: ${err.message}`,
+          "error"
+        );
+      })
+      .finally(() => {
+        setIsRenamePreviewLoading(false);
+      });
+  };
+
+  const handleConfirmRename = () => {
+    const filesToRename = selectedImages.map(
+      (name) => `${imageData.folder}\\${name}`
+    );
+    setIsRenameConfirmOpen(false);
     apiService
       .renameFiles(filesToRename)
       .then((results: RenameFileResult[]) => {
@@ -138,13 +170,13 @@ const App: React.FC = () => {
       });
   };
 
-  const handleConfirmationClose = () => {
+  const handleUnsavedChangesConfirmationClose = () => {
     setConfirmationState({ isOpen: false, onConfirm: () => {} });
   };
 
-  const handleConfirmationConfirm = () => {
+  const handleUnsavedChangesConfirmationConfirm = () => {
     confirmationState.onConfirm();
-    handleConfirmationClose();
+    handleUnsavedChangesConfirmationClose();
   };
 
   return (
@@ -207,14 +239,20 @@ const App: React.FC = () => {
             </Button>
             <Button
               variant="outlined"
-              color="secondary"
-              disabled={isLoading || selectedImages.length === 0}
-              onClick={() =>
-                handleRename(
-                  selectedImages.map((name) => `${imageData.folder}\\${name}`)
+              color="primary"
+              disabled={
+                isLoading ||
+                isRenamePreviewLoading ||
+                selectedImages.length === 0
+              }
+              onClick={handleOpenRenameDialog}
+              startIcon={
+                isRenamePreviewLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <DriveFileRenameOutlineIcon />
                 )
               }
-              startIcon={<DriveFileRenameOutlineIcon />}
             >
               Rename
             </Button>
@@ -282,7 +320,11 @@ const App: React.FC = () => {
         </Box>
       </Box>
 
-      <Dialog open={confirmationState.isOpen} onClose={handleConfirmationClose}>
+      {/* Unsaved Changes Dialog */}
+      <Dialog
+        open={confirmationState.isOpen}
+        onClose={handleUnsavedChangesConfirmationClose}
+      >
         <DialogTitle>Unsaved Changes</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -291,9 +333,84 @@ const App: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleConfirmationClose}>Cancel</Button>
-          <Button onClick={handleConfirmationConfirm} color="primary" autoFocus>
+          <Button onClick={handleUnsavedChangesConfirmationClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUnsavedChangesConfirmationConfirm}
+            color="primary"
+            autoFocus
+          >
             Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Rename Confirmation Dialog */}
+      <Dialog
+        open={isRenameConfirmOpen}
+        onClose={() => setIsRenameConfirmOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Confirm File Renaming</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Please review the following file name changes. This action cannot be
+            undone.
+          </DialogContentText>
+          <List dense>
+            {renamePreviewData.map((item) => {
+              const hasError = item.new.startsWith("(Error:");
+              const isSkipped = item.original === item.new;
+              return (
+                <ListItem key={item.original} divider>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        flex: 1,
+                        wordBreak: "break-all",
+                        color: "text.secondary",
+                      }}
+                    >
+                      {item.original}
+                    </Typography>
+                    <ArrowForwardIcon sx={{ flexShrink: 0 }} />
+                    <Typography
+                      sx={{
+                        flex: 1,
+                        wordBreak: "break-all",
+                        color: hasError
+                          ? "error.main"
+                          : isSkipped
+                          ? "text.disabled"
+                          : "text.primary",
+                        fontWeight: hasError || !isSkipped ? "bold" : "normal",
+                      }}
+                    >
+                      {item.new}
+                    </Typography>
+                  </Box>
+                </ListItem>
+              );
+            })}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsRenameConfirmOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmRename}
+            color="primary"
+            variant="contained"
+          >
+            Confirm Rename
           </Button>
         </DialogActions>
       </Dialog>

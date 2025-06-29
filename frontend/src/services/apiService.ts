@@ -3,6 +3,7 @@ import {
   ImageFile,
   RenameFileResult,
   SaveMetadataPayload,
+  RenamePreviewItem,
 } from "../types";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -10,23 +11,14 @@ const API_BASE_URL = "http://localhost:5000/api";
 /**
  * A generic response handler that checks for API errors, parses JSON,
  * and throws a structured error object if the request was not successful.
- *
- * It uses a generic type <T> which must be provided explicitly when calling it,
- * e.g., handleResponse<MyType>(response).
- *
- * @param response The raw Response object from a fetch call.
- * @returns A promise that resolves with the parsed JSON data of type T.
  */
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.ok) {
-    // If the response is empty (e.g., HTTP 204 No Content),
-    // return an empty object to prevent JSON parsing errors.
     if (response.status === 204) {
       return {} as T;
     }
     return response.json();
   } else {
-    // If the server returns an error, try to parse it as a structured ApiError.
     const errorData: ApiError = await response
       .json()
       .catch(() => ({ message: "An unknown error occurred." }));
@@ -74,4 +66,14 @@ export const renameFiles = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ files: filePaths }),
   }).then((response) => handleResponse<RenameFileResult[]>(response));
+};
+
+export const getRenamePreview = (
+  filePaths: string[]
+): Promise<RenamePreviewItem[]> => {
+  return fetch(`${API_BASE_URL}/preview_rename`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files: filePaths }),
+  }).then((response) => handleResponse<RenamePreviewItem[]>(response));
 };

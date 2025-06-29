@@ -16,6 +16,11 @@ export interface RenameFileResult {
   status: string;
 }
 
+export interface RenamePreviewItem {
+  original: string;
+  new: string;
+}
+
 export interface ApiError {
   message: string;
   details?: any;
@@ -23,13 +28,11 @@ export interface ApiError {
 
 // --- Form and State Structures ---
 
-// The structure of a Keyword object used in the form state.
 export interface Keyword {
   name: string;
   status: "common" | "partial";
 }
 
-// The primary data structure for a single image's metadata from the backend.
 export interface RawImageMetadata {
   [key: string]: any;
   Keywords: string[];
@@ -46,7 +49,6 @@ export interface RawImageMetadata {
   "XMP:CountryCode"?: string;
 }
 
-// The structure of our main form state in the UI.
 export interface FormState {
   Keywords: Keyword[];
   Caption: string | "(Mixed Values)";
@@ -62,7 +64,6 @@ export interface FormState {
   "XMP:CountryCode"?: string | "(Mixed Values)";
 }
 
-// The structure for an image file, combining its name and its metadata.
 export interface ImageFile {
   filename: string;
   metadata: RawImageMetadata;
@@ -70,7 +71,6 @@ export interface ImageFile {
 
 // --- Component Prop Interfaces ---
 
-// A common interface for props passed to each metadata form section.
 export interface SectionProps {
   formState: Partial<FormState>;
   handleFormChange: (fieldName: keyof FormState, newValue: any) => void;
