@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
-import { NotificationState, RenameFileResult, ApiError } from "../types";
+import { RenameFileResult, ApiError } from "../types";
 import { useImageSelection } from "../hooks/useImageSelection";
 import { useImageLoader } from "../hooks/useImageLoader";
+import { useNotification } from "../hooks/useNotification";
 import * as apiService from "../services/apiService";
 import "../App.css";
 
@@ -15,7 +16,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Snackbar,
   Paper,
   Dialog,
   DialogActions,
@@ -28,16 +28,13 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
 
 const App: React.FC = () => {
-  const [notification, setNotification] = useState<NotificationState>({
-    message: "",
-    type: "",
-  });
-
   const [isDirty, setIsDirty] = useState(false);
   const [confirmationState, setConfirmationState] = useState<{
     isOpen: boolean;
     onConfirm: () => void;
   }>({ isOpen: false, onConfirm: () => {} });
+
+  const { showNotification } = useNotification();
 
   const {
     imageData,
@@ -126,29 +123,19 @@ const App: React.FC = () => {
           (r) => r.status === "Renamed"
         ).length;
         if (successCount > 0) {
-          setNotification({
-            message: `${successCount} file(s) successfully renamed.`,
-            type: "success",
-          });
+          showNotification(
+            `${successCount} file(s) successfully renamed.`,
+            "success"
+          );
         }
         loadImages(imageData.folder);
       })
       .catch((err: ApiError) => {
-        setNotification({
-          message: `An error occurred during renaming: ${err.message}`,
-          type: "error",
-        });
+        showNotification(
+          `An error occurred during renaming: ${err.message}`,
+          "error"
+        );
       });
-  };
-
-  const handleNotificationClose = (
-    event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setNotification({ message: "", type: "" });
   };
 
   const handleConfirmationClose = () => {
@@ -294,24 +281,6 @@ const App: React.FC = () => {
           />
         </Box>
       </Box>
-
-      {!!notification.message && (
-        <Snackbar
-          open={true}
-          autoHideDuration={notification.type === "success" ? 4000 : null}
-          onClose={handleNotificationClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert
-            onClose={handleNotificationClose}
-            severity={notification.type || "info"}
-            sx={{ width: "100%" }}
-            variant="filled"
-          >
-            {notification.message}
-          </Alert>
-        </Snackbar>
-      )}
 
       <Dialog open={confirmationState.isOpen} onClose={handleConfirmationClose}>
         <DialogTitle>Unsaved Changes</DialogTitle>

@@ -4,9 +4,11 @@ import {
   RawImageMetadata,
   Keyword,
   SaveMetadataPayload,
+  ApiError,
 } from "../types";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
+import { useNotification } from "./useNotification";
 import * as apiService from "../services/apiService";
 
 interface UseMetadataEditorProps {
@@ -22,6 +24,7 @@ export const useMetadataEditor = ({
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const { showNotification } = useNotification(); // Use the new hook
 
   const {
     imageFiles,
@@ -104,10 +107,16 @@ export const useMetadataEditor = ({
 
     apiService
       .saveMetadata(payload)
-      .then(() => refetch())
-      .catch((err) =>
-        alert(`Error saving metadata: ${err.details || "Unknown error"}`)
-      )
+      .then(() => {
+        showNotification("Metadata saved successfully.", "success");
+        refetch();
+      })
+      .catch((err: ApiError) => {
+        showNotification(
+          `Error saving metadata: ${err.message || "Unknown error"}`,
+          "error"
+        );
+      })
       .finally(() => setIsSaving(false));
   };
 

@@ -68,12 +68,6 @@ export interface ImageFile {
   metadata: RawImageMetadata;
 }
 
-// The structure for our notification state.
-export interface NotificationState {
-  message: string;
-  type: "success" | "error" | "";
-}
-
 // --- Component Prop Interfaces ---
 
 // A common interface for props passed to each metadata form section.

@@ -2,9 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import App from "./components/App";
-import "./index.css";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { NotificationProvider } from "./context/NotificationContext"; // Import the provider
+import "./index.css";
 
 const theme = createTheme({
   palette: {
@@ -19,8 +20,12 @@ if (rootElement) {
     <React.StrictMode>
       <ThemeProvider theme={theme}>
         <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <CssBaseline />
-          <App />
+          <NotificationProvider>
+            {" "}
+            {/* Wrap the App */}
+            <CssBaseline />
+            <App />
+          </NotificationProvider>
         </LocalizationProvider>
       </ThemeProvider>
     </React.StrictMode>
