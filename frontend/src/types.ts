@@ -30,7 +30,6 @@ export interface Keyword {
 }
 
 // The primary data structure for a single image's metadata from the backend.
-// Note: Keywords from the backend will be a simple string array.
 export interface RawImageMetadata {
   [key: string]: any;
   Keywords: string[];
@@ -48,7 +47,6 @@ export interface RawImageMetadata {
 }
 
 // The structure of our main form state in the UI.
-// Keywords are represented as an array of Keyword objects.
 export interface FormState {
   Keywords: Keyword[];
   Caption: string | "(Mixed Values)";
@@ -74,4 +72,12 @@ export interface ImageFile {
 export interface NotificationState {
   message: string;
   type: "success" | "error" | "";
+}
+
+// --- Component Prop Interfaces ---
+
+// A common interface for props passed to each metadata form section.
+export interface SectionProps {
+  formState: Partial<FormState>;
+  handleFormChange: (fieldName: keyof FormState, newValue: any) => void;
 }
