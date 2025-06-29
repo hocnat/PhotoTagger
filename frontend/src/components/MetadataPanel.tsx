@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMetadataEditor } from "../hooks/useMetadataEditor";
 
 import ImageModal from "./ImageModal";
@@ -39,6 +39,24 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleKeywordInputChange,
     getDateTimeObject,
   } = useMetadataEditor({ selectedImageNames, folderPath, setIsDirty });
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+        event.preventDefault();
+
+        if (hasChanges && !isSaving) {
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [hasChanges, isSaving, handleSave]);
 
   if (selectedImageNames.length === 0) {
     return (
