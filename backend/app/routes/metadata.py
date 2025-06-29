@@ -9,9 +9,10 @@ from app.services.exif_service import (
     build_exiftool_args,
     run_exiftool_command,
 )
-from app.services.favorites_service import (
-    load_favorites,
-    save_favorites,
+
+from app.services.keyword_service import (
+    load_keyword_favorites,
+    save_keyword_favorites,
 )
 
 metadata_bp = Blueprint("metadata_bp", __name__)
@@ -81,16 +82,16 @@ def save_metadata():
     keywords_to_learn = data.get("keywords_to_learn", [])
 
     if keywords_to_learn:
-        favorites = load_favorites()
-        keyword_favs = favorites.get("keywords", {})
+        keywords_data = load_keyword_favorites()
+        keyword_map = keywords_data.get("keywords", {})
         for kw in keywords_to_learn:
             if isinstance(kw, str) and (clean_kw := kw.strip()):
-                entry = keyword_favs.get(clean_kw, {"usageCount": 0})
+                entry = keyword_map.get(clean_kw, {"usageCount": 0})
                 entry["usageCount"] += 1
                 entry["lastUsed"] = datetime.now(timezone.utc).isoformat()
-                keyword_favs[clean_kw] = entry
-        favorites["keywords"] = keyword_favs
-        save_favorites(favorites)
+                keyword_map[clean_kw] = entry
+        keywords_data["keywords"] = keyword_map
+        save_keyword_favorites(keywords_data)
 
     try:
         for file_update in files_to_update:
@@ -106,14 +107,16 @@ def save_metadata():
         )
 
 
-@metadata_bp.route("/suggestions")
-def get_suggestions():
+@metadata_bp.route("/keyword_suggestions")
+def get_keyword_suggestions():
     query = request.args.get("q", "").lower()
-    favorites = load_favorites()
-    keywords = favorites.get("keywords", {})
+    keywords_data = load_keyword_favorites()
+    keywords_map = keywords_data.get("keywords", {})
     if not query:
         suggestions = sorted(
-            keywords, key=lambda k: keywords[k].get("lastUsed", ""), reverse=True
+            keywords_map,
+            key=lambda k: keywords_map[k].get("lastUsed", ""),
+            reverse=True,
         )
         return jsonify(suggestions[:10])
-    return jsonify([k for k in keywords if k.lower().startswith(query)])
+    return jsonify([k for k in keywords_map if k.lower().startswith(query)])

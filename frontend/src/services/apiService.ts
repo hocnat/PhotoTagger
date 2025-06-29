@@ -42,9 +42,9 @@ export const getMetadataForSelection = (
   }).then((response) => handleResponse<ImageFile[]>(response));
 };
 
-export const getSuggestions = (query: string): Promise<string[]> => {
+export const getKeywordSuggestions = (query: string): Promise<string[]> => {
   return fetch(
-    `${API_BASE_URL}/suggestions?q=${encodeURIComponent(query)}`
+    `${API_BASE_URL}/keyword_suggestions?q=${encodeURIComponent(query)}`
   ).then((response) => handleResponse<string[]>(response));
 };
 

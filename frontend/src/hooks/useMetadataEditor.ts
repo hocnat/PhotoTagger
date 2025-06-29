@@ -24,7 +24,7 @@ export const useMetadataEditor = ({
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
-  const { showNotification } = useNotification(); // Use the new hook
+  const { showNotification } = useNotification();
 
   const {
     imageFiles,
@@ -126,7 +126,7 @@ export const useMetadataEditor = ({
   ) => {
     if (newInputValue.trim()) {
       apiService
-        .getSuggestions(newInputValue)
+        .getKeywordSuggestions(newInputValue)
         .then(setKeywordSuggestions)
         .catch((err) => console.error("Suggestion fetch error:", err));
     } else {
