@@ -26,6 +26,27 @@ export interface ApiError {
   details?: any;
 }
 
+// --- Location Preset Types ---
+
+export interface LocationPresetData {
+  DecimalLatitude?: number;
+  DecimalLongitude?: number;
+  "XMP:Location"?: string;
+  "XMP:City"?: string;
+  "XMP:State"?: string;
+  "XMP:Country"?: string;
+  "XMP:CountryCode"?: string;
+}
+
+export interface LocationPreset {
+  id: string;
+  name: string;
+  useCount: number;
+  lastUsed: string | null;
+  createdAt: string;
+  data: LocationPresetData;
+}
+
 // --- Form and State Structures ---
 
 export interface Keyword {

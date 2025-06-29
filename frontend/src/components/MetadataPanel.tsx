@@ -38,6 +38,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleSave,
     handleKeywordInputChange,
     getDateTimeObject,
+    applyLocationPreset,
   } = useMetadataEditor({ selectedImageNames, folderPath, setIsDirty });
 
   useEffect(() => {
@@ -132,6 +133,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             formState={formState}
             handleFormChange={handleFormChange}
             onLocationSet={handleLocationSet}
+            applyLocationPreset={applyLocationPreset}
           />
           <CreatorSection
             formState={formState}

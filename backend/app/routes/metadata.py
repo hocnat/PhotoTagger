@@ -1,7 +1,6 @@
 import os
 import subprocess
 import json
-from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from app.services.exif_service import (
     EXIFTOOL_PATH,
@@ -10,10 +9,7 @@ from app.services.exif_service import (
     run_exiftool_command,
 )
 
-from app.services.keyword_service import (
-    load_keyword_favorites,
-    save_keyword_favorites,
-)
+from app.services.keyword_service import learn_keywords
 
 metadata_bp = Blueprint("metadata_bp", __name__)
 
@@ -82,16 +78,7 @@ def save_metadata():
     keywords_to_learn = data.get("keywords_to_learn", [])
 
     if keywords_to_learn:
-        keywords_data = load_keyword_favorites()
-        keyword_map = keywords_data.get("keywords", {})
-        for kw in keywords_to_learn:
-            if isinstance(kw, str) and (clean_kw := kw.strip()):
-                entry = keyword_map.get(clean_kw, {"usageCount": 0})
-                entry["usageCount"] += 1
-                entry["lastUsed"] = datetime.now(timezone.utc).isoformat()
-                keyword_map[clean_kw] = entry
-        keywords_data["keywords"] = keyword_map
-        save_keyword_favorites(keywords_data)
+        learn_keywords(keywords_to_learn)
 
     try:
         for file_update in files_to_update:
@@ -105,18 +92,3 @@ def save_metadata():
             jsonify({"error": "ExifTool failed to save", "details": stderr or str(e)}),
             500,
         )
-
-
-@metadata_bp.route("/keyword_suggestions")
-def get_keyword_suggestions():
-    query = request.args.get("q", "").lower()
-    keywords_data = load_keyword_favorites()
-    keywords_map = keywords_data.get("keywords", {})
-    if not query:
-        suggestions = sorted(
-            keywords_map,
-            key=lambda k: keywords_map[k].get("lastUsed", ""),
-            reverse=True,
-        )
-        return jsonify(suggestions[:10])
-    return jsonify([k for k in keywords_map if k.lower().startswith(query)])

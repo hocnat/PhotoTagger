@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FormState,
   RawImageMetadata,
   Keyword,
   SaveMetadataPayload,
   ApiError,
+  LocationPresetData,
 } from "../types";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
@@ -31,7 +32,6 @@ export const useMetadataEditor = ({
     isLoading: isMetadataLoading,
     refetch,
   } = useSelectionDataLoader(selectedImageNames, folderPath);
-
   const { formState, setFormState, hasChanges, originalFormState } =
     useAggregatedMetadata(imageFiles);
 
@@ -39,9 +39,19 @@ export const useMetadataEditor = ({
     setIsDirty(hasChanges);
   }, [hasChanges, setIsDirty]);
 
-  const handleFormChange = (fieldName: keyof FormState, newValue: any) => {
-    setFormState((prevState) => ({ ...prevState, [fieldName]: newValue }));
-  };
+  const handleFormChange = useCallback(
+    (fieldName: keyof FormState, newValue: any) => {
+      setFormState((prevState) => ({ ...prevState, [fieldName]: newValue }));
+    },
+    [setFormState]
+  );
+
+  const applyLocationPreset = useCallback(
+    (data: LocationPresetData) => {
+      setFormState((prevState) => ({ ...prevState, ...data }));
+    },
+    [setFormState]
+  );
 
   const handleLocationSet = (latlng: { lat: number; lng: number }) => {
     setFormState((prev) => ({
@@ -53,7 +63,6 @@ export const useMetadataEditor = ({
 
   const handleSave = () => {
     setIsSaving(true);
-
     const originalKeywords = (
       Array.isArray(originalFormState.Keywords)
         ? originalFormState.Keywords
@@ -62,7 +71,6 @@ export const useMetadataEditor = ({
     const currentKeywords = (
       Array.isArray(formState.Keywords) ? formState.Keywords : []
     ).map((kw: Keyword) => kw.name);
-
     const addedKeywords = currentKeywords.filter(
       (kw) => !originalKeywords.includes(kw)
     );
@@ -74,19 +82,16 @@ export const useMetadataEditor = ({
       const existingKeywords = new Set(file.metadata.Keywords || []);
       removedKeywords.forEach((kw) => existingKeywords.delete(kw));
       addedKeywords.forEach((kw) => existingKeywords.add(kw));
-
       const finalKeywordsForFile = Array.from(existingKeywords);
       const metadata_for_file: Partial<RawImageMetadata> = {
         Keywords: finalKeywordsForFile,
       };
-
       Object.keys(formState).forEach((keyStr) => {
         const key = keyStr as keyof FormState;
         if (key !== "Keywords" && formState[key] !== "(Mixed Values)") {
           (metadata_for_file as any)[key] = formState[key];
         }
       });
-
       return {
         path: `${folderPath}\\${file.filename}`,
         metadata: metadata_for_file,
@@ -99,7 +104,6 @@ export const useMetadataEditor = ({
       ),
       keywords_to_learn: addedKeywords,
     };
-
     if (payload.files_to_update.length === 0) {
       setIsSaving(false);
       return;
@@ -155,5 +159,6 @@ export const useMetadataEditor = ({
     handleSave,
     handleKeywordInputChange,
     getDateTimeObject,
+    applyLocationPreset,
   };
 };

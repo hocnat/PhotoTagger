@@ -4,19 +4,15 @@ import {
   RenameFileResult,
   SaveMetadataPayload,
   RenamePreviewItem,
+  LocationPreset,
+  LocationPresetData,
 } from "../types";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
-/**
- * A generic response handler that checks for API errors, parses JSON,
- * and throws a structured error object if the request was not successful.
- */
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.ok) {
-    if (response.status === 204) {
-      return {} as T;
-    }
+    if (response.status === 204) return {} as T;
     return response.json();
   } else {
     const errorData: ApiError = await response
@@ -76,4 +72,21 @@ export const getRenamePreview = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ files: filePaths }),
   }).then((response) => handleResponse<RenamePreviewItem[]>(response));
+};
+
+export const getLocationPresets = (): Promise<LocationPreset[]> => {
+  return fetch(`${API_BASE_URL}/locations`).then((response) =>
+    handleResponse<LocationPreset[]>(response)
+  );
+};
+
+export const saveLocationPreset = (
+  name: string,
+  data: LocationPresetData
+): Promise<LocationPreset> => {
+  return fetch(`${API_BASE_URL}/locations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, data }),
+  }).then((response) => handleResponse<LocationPreset>(response));
 };

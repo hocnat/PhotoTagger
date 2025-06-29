@@ -12,10 +12,14 @@ def create_app():
 
     # Import and register blueprints
     from .routes.files import files_bp
+    from .routes.keywords import keywords_bp
+    from .routes.locations import locations_bp
     from .routes.metadata import metadata_bp
     from .routes.tools import tools_bp
 
     app.register_blueprint(files_bp, url_prefix="/api")
+    app.register_blueprint(keywords_bp, url_prefix="/api")
+    app.register_blueprint(locations_bp, url_prefix="/api")
     app.register_blueprint(metadata_bp, url_prefix="/api")
     app.register_blueprint(tools_bp, url_prefix="/api")
 
