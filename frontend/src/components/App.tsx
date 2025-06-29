@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import MetadataPanel from "./MetadataPanel";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { RenameDialog } from "./RenameDialog";
@@ -22,6 +22,29 @@ import {
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
+
+/**
+ * Calculates the number of columns in the image grid by inspecting the
+ * rendered positions of the image cards. This is a robust way to determine
+ * the layout without relying on hardcoded CSS values.
+ * @returns The number of columns in the grid.
+ */
+const getGridColumnCount = (): number => {
+  const gridElement = document.querySelector(".image-grid");
+  if (!gridElement) return 4;
+
+  const cards = gridElement.querySelectorAll(".image-card");
+  if (cards.length <= 1) return 1;
+
+  const firstCardTop = cards[0].getBoundingClientRect().top;
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].getBoundingClientRect().top !== firstCardTop) {
+      return i;
+    }
+  }
+
+  return cards.length;
+};
 
 const App: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
@@ -47,14 +70,11 @@ const App: React.FC = () => {
     handleConfirm: handleUnsavedChangesConfirm,
     handleClose: handleUnsavedChangesClose,
   } = useUnsavedChanges(isDirty);
-
   const {
     openRenameDialog,
     isRenamePreviewLoading,
     dialogProps: renameDialogProps,
-  } = useRenameDialog({
-    onRenameComplete: () => loadImages(imageData.folder),
-  });
+  } = useRenameDialog({ onRenameComplete: () => loadImages(imageData.folder) });
 
   const handleFetchImages = useCallback(() => {
     promptAction(() => {
@@ -62,6 +82,58 @@ const App: React.FC = () => {
       loadImages(folderInput, () => setIsDirty(false));
     });
   }, [promptAction, loadImages, folderInput, setSelectedImages]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        promptAction(() => setSelectedImages([...imageData.files]));
+        return;
+      }
+
+      if (document.activeElement !== document.body) return;
+
+      const numImages = imageData.files.length;
+      if (numImages === 0) return;
+
+      if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+
+        if (selectedImages.length > 1) return;
+
+        const columns = getGridColumnCount();
+
+        const currentIndex =
+          selectedImages.length === 1
+            ? imageData.files.indexOf(selectedImages[0])
+            : -1;
+        let newIndex = currentIndex;
+
+        switch (e.key) {
+          case "ArrowDown":
+            newIndex = Math.min(currentIndex + columns, numImages - 1);
+            break;
+          case "ArrowUp":
+            newIndex = Math.max(currentIndex - columns, 0);
+            break;
+          case "ArrowLeft":
+            newIndex = Math.max(currentIndex - 1, 0);
+            break;
+          case "ArrowRight":
+            newIndex = Math.min(currentIndex + 1, numImages - 1);
+            break;
+        }
+
+        if (newIndex >= 0 && newIndex !== currentIndex) {
+          const newSelectedImage = imageData.files[newIndex];
+          promptAction(() => setSelectedImages([newSelectedImage]));
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImages, imageData.files, promptAction, setSelectedImages]);
 
   const getImageUrl = (imageName: string): string => {
     const fullPath = `${imageData.folder}\\${imageName}`;
@@ -161,14 +233,19 @@ const App: React.FC = () => {
           >
             {imageData.files.map((imageName, index) => {
               const isSelected = selectedImages.includes(imageName);
+              const cardClassName = `image-card ${
+                isSelected ? "selected" : ""
+              }`.trim();
+
               return (
                 <Paper
                   elevation={isSelected ? 8 : 2}
                   key={imageName}
-                  className={`image-card ${isSelected ? "selected" : ""}`}
-                  onClick={(e) =>
-                    promptAction(() => handleImageClick(e, imageName, index))
-                  }
+                  className={cardClassName}
+                  id={`image-card-${index}`}
+                  onClick={(e) => {
+                    promptAction(() => handleImageClick(e, imageName, index));
+                  }}
                 >
                   <img
                     src={getImageUrl(imageName)}

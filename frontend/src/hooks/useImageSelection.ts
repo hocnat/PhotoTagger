@@ -5,18 +5,8 @@ export const useImageSelection = (images: string[]) => {
   const lastSelectedIndex = useRef<number | null>(null);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-        e.preventDefault();
-        setSelectedImages([...images]);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [images]);
-
-  useEffect(() => {
     setSelectedImages([]);
+    lastSelectedIndex.current = null;
   }, [images]);
 
   const handleImageClick = (
