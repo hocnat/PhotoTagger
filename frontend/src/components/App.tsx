@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import MetadataPanel from "./MetadataPanel";
-import { RenameFileResult, ApiError, RenamePreviewItem } from "../types";
+import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
+import { RenameDialog } from "./RenameDialog";
 import { useImageSelection } from "../hooks/useImageSelection";
 import { useImageLoader } from "../hooks/useImageLoader";
-import { useNotification } from "../hooks/useNotification";
-import * as apiService from "../services/apiService";
+import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
+import { useRenameDialog } from "../hooks/useRenameDialog";
 import "../App.css";
 
 import {
@@ -17,33 +18,13 @@ import {
   CircularProgress,
   Alert,
   Paper,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  List,
-  ListItem,
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 const App: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
-  const [confirmationState, setConfirmationState] = useState<{
-    isOpen: boolean;
-    onConfirm: () => void;
-  }>({ isOpen: false, onConfirm: () => {} });
-
-  const [isRenameConfirmOpen, setIsRenameConfirmOpen] = useState(false);
-  const [isRenamePreviewLoading, setIsRenamePreviewLoading] = useState(false);
-  const [renamePreviewData, setRenamePreviewData] = useState<
-    RenamePreviewItem[]
-  >([]);
-
-  const { showNotification } = useNotification();
 
   const {
     imageData,
@@ -60,123 +41,33 @@ const App: React.FC = () => {
     handleBackgroundClick,
   } = useImageSelection(imageData.files);
 
-  const proceedWithLoad = useCallback(() => {
-    setSelectedImages([]);
-    loadImages(folderInput, () => {
-      setIsDirty(false);
-    });
-  }, [loadImages, folderInput, setSelectedImages]);
+  const {
+    promptAction,
+    isConfirmationOpen,
+    handleConfirm: handleUnsavedChangesConfirm,
+    handleClose: handleUnsavedChangesClose,
+  } = useUnsavedChanges(isDirty);
+
+  const {
+    openRenameDialog,
+    isRenamePreviewLoading,
+    dialogProps: renameDialogProps,
+  } = useRenameDialog({
+    onRenameComplete: () => loadImages(imageData.folder),
+  });
 
   const handleFetchImages = useCallback(() => {
-    if (isDirty) {
-      setConfirmationState({ isOpen: true, onConfirm: proceedWithLoad });
-    } else {
-      proceedWithLoad();
-    }
-  }, [isDirty, proceedWithLoad]);
-
-  const promptAndHandleImageClick = (
-    e: React.MouseEvent,
-    imageName: string,
-    index: number
-  ) => {
-    if (isDirty) {
-      setConfirmationState({
-        isOpen: true,
-        onConfirm: () => handleImageClick(e, imageName, index),
-      });
-    } else {
-      handleImageClick(e, imageName, index);
-    }
-  };
-
-  const promptAndHandleBackgroundClick = (e: React.MouseEvent) => {
-    if (isDirty) {
-      setConfirmationState({
-        isOpen: true,
-        onConfirm: () => handleBackgroundClick(),
-      });
-    } else {
-      handleBackgroundClick();
-    }
-  };
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [isDirty]);
+    promptAction(() => {
+      setSelectedImages([]);
+      loadImages(folderInput, () => setIsDirty(false));
+    });
+  }, [promptAction, loadImages, folderInput, setSelectedImages]);
 
   const getImageUrl = (imageName: string): string => {
     const fullPath = `${imageData.folder}\\${imageName}`;
     return `http://localhost:5000/api/image_data?path=${encodeURIComponent(
       fullPath
     )}`;
-  };
-
-  const handleOpenRenameDialog = () => {
-    const filesToPreview = selectedImages.map(
-      (name) => `${imageData.folder}\\${name}`
-    );
-    setIsRenamePreviewLoading(true);
-    apiService
-      .getRenamePreview(filesToPreview)
-      .then((data) => {
-        setRenamePreviewData(data);
-        setIsRenameConfirmOpen(true);
-      })
-      .catch((err: ApiError) => {
-        showNotification(
-          `Error fetching rename preview: ${err.message}`,
-          "error"
-        );
-      })
-      .finally(() => {
-        setIsRenamePreviewLoading(false);
-      });
-  };
-
-  const handleConfirmRename = () => {
-    const filesToRename = selectedImages.map(
-      (name) => `${imageData.folder}\\${name}`
-    );
-    setIsRenameConfirmOpen(false);
-    apiService
-      .renameFiles(filesToRename)
-      .then((results: RenameFileResult[]) => {
-        const successCount = results.filter(
-          (r) => r.status === "Renamed"
-        ).length;
-        if (successCount > 0) {
-          showNotification(
-            `${successCount} file(s) successfully renamed.`,
-            "success"
-          );
-        }
-        loadImages(imageData.folder);
-      })
-      .catch((err: ApiError) => {
-        showNotification(
-          `An error occurred during renaming: ${err.message}`,
-          "error"
-        );
-      });
-  };
-
-  const handleUnsavedChangesConfirmationClose = () => {
-    setConfirmationState({ isOpen: false, onConfirm: () => {} });
-  };
-
-  const handleUnsavedChangesConfirmationConfirm = () => {
-    confirmationState.onConfirm();
-    handleUnsavedChangesConfirmationClose();
   };
 
   return (
@@ -218,9 +109,7 @@ const App: React.FC = () => {
               value={folderInput}
               onChange={(e) => setFolderInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleFetchImages();
-                }
+                if (e.key === "Enter") handleFetchImages();
               }}
             />
             <Button
@@ -245,7 +134,11 @@ const App: React.FC = () => {
                 isRenamePreviewLoading ||
                 selectedImages.length === 0
               }
-              onClick={handleOpenRenameDialog}
+              onClick={() =>
+                openRenameDialog(
+                  selectedImages.map((name) => `${imageData.folder}\\${name}`)
+                )
+              }
               startIcon={
                 isRenamePreviewLoading ? (
                   <CircularProgress size={20} color="inherit" />
@@ -257,14 +150,15 @@ const App: React.FC = () => {
               Rename
             </Button>
           </Box>
-
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
-
-          <Box className="image-grid" onClick={promptAndHandleBackgroundClick}>
+          <Box
+            className="image-grid"
+            onClick={() => promptAction(handleBackgroundClick)}
+          >
             {imageData.files.map((imageName, index) => {
               const isSelected = selectedImages.includes(imageName);
               return (
@@ -273,7 +167,7 @@ const App: React.FC = () => {
                   key={imageName}
                   className={`image-card ${isSelected ? "selected" : ""}`}
                   onClick={(e) =>
-                    promptAndHandleImageClick(e, imageName, index)
+                    promptAction(() => handleImageClick(e, imageName, index))
                   }
                 >
                   <img
@@ -297,7 +191,6 @@ const App: React.FC = () => {
             })}
           </Box>
         </Box>
-
         <Box
           component="aside"
           sx={{
@@ -319,101 +212,12 @@ const App: React.FC = () => {
           />
         </Box>
       </Box>
-
-      {/* Unsaved Changes Dialog */}
-      <Dialog
-        open={confirmationState.isOpen}
-        onClose={handleUnsavedChangesConfirmationClose}
-      >
-        <DialogTitle>Unsaved Changes</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            You have unsaved changes. Are you sure you want to proceed without
-            saving?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleUnsavedChangesConfirmationClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUnsavedChangesConfirmationConfirm}
-            color="primary"
-            autoFocus
-          >
-            Proceed
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Rename Confirmation Dialog */}
-      <Dialog
-        open={isRenameConfirmOpen}
-        onClose={() => setIsRenameConfirmOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Confirm File Renaming</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            Please review the following file name changes. This action cannot be
-            undone.
-          </DialogContentText>
-          <List dense>
-            {renamePreviewData.map((item) => {
-              const hasError = item.new.startsWith("(Error:");
-              const isSkipped = item.original === item.new;
-              return (
-                <ListItem key={item.original} divider>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      width: "100%",
-                      gap: 2,
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        flex: 1,
-                        wordBreak: "break-all",
-                        color: "text.secondary",
-                      }}
-                    >
-                      {item.original}
-                    </Typography>
-                    <ArrowForwardIcon sx={{ flexShrink: 0 }} />
-                    <Typography
-                      sx={{
-                        flex: 1,
-                        wordBreak: "break-all",
-                        color: hasError
-                          ? "error.main"
-                          : isSkipped
-                          ? "text.disabled"
-                          : "text.primary",
-                        fontWeight: hasError || !isSkipped ? "bold" : "normal",
-                      }}
-                    >
-                      {item.new}
-                    </Typography>
-                  </Box>
-                </ListItem>
-              );
-            })}
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsRenameConfirmOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleConfirmRename}
-            color="primary"
-            variant="contained"
-          >
-            Confirm Rename
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <UnsavedChangesDialog
+        isOpen={isConfirmationOpen}
+        onConfirm={handleUnsavedChangesConfirm}
+        onClose={handleUnsavedChangesClose}
+      />
+      <RenameDialog {...renameDialogProps} />
     </Box>
   );
 };
