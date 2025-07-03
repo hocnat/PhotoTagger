@@ -138,8 +138,15 @@ const App: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedImages, imageData.files, promptAction, setSelectedImages]);
 
-  const getImageUrl = (imageName: string): string =>
-    `${imageData.folder}\\${imageName}`;
+  const getImageUrl = (imageName: string): string => {
+    if (!imageData.folder || !imageName) {
+      return "";
+    }
+    const fullPath = `${imageData.folder}\\${imageName}`;
+    return `http://localhost:5000/api/image_data?path=${encodeURIComponent(
+      fullPath
+    )}`;
+  };
 
   return (
     <Box
@@ -251,9 +258,7 @@ const App: React.FC = () => {
                   }}
                 >
                   <img
-                    src={`http://localhost:5000/api/image_data?path=${encodeURIComponent(
-                      getImageUrl(imageName)
-                    )}`}
+                    src={getImageUrl(imageName)}
                     alt={imageName}
                     className="thumbnail"
                   />

@@ -20,20 +20,20 @@ const ContentSection: React.FC<ContentSectionProps> = ({
   return (
     <FormSection title="Content">
       <TextField
-        label="Caption / Description"
+        label="Title"
         variant="outlined"
         size="small"
         fullWidth
         value={
-          typeof formState.Caption === "string" &&
-          formState.Caption !== "(Mixed Values)"
-            ? formState.Caption
+          typeof formState.Title === "string" &&
+          formState.Title !== "(Mixed Values)"
+            ? formState.Title
             : ""
         }
         placeholder={
-          formState.Caption === "(Mixed Values)" ? "(Mixed Values)" : ""
+          formState.Title === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
-        onChange={(e) => handleFormChange("Caption", e.target.value)}
+        onChange={(e) => handleFormChange("Title", e.target.value)}
       />
       <Autocomplete
         freeSolo
@@ -60,8 +60,8 @@ const ContentSection: React.FC<ContentSectionProps> = ({
             {...params}
             variant="outlined"
             size="small"
-            label="Add Keyword"
-            placeholder="Type and press Enter..."
+            label="Keywords"
+            placeholder="Add keyword and press Enter..."
           />
         )}
       />

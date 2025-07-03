@@ -1,5 +1,4 @@
 import React from "react";
-import iso from "iso-3166-1";
 
 // MUI Imports
 import { TextField, Autocomplete } from "@mui/material";
@@ -28,42 +27,48 @@ const CountryInput: React.FC<CountryInputProps> = ({
     event: any,
     newValue: Country | string | null
   ) => {
-    if (typeof newValue === "string") {
-      onCountryChange(newValue);
-    } else if (newValue) {
-      const alpha2Code = newValue.code;
-      const countryInfo = iso.whereAlpha2(alpha2Code);
-      const alpha3Code = countryInfo ? countryInfo.alpha3 : "";
-
-      onCountryChange(newValue.name);
-      onCodeChange(alpha3Code);
-    } else {
+    // Case 1: The input was cleared.
+    if (!newValue) {
       onCountryChange("");
       onCodeChange("");
+      return;
     }
-  };
 
-  const selectedCountryObject =
-    countryData.find((c: Country) => c.name === countryValue) || null;
+    // Case 2: User typed a custom string (freeSolo mode).
+    if (typeof newValue === "string") {
+      // Find if the typed string matches a known country name (case-insensitive).
+      const matchedCountry = countryData.find(
+        (c: Country) => c.name.toLowerCase() === newValue.toLowerCase()
+      );
+      if (matchedCountry) {
+        // A match was found, update both name and code.
+        onCountryChange(matchedCountry.name);
+        onCodeChange(matchedCountry.code);
+      } else {
+        // No match found, update the name but clear the code.
+        onCountryChange(newValue);
+        onCodeChange("");
+      }
+      return;
+    }
+
+    // Case 3: User selected an item from the list (newValue is a Country object).
+    onCountryChange(newValue.name);
+    onCodeChange(newValue.code);
+  };
 
   return (
     <Autocomplete
-      value={selectedCountryObject}
+      value={countryValue}
       onChange={handleAutocompleteChange}
       freeSolo
-      getOptionLabel={(option) =>
-        typeof option === "string" ? option : option.name
-      }
+      getOptionLabel={(option: string | Country) => {
+        return typeof option === "string" ? option : option.name;
+      }}
       options={countryData}
       sx={{ width: "100%" }}
       renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          variant="outlined"
-          size="small"
-          onChange={(e) => onCountryChange(e.target.value)}
-        />
+        <TextField {...params} label={label} variant="outlined" size="small" />
       )}
     />
   );

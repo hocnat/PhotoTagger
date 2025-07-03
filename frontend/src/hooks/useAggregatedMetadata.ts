@@ -16,17 +16,16 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
 
     const newFormState: Partial<FormState> = {};
     const simpleKeys: (keyof Omit<FormState, "Keywords">)[] = [
-      "Caption",
-      "Author",
-      "EXIF:DateTimeOriginal",
-      "EXIF:OffsetTimeOriginal",
-      "DecimalLatitude",
-      "DecimalLongitude",
-      "XMP:Location",
-      "XMP:City",
-      "XMP:State",
-      "XMP:Country",
-      "XMP:CountryCode",
+      "Title",
+      "GPSPosition",
+      "Location",
+      "City",
+      "State",
+      "Country",
+      "CountryCode",
+      "CreateDate",
+      "OffsetTimeOriginal",
+      "Creator",
     ];
 
     simpleKeys.forEach((key) => {

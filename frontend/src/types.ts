@@ -29,13 +29,12 @@ export interface ApiError {
 // --- Location Preset Types ---
 
 export interface LocationPresetData {
-  DecimalLatitude?: number;
-  DecimalLongitude?: number;
-  "XMP:Location"?: string;
-  "XMP:City"?: string;
-  "XMP:State"?: string;
-  "XMP:Country"?: string;
-  "XMP:CountryCode"?: string;
+  GPSPosition?: string;
+  Location?: string;
+  City?: string;
+  State?: string;
+  Country?: string;
+  CountryCode?: string;
 }
 
 export interface LocationPreset {
@@ -80,33 +79,32 @@ export interface Keyword {
 
 export interface RawImageMetadata {
   [key: string]: any;
-  Keywords: string[];
-  Caption: string;
-  Author: string;
-  "EXIF:DateTimeOriginal"?: string;
-  "EXIF:OffsetTimeOriginal"?: string;
-  DecimalLatitude?: number;
-  DecimalLongitude?: number;
-  "XMP:Location"?: string;
-  "XMP:City"?: string;
-  "XMP:State"?: string;
-  "XMP:Country"?: string;
-  "XMP:CountryCode"?: string;
+  Title?: string;
+  Keywords?: string[];
+  GPSPosition?: string;
+  Location?: string;
+  City?: string;
+  State?: string;
+  Country?: string;
+  CountryCode?: string;
+  CreateDate?: string;
+  OffsetTimeOriginal?: string;
+  CalculatedOffsetTimeOriginal?: string;
+  Creator?: string;
 }
 
 export interface FormState {
+  Title: string | "(Mixed Values)";
   Keywords: Keyword[];
-  Caption: string | "(Mixed Values)";
-  Author: string | "(Mixed Values)";
-  "EXIF:DateTimeOriginal"?: string | "(Mixed Values)";
-  "EXIF:OffsetTimeOriginal"?: string | "(Mixed Values)";
-  DecimalLatitude?: number | "(Mixed Values)";
-  DecimalLongitude?: number | "(Mixed Values)";
-  "XMP:Location"?: string | "(Mixed Values)";
-  "XMP:City"?: string | "(Mixed Values)";
-  "XMP:State"?: string | "(Mixed Values)";
-  "XMP:Country"?: string | "(Mixed Values)";
-  "XMP:CountryCode"?: string | "(Mixed Values)";
+  GPSPosition?: string | "(Mixed Values)";
+  Location?: string | "(Mixed Values)";
+  City?: string | "(Mixed Values)";
+  State?: string | "(Mixed Values)";
+  Country?: string | "(Mixed Values)";
+  CountryCode?: string | "(Mixed Values)";
+  CreateDate?: string | "(Mixed Values)";
+  OffsetTimeOriginal?: string | "(Mixed Values)";
+  Creator: string | "(Mixed Values)";
 }
 
 export interface ImageFile {

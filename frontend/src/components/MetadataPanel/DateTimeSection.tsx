@@ -14,14 +14,14 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
   getDateTimeObject,
 }) => {
   return (
-    <FormSection title="When">
+    <FormSection title="Date & Time">
       <Box sx={{ display: "flex", gap: 2 }}>
         <DateTimePicker
-          label="Date Taken"
+          label="Create Date"
           value={getDateTimeObject()}
           onChange={(date) =>
             handleFormChange(
-              "EXIF:DateTimeOriginal",
+              "CreateDate",
               date
                 ? `${date.getFullYear()}:${(date.getMonth() + 1)
                     .toString()
@@ -50,22 +50,22 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
           }}
         />
         <TextField
-          label="Time Zone"
+          label="Offset Time Original"
           variant="outlined"
           size="small"
           value={
-            typeof formState["EXIF:OffsetTimeOriginal"] === "string" &&
-            formState["EXIF:OffsetTimeOriginal"] !== "(Mixed Values)"
-              ? formState["EXIF:OffsetTimeOriginal"]
+            typeof formState.OffsetTimeOriginal === "string" &&
+            formState.OffsetTimeOriginal !== "(Mixed Values)"
+              ? formState.OffsetTimeOriginal
               : ""
           }
           placeholder={
-            formState["EXIF:OffsetTimeOriginal"] === "(Mixed Values)"
+            formState.OffsetTimeOriginal === "(Mixed Values)"
               ? "Mixed"
               : "+01:00"
           }
           onChange={(e) =>
-            handleFormChange("EXIF:OffsetTimeOriginal", e.target.value)
+            handleFormChange("OffsetTimeOriginal", e.target.value)
           }
           sx={{ width: 120, flexShrink: 0 }}
         />

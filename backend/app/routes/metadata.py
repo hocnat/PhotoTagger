@@ -1,14 +1,11 @@
 import os
-import subprocess
-import json
 from flask import Blueprint, request, jsonify
+
 from app.services.exif_service import (
-    EXIFTOOL_PATH,
-    dms_to_dd,
+    read_metadata_for_files,
     build_exiftool_args,
     run_exiftool_command,
 )
-
 from app.services.keyword_service import learn_keywords
 
 metadata_bp = Blueprint("metadata_bp", __name__)
@@ -16,51 +13,31 @@ metadata_bp = Blueprint("metadata_bp", __name__)
 
 @metadata_bp.route("/metadata", methods=["POST"])
 def get_metadata_batch():
+    """
+    Handles batch requests for image metadata.
+    """
     data = request.get_json()
     if not data or "files" not in data:
         return jsonify({"error": "File list is required"}), 400
 
     image_paths = data["files"]
+    if not isinstance(image_paths, list) or not image_paths:
+        return jsonify([])
+
+    metadata_list = read_metadata_for_files(image_paths)
+
     results = []
-
-    for image_path in image_paths:
-        filename = os.path.basename(image_path)
-        if not os.path.isfile(image_path):
-            results.append(
-                {"filename": filename, "metadata": {"error": "File not found"}}
-            )
-            continue
-        try:
-            command = [EXIFTOOL_PATH, "-json", "-G", "-charset", "UTF8", image_path]
-            result = subprocess.run(command, capture_output=True, check=True)
-            metadata = json.loads(result.stdout.decode("utf-8"))[0]
-
-            keywords = metadata.get("XMP:Subject", metadata.get("IPTC:Keywords", []))
-            metadata["Keywords"] = (
-                [keywords] if not isinstance(keywords, list) else keywords
-            )
-            metadata["Author"] = metadata.get(
-                "XMP:Creator",
-                metadata.get("IPTC:By-line", metadata.get("EXIF:Artist", "")),
-            )
-            metadata["Caption"] = metadata.get(
-                "XMP:Description",
-                metadata.get(
-                    "IPTC:Caption-Abstract", metadata.get("EXIF:ImageDescription", "")
-                ),
-            )
-
-            if "EXIF:GPSLatitude" in metadata and "EXIF:GPSLatitudeRef" in metadata:
-                metadata["DecimalLatitude"] = dms_to_dd(
-                    metadata["EXIF:GPSLatitude"], metadata["EXIF:GPSLatitudeRef"]
-                )
-            if "EXIF:GPSLongitude" in metadata and "EXIF:GPSLongitudeRef" in metadata:
-                metadata["DecimalLongitude"] = dms_to_dd(
-                    metadata["EXIF:GPSLongitude"], metadata["EXIF:GPSLongitudeRef"]
-                )
-
+    processed_files = set()
+    for metadata in metadata_list:
+        source_file = metadata.get("SourceFile")
+        if source_file:
+            filename = os.path.basename(source_file)
             results.append({"filename": filename, "metadata": metadata})
-        except Exception:
+            processed_files.add(filename)
+
+    for path in image_paths:
+        filename = os.path.basename(path)
+        if filename not in processed_files:
             results.append(
                 {"filename": filename, "metadata": {"error": "Failed to read metadata"}}
             )
@@ -70,6 +47,9 @@ def get_metadata_batch():
 
 @metadata_bp.route("/save_metadata", methods=["POST"])
 def save_metadata():
+    """
+    Handles saving metadata changes to one or more files.
+    """
     data = request.get_json()
     if not data or "files_to_update" not in data:
         return jsonify({"error": "Invalid request"}), 400

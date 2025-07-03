@@ -124,16 +124,16 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             keywordSuggestions={keywordSuggestions}
             onKeywordInputChange={handleKeywordInputChange}
           />
-          <DateTimeSection
-            formState={formState}
-            handleFormChange={handleFormChange}
-            getDateTimeObject={getDateTimeObject}
-          />
           <LocationSection
             formState={formState}
             handleFormChange={handleFormChange}
             onLocationSet={handleLocationSet}
             applyLocationPreset={applyLocationPreset}
+          />
+          <DateTimeSection
+            formState={formState}
+            handleFormChange={handleFormChange}
+            getDateTimeObject={getDateTimeObject}
           />
           <CreatorSection
             formState={formState}

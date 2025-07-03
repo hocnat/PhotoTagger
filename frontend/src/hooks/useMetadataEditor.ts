@@ -39,6 +39,16 @@ export const useMetadataEditor = ({
     setIsDirty(hasChanges);
   }, [hasChanges, setIsDirty]);
 
+  useEffect(() => {
+    if (imageFiles.length === 1) {
+      const calculatedOffset =
+        imageFiles[0].metadata.CalculatedOffsetTimeOriginal;
+      if (calculatedOffset && !formState.OffsetTimeOriginal) {
+        handleFormChange("OffsetTimeOriginal", calculatedOffset);
+      }
+    }
+  }, [imageFiles, formState.OffsetTimeOriginal, setFormState]);
+
   const handleFormChange = useCallback(
     (fieldName: keyof FormState, newValue: any) => {
       setFormState((prevState) => ({ ...prevState, [fieldName]: newValue }));
@@ -54,10 +64,10 @@ export const useMetadataEditor = ({
   );
 
   const handleLocationSet = (latlng: { lat: number; lng: number }) => {
+    const gpsString = `${latlng.lat}, ${latlng.lng}`;
     setFormState((prev) => ({
       ...prev,
-      DecimalLatitude: latlng.lat,
-      DecimalLongitude: latlng.lng,
+      GPSPosition: gpsString,
     }));
   };
 
@@ -139,7 +149,7 @@ export const useMetadataEditor = ({
   };
 
   const getDateTimeObject = (): Date | null => {
-    const dateStr = formState["EXIF:DateTimeOriginal"];
+    const dateStr = formState.CreateDate;
     if (!dateStr || typeof dateStr !== "string" || dateStr === "(Mixed Values)")
       return null;
     const parsableDateStr =

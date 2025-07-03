@@ -24,6 +24,22 @@ interface LocationSectionProps extends SectionProps {
   applyLocationPreset: (data: LocationPresetData) => void;
 }
 
+const parseGpsString = (
+  gpsString?: string
+): { lat: number; lng: number } | null => {
+  if (!gpsString || typeof gpsString !== "string") return null;
+
+  const parts = gpsString.split(",").map((s) => s.trim());
+  if (parts.length === 2) {
+    const lat = parseFloat(parts[0]);
+    const lon = parseFloat(parts[1]);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      return { lat, lng: lon };
+    }
+  }
+  return null;
+};
+
 const LocationSection: React.FC<LocationSectionProps> = ({
   formState,
   handleFormChange,
@@ -41,53 +57,41 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   };
 
   const handleSavePreset = () => {
-    const dataToSave: LocationPresetData = {
-      DecimalLatitude:
-        typeof formState.DecimalLatitude === "number"
-          ? formState.DecimalLatitude
-          : undefined,
-      DecimalLongitude:
-        typeof formState.DecimalLongitude === "number"
-          ? formState.DecimalLongitude
-          : undefined,
-      "XMP:Location":
-        typeof formState["XMP:Location"] === "string" &&
-        formState["XMP:Location"] !== "(Mixed Values)"
-          ? formState["XMP:Location"]
-          : undefined,
-      "XMP:City":
-        typeof formState["XMP:City"] === "string" &&
-        formState["XMP:City"] !== "(Mixed Values)"
-          ? formState["XMP:City"]
-          : undefined,
-      "XMP:State":
-        typeof formState["XMP:State"] === "string" &&
-        formState["XMP:State"] !== "(Mixed Values)"
-          ? formState["XMP:State"]
-          : undefined,
-      "XMP:Country":
-        typeof formState["XMP:Country"] === "string" &&
-        formState["XMP:Country"] !== "(Mixed Values)"
-          ? formState["XMP:Country"]
-          : undefined,
-      "XMP:CountryCode":
-        typeof formState["XMP:CountryCode"] === "string" &&
-        formState["XMP:CountryCode"] !== "(Mixed Values)"
-          ? formState["XMP:CountryCode"]
-          : undefined,
-    };
-    addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
+    const dataToSave: LocationPresetData = {};
+    const locationKeys: (keyof LocationPresetData)[] = [
+      "GPSPosition",
+      "Location",
+      "City",
+      "State",
+      "Country",
+      "CountryCode",
+    ];
+
+    locationKeys.forEach((key) => {
+      const value = formState[key];
+      if (typeof value === "string" && value !== "(Mixed Values)") {
+        dataToSave[key] = value;
+      }
+    });
+
+    if (Object.keys(dataToSave).length > 0) {
+      addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
+    } else {
+      setSaveDialogOpen(false);
+    }
   };
 
   const locationFieldsPopulated =
-    typeof formState.DecimalLatitude === "number" ||
-    (typeof formState["XMP:City"] === "string" &&
-      formState["XMP:City"] !== "(Mixed Values)") ||
-    (typeof formState["XMP:Country"] === "string" &&
-      formState["XMP:Country"] !== "(Mixed Values)");
+    (typeof formState.GPSPosition === "string" &&
+      formState.GPSPosition.trim() !== "" &&
+      formState.GPSPosition !== "(Mixed Values)") ||
+    (typeof formState.City === "string" &&
+      formState.City !== "(Mixed Values)") ||
+    (typeof formState.Country === "string" &&
+      formState.Country !== "(Mixed Values)");
 
   return (
-    <FormSection title="Where">
+    <FormSection title="Location">
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Autocomplete
           fullWidth
@@ -112,42 +116,24 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         </IconButton>
       </Box>
 
-      <Box sx={{ display: "flex", gap: 2 }}>
-        <TextField
-          fullWidth
-          label="GPS Latitude"
-          variant="outlined"
-          size="small"
-          value={
-            typeof formState.DecimalLatitude === "number"
-              ? formState.DecimalLatitude
-              : ""
-          }
-          placeholder={
-            typeof formState.DecimalLatitude !== "number"
-              ? "(Mixed Values)"
-              : ""
-          }
-          onChange={(e) => handleFormChange("DecimalLatitude", e.target.value)}
-        />
-        <TextField
-          fullWidth
-          label="GPS Longitude"
-          variant="outlined"
-          size="small"
-          value={
-            typeof formState.DecimalLongitude === "number"
-              ? formState.DecimalLongitude
-              : ""
-          }
-          placeholder={
-            typeof formState.DecimalLongitude !== "number"
-              ? "(Mixed Values)"
-              : ""
-          }
-          onChange={(e) => handleFormChange("DecimalLongitude", e.target.value)}
-        />
-      </Box>
+      <TextField
+        fullWidth
+        label="GPS Position"
+        variant="outlined"
+        size="small"
+        value={
+          typeof formState.GPSPosition === "string" &&
+          formState.GPSPosition !== "(Mixed Values)"
+            ? formState.GPSPosition
+            : ""
+        }
+        placeholder={
+          formState.GPSPosition === "(Mixed Values)"
+            ? "(Mixed Values)"
+            : "e.g., 48.8583, 2.2945"
+        }
+        onChange={(e) => handleFormChange("GPSPosition", e.target.value)}
+      />
       <Button
         variant="outlined"
         startIcon={<MapIcon />}
@@ -159,19 +145,19 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       </Button>
       <TextField
         fullWidth
-        label="Sublocation"
+        label="Location"
         variant="outlined"
         size="small"
         value={
-          typeof formState["XMP:Location"] === "string" &&
-          formState["XMP:Location"] !== "(Mixed Values)"
-            ? formState["XMP:Location"]
+          typeof formState.Location === "string" &&
+          formState.Location !== "(Mixed Values)"
+            ? formState.Location
             : ""
         }
         placeholder={
-          formState["XMP:Location"] === "(Mixed Values)" ? "(Mixed Values)" : ""
+          formState.Location === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
-        onChange={(e) => handleFormChange("XMP:Location", e.target.value)}
+        onChange={(e) => handleFormChange("Location", e.target.value)}
       />
       <TextField
         fullWidth
@@ -179,58 +165,58 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         variant="outlined"
         size="small"
         value={
-          typeof formState["XMP:City"] === "string" &&
-          formState["XMP:City"] !== "(Mixed Values)"
-            ? formState["XMP:City"]
+          typeof formState.City === "string" &&
+          formState.City !== "(Mixed Values)"
+            ? formState.City
             : ""
         }
         placeholder={
-          formState["XMP:City"] === "(Mixed Values)" ? "(Mixed Values)" : ""
+          formState.City === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
-        onChange={(e) => handleFormChange("XMP:City", e.target.value)}
+        onChange={(e) => handleFormChange("City", e.target.value)}
       />
       <TextField
         fullWidth
-        label="State/Province"
+        label="State"
         variant="outlined"
         size="small"
         value={
-          typeof formState["XMP:State"] === "string" &&
-          formState["XMP:State"] !== "(Mixed Values)"
-            ? formState["XMP:State"]
+          typeof formState.State === "string" &&
+          formState.State !== "(Mixed Values)"
+            ? formState.State
             : ""
         }
         placeholder={
-          formState["XMP:State"] === "(Mixed Values)" ? "(Mixed Values)" : ""
+          formState.State === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
-        onChange={(e) => handleFormChange("XMP:State", e.target.value)}
+        onChange={(e) => handleFormChange("State", e.target.value)}
       />
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
         <CountryInput
           label="Country"
           countryValue={
-            typeof formState["XMP:Country"] === "string" &&
-            formState["XMP:Country"] !== "(Mixed Values)"
-              ? formState["XMP:Country"]
+            typeof formState.Country === "string" &&
+            formState.Country !== "(Mixed Values)"
+              ? formState.Country
               : ""
           }
-          onCountryChange={(val) => handleFormChange("XMP:Country", val)}
-          onCodeChange={(val) => handleFormChange("XMP:CountryCode", val)}
+          onCountryChange={(val) => handleFormChange("Country", val)}
+          onCodeChange={(val) => handleFormChange("CountryCode", val)}
         />
         <TextField
-          label="Code"
+          label="Country Code"
           variant="outlined"
           size="small"
           value={
-            typeof formState["XMP:CountryCode"] === "string" &&
-            formState["XMP:CountryCode"] !== "(Mixed Values)"
-              ? formState["XMP:CountryCode"]
+            typeof formState.CountryCode === "string" &&
+            formState.CountryCode !== "(Mixed Values)"
+              ? formState.CountryCode
               : ""
           }
           placeholder={
-            formState["XMP:CountryCode"] === "(Mixed Values)" ? "(Mixed)" : ""
+            formState.CountryCode === "(Mixed Values)" ? "(Mixed)" : ""
           }
-          onChange={(e) => handleFormChange("XMP:CountryCode", e.target.value)}
+          onChange={(e) => handleFormChange("CountryCode", e.target.value)}
           sx={{ width: 100, flexShrink: 0 }}
         />
       </Box>
@@ -238,15 +224,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         onLocationSet={onLocationSet}
-        initialCoords={
-          typeof formState.DecimalLatitude === "number" &&
-          typeof formState.DecimalLongitude === "number"
-            ? {
-                lat: formState.DecimalLatitude,
-                lng: formState.DecimalLongitude,
-              }
-            : null
-        }
+        initialCoords={parseGpsString(formState.GPSPosition)}
       />
       <Dialog open={isSaveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
         <DialogTitle>Save Location Preset</DialogTitle>
