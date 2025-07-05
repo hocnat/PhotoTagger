@@ -1,7 +1,10 @@
 import React from "react";
 import { SectionProps, Keyword } from "../../types";
 import FormSection from "./FormSection";
-import { TextField, Autocomplete, Chip, Box } from "@mui/material";
+import ConsolidatedTextField from "./ConsolidatedTextField";
+import { getFieldData } from "../../utils/metadataUtils";
+import { Autocomplete, Chip, Box, TextField, Tooltip } from "@mui/material";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 interface ContentSectionProps extends SectionProps {
   keywordSuggestions: string[];
@@ -17,19 +20,32 @@ const ContentSection: React.FC<ContentSectionProps> = ({
   keywordSuggestions,
   onKeywordInputChange,
 }) => {
+  const titleData = getFieldData(formState.Title, "");
+  const keywordsData = getFieldData(formState.Keywords, []);
+
+  const keywordsLabel = (
+    <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
+      Keywords
+      {!keywordsData.isConsolidated && (
+        <Tooltip title="This value is not fully consolidated. Saving will fix this.">
+          <InfoOutlinedIcon
+            color="warning"
+            sx={{ ml: 0.5, fontSize: "1rem" }}
+          />
+        </Tooltip>
+      )}
+    </Box>
+  );
+
   return (
     <FormSection title="Content">
-      <TextField
-        label="Title"
+      <ConsolidatedTextField
+        baseLabel="Title"
+        isConsolidated={titleData.isConsolidated}
         variant="outlined"
         size="small"
         fullWidth
-        value={
-          typeof formState.Title === "string" &&
-          formState.Title !== "(Mixed Values)"
-            ? formState.Title
-            : ""
-        }
+        value={formState.Title === "(Mixed Values)" ? "" : titleData.value}
         placeholder={
           formState.Title === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
@@ -47,11 +63,8 @@ const ContentSection: React.FC<ContentSectionProps> = ({
               name: newValue.trim(),
               status: "common",
             };
-            const currentKeywords = Array.isArray(formState.Keywords)
-              ? formState.Keywords
-              : [];
-            if (!currentKeywords.some((kw) => kw.name === newKeyword.name)) {
-              handleFormChange("Keywords", [...currentKeywords, newKeyword]);
+            if (!keywordsData.value.some((kw) => kw.name === newKeyword.name)) {
+              handleFormChange("Keywords", [...keywordsData.value, newKeyword]);
             }
           }
         }}
@@ -60,14 +73,14 @@ const ContentSection: React.FC<ContentSectionProps> = ({
             {...params}
             variant="outlined"
             size="small"
-            label="Keywords"
+            label={keywordsLabel}
             placeholder="Add keyword and press Enter..."
           />
         )}
       />
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
-        {Array.isArray(formState.Keywords) &&
-          formState.Keywords.map((keyword) => (
+        {Array.isArray(keywordsData.value) &&
+          keywordsData.value.map((keyword) => (
             <Chip
               key={keyword.name}
               label={keyword.name}
@@ -79,7 +92,7 @@ const ContentSection: React.FC<ContentSectionProps> = ({
                   : {}
               }
               onDelete={() => {
-                const updatedKeywords = (formState.Keywords || []).filter(
+                const updatedKeywords = keywordsData.value.filter(
                   (kw) => kw.name !== keyword.name
                 );
                 handleFormChange("Keywords", updatedKeywords);

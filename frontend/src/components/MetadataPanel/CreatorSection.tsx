@@ -1,25 +1,24 @@
 import React from "react";
 import { SectionProps } from "../../types";
 import FormSection from "./FormSection";
-import { TextField } from "@mui/material";
+import ConsolidatedTextField from "./ConsolidatedTextField";
+import { getFieldData } from "../../utils/metadataUtils";
 
 const CreatorSection: React.FC<SectionProps> = ({
   formState,
   handleFormChange,
 }) => {
+  const fieldData = getFieldData(formState.Creator, "");
+
   return (
     <FormSection title="Creator">
-      <TextField
-        label="Creator"
+      <ConsolidatedTextField
+        baseLabel="Creator"
+        isConsolidated={fieldData.isConsolidated}
         variant="outlined"
         size="small"
         fullWidth
-        value={
-          typeof formState.Creator === "string" &&
-          formState.Creator !== "(Mixed Values)"
-            ? formState.Creator
-            : ""
-        }
+        value={formState.Creator === "(Mixed Values)" ? "" : fieldData.value}
         placeholder={
           formState.Creator === "(Mixed Values)" ? "(Mixed Values)" : ""
         }

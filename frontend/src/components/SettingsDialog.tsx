@@ -139,7 +139,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               onChange={(e) =>
                 handleFieldChange("renameSettings", "pattern", e.target.value)
               }
-              helperText="Example: ${DateTimeOriginal:%Y%m%d_%H%M%S}_${Caption}. Valid tags: Caption, DateTimeOriginal, CreateDate, etc."
+              helperText="Example: ${DateTimeOriginal:%Y%m%d_%H%M%S}_${Title}. Valid tags: DateTimeOriginal, Title, etc."
             />
             <ExtensionRuleEditor
               rules={localSettings.renameSettings.extensionRules}

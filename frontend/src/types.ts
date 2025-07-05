@@ -1,8 +1,12 @@
-// --- API Payloads and Responses ---
+export interface MetadataValue<T> {
+  value: T;
+  isConsolidated: boolean;
+}
 
 export interface FileUpdatePayload {
   path: string;
-  metadata: Partial<RawImageMetadata>;
+  original_metadata: { [key: string]: any };
+  new_metadata: { [key: string]: string | string[] | number | undefined };
 }
 
 export interface SaveMetadataPayload {
@@ -26,8 +30,6 @@ export interface ApiError {
   details?: any;
 }
 
-// --- Location Preset Types ---
-
 export interface LocationPresetData {
   GPSPosition?: string;
   Location?: string;
@@ -46,7 +48,6 @@ export interface LocationPreset {
   data: LocationPresetData;
 }
 
-// --- App Settings Types ---
 export interface ExtensionRule {
   extension: string;
   casing: "lowercase" | "uppercase";
@@ -70,8 +71,6 @@ export interface AppSettings {
   };
 }
 
-// --- Form and State Structures ---
-
 export interface Keyword {
   name: string;
   status: "common" | "partial";
@@ -79,40 +78,41 @@ export interface Keyword {
 
 export interface RawImageMetadata {
   [key: string]: any;
-  Title?: string;
-  Keywords?: string[];
-  GPSPosition?: string;
-  Location?: string;
-  City?: string;
-  State?: string;
-  Country?: string;
-  CountryCode?: string;
-  CreateDate?: string;
-  OffsetTimeOriginal?: string;
-  CalculatedOffsetTimeOriginal?: string;
-  Creator?: string;
+  Title?: MetadataValue<string>;
+  Keywords?: MetadataValue<string[]>;
+  GPSPosition?: MetadataValue<string>;
+  Location?: MetadataValue<string>;
+  City?: MetadataValue<string>;
+  State?: MetadataValue<string>;
+  Country?: MetadataValue<string>;
+  CountryCode?: MetadataValue<string>;
+  DateTimeOriginal?: MetadataValue<string>;
+  OffsetTimeOriginal?: MetadataValue<string>;
+  Creator?: MetadataValue<string>;
+  Copyright?: MetadataValue<string>;
 }
 
+export type FormStateField<T> = MetadataValue<T> | "(Mixed Values)";
+
 export interface FormState {
-  Title: string | "(Mixed Values)";
-  Keywords: Keyword[];
-  GPSPosition?: string | "(Mixed Values)";
-  Location?: string | "(Mixed Values)";
-  City?: string | "(Mixed Values)";
-  State?: string | "(Mixed Values)";
-  Country?: string | "(Mixed Values)";
-  CountryCode?: string | "(Mixed Values)";
-  CreateDate?: string | "(Mixed Values)";
-  OffsetTimeOriginal?: string | "(Mixed Values)";
-  Creator: string | "(Mixed Values)";
+  Title: FormStateField<string>;
+  Keywords: FormStateField<Keyword[]>;
+  GPSPosition?: FormStateField<string>;
+  Location?: FormStateField<string>;
+  City?: FormStateField<string>;
+  State?: FormStateField<string>;
+  Country?: FormStateField<string>;
+  CountryCode?: FormStateField<string>;
+  DateTimeOriginal?: FormStateField<string>;
+  OffsetTimeOriginal?: FormStateField<string>;
+  Creator: FormStateField<string>;
+  Copyright: FormStateField<string>;
 }
 
 export interface ImageFile {
   filename: string;
   metadata: RawImageMetadata;
 }
-
-// --- Component Prop Interfaces ---
 
 export interface SectionProps {
   formState: Partial<FormState>;

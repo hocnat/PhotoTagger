@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import { SectionProps, LocationPreset, LocationPresetData } from "../../types";
+import {
+  SectionProps,
+  LocationPreset,
+  LocationPresetData,
+  MetadataValue,
+} from "../../types";
 import { useLocationPresets } from "../../hooks/useLocationPresets";
 import FormSection from "./FormSection";
 import CountryInput from "../CountryInput";
 import MapModal from "../MapModal";
+import ConsolidatedTextField from "./ConsolidatedTextField";
+import { getFieldData } from "../../utils/metadataUtils";
 import {
   Box,
   Button,
@@ -68,9 +75,14 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     ];
 
     locationKeys.forEach((key) => {
-      const value = formState[key];
-      if (typeof value === "string" && value !== "(Mixed Values)") {
-        dataToSave[key] = value;
+      const field = formState[key];
+      if (
+        field &&
+        typeof field === "object" &&
+        "value" in field &&
+        field.value
+      ) {
+        (dataToSave as any)[key] = field.value;
       }
     });
 
@@ -81,14 +93,21 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     }
   };
 
+  const gpsPositionData = getFieldData(formState.GPSPosition, "");
+  const cityData = getFieldData(formState.City, "");
+  const countryData = getFieldData(formState.Country, "");
+  const countryCodeData = getFieldData(formState.CountryCode, "");
+
   const locationFieldsPopulated =
-    (typeof formState.GPSPosition === "string" &&
-      formState.GPSPosition.trim() !== "" &&
-      formState.GPSPosition !== "(Mixed Values)") ||
-    (typeof formState.City === "string" &&
-      formState.City !== "(Mixed Values)") ||
-    (typeof formState.Country === "string" &&
-      formState.Country !== "(Mixed Values)");
+    gpsPositionData.value.trim() !== "" ||
+    cityData.value.trim() !== "" ||
+    countryData.value.trim() !== "";
+
+  const textFields: { key: keyof LocationPresetData; label: string }[] = [
+    { key: "Location", label: "Location" },
+    { key: "City", label: "City" },
+    { key: "State", label: "State" },
+  ];
 
   return (
     <FormSection title="Location">
@@ -97,7 +116,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           fullWidth
           options={presets}
           getOptionLabel={(option) => option.name}
-          onChange={(event, newValue: LocationPreset | null) => {
+          onChange={(event, newValue) => {
             if (newValue) {
               applyLocationPreset(newValue.data);
               trackUsage(newValue.id);
@@ -116,16 +135,16 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         </IconButton>
       </Box>
 
-      <TextField
+      <ConsolidatedTextField
         fullWidth
-        label="GPS Position"
+        baseLabel="GPS Position"
         variant="outlined"
         size="small"
+        isConsolidated={gpsPositionData.isConsolidated}
         value={
-          typeof formState.GPSPosition === "string" &&
-          formState.GPSPosition !== "(Mixed Values)"
-            ? formState.GPSPosition
-            : ""
+          formState.GPSPosition === "(Mixed Values)"
+            ? ""
+            : gpsPositionData.value
         }
         placeholder={
           formState.GPSPosition === "(Mixed Values)"
@@ -143,76 +162,40 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       >
         Select on Map
       </Button>
-      <TextField
-        fullWidth
-        label="Location"
-        variant="outlined"
-        size="small"
-        value={
-          typeof formState.Location === "string" &&
-          formState.Location !== "(Mixed Values)"
-            ? formState.Location
-            : ""
-        }
-        placeholder={
-          formState.Location === "(Mixed Values)" ? "(Mixed Values)" : ""
-        }
-        onChange={(e) => handleFormChange("Location", e.target.value)}
-      />
-      <TextField
-        fullWidth
-        label="City"
-        variant="outlined"
-        size="small"
-        value={
-          typeof formState.City === "string" &&
-          formState.City !== "(Mixed Values)"
-            ? formState.City
-            : ""
-        }
-        placeholder={
-          formState.City === "(Mixed Values)" ? "(Mixed Values)" : ""
-        }
-        onChange={(e) => handleFormChange("City", e.target.value)}
-      />
-      <TextField
-        fullWidth
-        label="State"
-        variant="outlined"
-        size="small"
-        value={
-          typeof formState.State === "string" &&
-          formState.State !== "(Mixed Values)"
-            ? formState.State
-            : ""
-        }
-        placeholder={
-          formState.State === "(Mixed Values)" ? "(Mixed Values)" : ""
-        }
-        onChange={(e) => handleFormChange("State", e.target.value)}
-      />
+      {textFields.map(({ key, label }) => {
+        const fieldData = getFieldData(
+          formState[key] as MetadataValue<string> | "(Mixed Values)",
+          ""
+        );
+        return (
+          <ConsolidatedTextField
+            key={key}
+            fullWidth
+            baseLabel={label}
+            variant="outlined"
+            size="small"
+            isConsolidated={fieldData.isConsolidated}
+            value={formState[key] === "(Mixed Values)" ? "" : fieldData.value}
+            placeholder={
+              formState[key] === "(Mixed Values)" ? "(Mixed Values)" : ""
+            }
+            onChange={(e) => handleFormChange(key, e.target.value)}
+          />
+        );
+      })}
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
         <CountryInput
           label="Country"
-          countryValue={
-            typeof formState.Country === "string" &&
-            formState.Country !== "(Mixed Values)"
-              ? formState.Country
-              : ""
-          }
+          countryValue={countryData.value}
           onCountryChange={(val) => handleFormChange("Country", val)}
           onCodeChange={(val) => handleFormChange("CountryCode", val)}
         />
-        <TextField
-          label="Country Code"
+        <ConsolidatedTextField
+          baseLabel="Country Code"
           variant="outlined"
           size="small"
-          value={
-            typeof formState.CountryCode === "string" &&
-            formState.CountryCode !== "(Mixed Values)"
-              ? formState.CountryCode
-              : ""
-          }
+          isConsolidated={countryCodeData.isConsolidated}
+          value={countryCodeData.value}
           placeholder={
             formState.CountryCode === "(Mixed Values)" ? "(Mixed)" : ""
           }
@@ -224,7 +207,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         onLocationSet={onLocationSet}
-        initialCoords={parseGpsString(formState.GPSPosition)}
+        initialCoords={parseGpsString(gpsPositionData.value)}
       />
       <Dialog open={isSaveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
         <DialogTitle>Save Location Preset</DialogTitle>

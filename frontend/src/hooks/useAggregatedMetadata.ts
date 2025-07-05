@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { FormState, ImageFile, Keyword } from "../types";
+import { FormState, ImageFile, Keyword, MetadataValue } from "../types";
+
+const defaultEmptyValues: { [K in keyof FormState]?: any } = {
+  Title: { value: "", isConsolidated: true },
+  Creator: { value: "", isConsolidated: true },
+  Copyright: { value: "", isConsolidated: true },
+  Keywords: { value: [], isConsolidated: true },
+};
 
 export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
   const [formState, setFormState] = useState<Partial<FormState>>({});
@@ -23,56 +30,90 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
       "State",
       "Country",
       "CountryCode",
-      "CreateDate",
+      "DateTimeOriginal",
       "OffsetTimeOriginal",
       "Creator",
+      "Copyright",
     ];
 
     simpleKeys.forEach((key) => {
-      const firstValue = imageFiles[0]?.metadata[key];
-      const allSame = imageFiles.every(
-        (file) =>
-          JSON.stringify(file.metadata[key]) === JSON.stringify(firstValue)
-      );
-      (newFormState as any)[key] = allSame ? firstValue : "(Mixed Values)";
+      const firstField =
+        imageFiles[0]?.metadata[key] || defaultEmptyValues[key];
+      let isConsolidated = firstField?.isConsolidated ?? true;
+      let allSameValue = true;
+
+      for (let i = 1; i < imageFiles.length; i++) {
+        const currentField =
+          imageFiles[i]?.metadata[key] || defaultEmptyValues[key];
+        if (
+          JSON.stringify(currentField?.value) !==
+          JSON.stringify(firstField?.value)
+        ) {
+          allSameValue = false;
+        }
+        if (!currentField?.isConsolidated) {
+          isConsolidated = false;
+        }
+      }
+      if (allSameValue) {
+        newFormState[key] = { value: firstField?.value ?? "", isConsolidated };
+      } else {
+        newFormState[key] = "(Mixed Values)";
+      }
     });
 
-    const allKeywords = new Set<string>();
+    const allKeywords = new Map<
+      string,
+      { count: number; consolidated: boolean }
+    >();
     imageFiles.forEach((file) => {
-      (file.metadata.Keywords || []).forEach((kw) =>
-        allKeywords.add(String(kw))
-      );
-    });
-
-    const commonKeywords = new Set<string>(
-      imageFiles[0]?.metadata.Keywords || []
-    );
-    for (let i = 1; i < imageFiles.length; i++) {
-      const currentKeywords = new Set<string>(
-        imageFiles[i].metadata.Keywords || []
-      );
-      commonKeywords.forEach((commonKw) => {
-        if (!currentKeywords.has(commonKw)) {
-          commonKeywords.delete(commonKw);
+      const field = file.metadata.Keywords;
+      const keywords = field?.value || [];
+      const isConsolidated = field?.isConsolidated ?? true;
+      keywords.forEach((kw) => {
+        const existing = allKeywords.get(kw);
+        if (existing) {
+          existing.count++;
+          existing.consolidated = existing.consolidated && isConsolidated;
+        } else {
+          allKeywords.set(kw, { count: 1, consolidated: isConsolidated });
         }
       });
-    }
-
-    newFormState.Keywords = Array.from(allKeywords).map(
-      (name): Keyword => ({
+    });
+    const keywordValue: Keyword[] = Array.from(allKeywords.entries()).map(
+      ([name, { count }]) => ({
         name,
-        status: commonKeywords.has(name) ? "common" : "partial",
+        status: count === imageFiles.length ? "common" : "partial",
       })
     );
+    const allKwConsolidated = Array.from(allKeywords.values()).every(
+      (v) => v.consolidated
+    );
+    newFormState.Keywords = {
+      value: keywordValue,
+      isConsolidated:
+        allKwConsolidated &&
+        (imageFiles[0]?.metadata.Keywords?.isConsolidated ?? true),
+    };
 
     setFormState(newFormState);
     setOriginalFormState(newFormState);
   }, [imageFiles]);
 
-  const hasChanges = useMemo(
-    () => JSON.stringify(formState) !== JSON.stringify(originalFormState),
-    [formState, originalFormState]
-  );
+  const hasChanges = useMemo(() => {
+    if (Object.keys(formState).length === 0) return false;
+    const valuesChanged =
+      JSON.stringify(formState) !== JSON.stringify(originalFormState);
+    const needsConsolidation = Object.values(formState).some(
+      (field) =>
+        field !== "(Mixed Values)" &&
+        field &&
+        typeof field === "object" &&
+        "isConsolidated" in field &&
+        !field.isConsolidated
+    );
+    return valuesChanged || needsConsolidation;
+  }, [formState, originalFormState]);
 
   return { formState, setFormState, hasChanges, originalFormState };
 };

@@ -62,7 +62,9 @@ def save_metadata():
 
     try:
         for file_update in files_to_update:
-            args = build_exiftool_args(file_update["metadata"])
+            args = build_exiftool_args(
+                file_update["original_metadata"], file_update["new_metadata"]
+            )
             if args:
                 run_exiftool_command(args + [file_update["path"]])
         return jsonify({"message": "Metadata saved successfully"})

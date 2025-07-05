@@ -1,16 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   FormState,
-  RawImageMetadata,
   Keyword,
   SaveMetadataPayload,
   ApiError,
   LocationPresetData,
+  MetadataValue,
+  ImageFile,
 } from "../types";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
 import { useNotification } from "./useNotification";
 import * as apiService from "../services/apiService";
+
+function getValueFromState<T>(
+  field: MetadataValue<T> | "(Mixed Values)" | undefined
+): T | undefined {
+  if (field && typeof field === "object" && "value" in field) {
+    return field.value;
+  }
+  return undefined;
+}
 
 interface UseMetadataEditorProps {
   selectedImageNames: string[];
@@ -39,81 +49,71 @@ export const useMetadataEditor = ({
     setIsDirty(hasChanges);
   }, [hasChanges, setIsDirty]);
 
-  useEffect(() => {
-    if (imageFiles.length === 1) {
-      const calculatedOffset =
-        imageFiles[0].metadata.CalculatedOffsetTimeOriginal;
-      if (calculatedOffset && !formState.OffsetTimeOriginal) {
-        handleFormChange("OffsetTimeOriginal", calculatedOffset);
-      }
-    }
-  }, [imageFiles, formState.OffsetTimeOriginal, setFormState]);
-
   const handleFormChange = useCallback(
     (fieldName: keyof FormState, newValue: any) => {
-      setFormState((prevState) => ({ ...prevState, [fieldName]: newValue }));
+      setFormState((prevState) => {
+        const existingField = prevState[fieldName];
+        const isConsolidated =
+          existingField &&
+          typeof existingField === "object" &&
+          "isConsolidated" in existingField
+            ? existingField.isConsolidated
+            : false;
+        return {
+          ...prevState,
+          [fieldName]: { value: newValue, isConsolidated },
+        };
+      });
     },
     [setFormState]
   );
 
   const applyLocationPreset = useCallback(
     (data: LocationPresetData) => {
-      setFormState((prevState) => ({ ...prevState, ...data }));
+      const newFormState: Partial<FormState> = { ...formState };
+      for (const [key, value] of Object.entries(data)) {
+        if (value !== undefined) {
+          (newFormState as any)[key] = { value, isConsolidated: false };
+        }
+      }
+      setFormState(newFormState);
     },
-    [setFormState]
+    [formState, setFormState]
   );
 
   const handleLocationSet = (latlng: { lat: number; lng: number }) => {
-    const gpsString = `${latlng.lat}, ${latlng.lng}`;
-    setFormState((prev) => ({
-      ...prev,
-      GPSPosition: gpsString,
-    }));
+    handleFormChange("GPSPosition", `${latlng.lat}, ${latlng.lng}`);
   };
 
   const handleSave = () => {
     setIsSaving(true);
-    const originalKeywords = (
-      Array.isArray(originalFormState.Keywords)
-        ? originalFormState.Keywords
-        : []
-    ).map((kw: Keyword) => kw.name);
-    const currentKeywords = (
-      Array.isArray(formState.Keywords) ? formState.Keywords : []
-    ).map((kw: Keyword) => kw.name);
-    const addedKeywords = currentKeywords.filter(
-      (kw) => !originalKeywords.includes(kw)
-    );
-    const removedKeywords = new Set(
-      originalKeywords.filter((kw) => !currentKeywords.includes(kw))
-    );
-
-    const files_to_update = imageFiles.map((file) => {
-      const existingKeywords = new Set(file.metadata.Keywords || []);
-      removedKeywords.forEach((kw) => existingKeywords.delete(kw));
-      addedKeywords.forEach((kw) => existingKeywords.add(kw));
-      const finalKeywordsForFile = Array.from(existingKeywords);
-      const metadata_for_file: Partial<RawImageMetadata> = {
-        Keywords: finalKeywordsForFile,
-      };
-      Object.keys(formState).forEach((keyStr) => {
-        const key = keyStr as keyof FormState;
-        if (key !== "Keywords" && formState[key] !== "(Mixed Values)") {
-          (metadata_for_file as any)[key] = formState[key];
-        }
-      });
-      return {
-        path: `${folderPath}\\${file.filename}`,
-        metadata: metadata_for_file,
-      };
+    const new_metadata: { [key: string]: any } = {};
+    Object.entries(formState).forEach(([key, field]) => {
+      if (field && field !== "(Mixed Values)") {
+        new_metadata[key] =
+          key === "Keywords"
+            ? (field.value as Keyword[]).map((kw) => kw.name)
+            : field.value;
+      }
     });
 
     const payload: SaveMetadataPayload = {
-      files_to_update: files_to_update.filter(
-        (f) => Object.keys(f.metadata).length > 0
-      ),
-      keywords_to_learn: addedKeywords,
+      files_to_update: imageFiles.map((file: ImageFile) => ({
+        path: `${folderPath}\\${file.filename}`,
+        original_metadata: file.metadata.original,
+        new_metadata: new_metadata,
+      })),
+      keywords_to_learn: [],
     };
+
+    const currentKeywords =
+      getValueFromState(formState.Keywords)?.map((kw) => kw.name) || [];
+    const originalKeywords =
+      getValueFromState(originalFormState.Keywords)?.map((kw) => kw.name) || [];
+    payload.keywords_to_learn = currentKeywords.filter(
+      (kw) => !originalKeywords.includes(kw)
+    );
+
     if (payload.files_to_update.length === 0) {
       setIsSaving(false);
       return;
@@ -149,9 +149,8 @@ export const useMetadataEditor = ({
   };
 
   const getDateTimeObject = (): Date | null => {
-    const dateStr = formState.CreateDate;
-    if (!dateStr || typeof dateStr !== "string" || dateStr === "(Mixed Values)")
-      return null;
+    const dateStr = getValueFromState(formState.DateTimeOriginal);
+    if (!dateStr) return null;
     const parsableDateStr =
       dateStr.substring(0, 10).replace(/:/g, "-") + "T" + dateStr.substring(11);
     const date = new Date(parsableDateStr);

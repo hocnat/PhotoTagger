@@ -89,26 +89,23 @@ export const trackLocationPresetUsage = (
     method: "PUT",
   }).then((response) => handleResponse<LocationPreset>(response));
 
-export const getSettings = (): Promise<AppSettings> => {
-  return fetch(`${API_BASE_URL}/settings`).then((response) =>
+export const getSettings = (): Promise<AppSettings> =>
+  fetch(`${API_BASE_URL}/settings`).then((response) =>
     handleResponse<AppSettings>(response)
   );
-};
 
-export const updateSettings = (settings: AppSettings): Promise<AppSettings> => {
-  return fetch(`${API_BASE_URL}/settings`, {
+export const updateSettings = (settings: AppSettings): Promise<AppSettings> =>
+  fetch(`${API_BASE_URL}/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(settings),
   }).then((response) => handleResponse<AppSettings>(response));
-};
 
 export const updateLastOpenedFolder = (
   path: string
-): Promise<{ message: string }> => {
-  return fetch(`${API_BASE_URL}/settings/last-opened-folder`, {
+): Promise<{ message: string }> =>
+  fetch(`${API_BASE_URL}/settings/last-opened-folder`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path }),
   }).then((response) => handleResponse<{ message: string }>(response));
-};
