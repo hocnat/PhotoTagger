@@ -9,7 +9,6 @@ import { useLocationPresets } from "../../hooks/useLocationPresets";
 import FormSection from "./FormSection";
 import CountryInput from "../CountryInput";
 import MapModal from "../MapModal";
-import ConsolidatedTextField from "./ConsolidatedTextField";
 import { getFieldData } from "../../utils/metadataUtils";
 import {
   Box,
@@ -25,6 +24,7 @@ import {
 } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
+import ConsolidationAdornment from "./ConsolidationAdornment";
 
 interface LocationSectionProps extends SectionProps {
   onLocationSet: (latlng: { lat: number; lng: number }) => void;
@@ -135,12 +135,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         </IconButton>
       </Box>
 
-      <ConsolidatedTextField
+      <TextField
         fullWidth
-        baseLabel="GPS Position"
+        label="GPS Position"
         variant="outlined"
         size="small"
-        isConsolidated={gpsPositionData.isConsolidated}
         value={
           formState.GPSPosition === "(Mixed Values)"
             ? ""
@@ -152,6 +151,13 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             : "e.g., 48.8583, 2.2945"
         }
         onChange={(e) => handleFormChange("GPSPosition", e.target.value)}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <ConsolidationAdornment show={!gpsPositionData.isConsolidated} />
+            ),
+          },
+        }}
       />
       <Button
         variant="outlined"
@@ -168,18 +174,24 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           ""
         );
         return (
-          <ConsolidatedTextField
+          <TextField
             key={key}
             fullWidth
-            baseLabel={label}
+            label={label}
             variant="outlined"
             size="small"
-            isConsolidated={fieldData.isConsolidated}
             value={formState[key] === "(Mixed Values)" ? "" : fieldData.value}
             placeholder={
               formState[key] === "(Mixed Values)" ? "(Mixed Values)" : ""
             }
             onChange={(e) => handleFormChange(key, e.target.value)}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <ConsolidationAdornment show={!fieldData.isConsolidated} />
+                ),
+              },
+            }}
           />
         );
       })}
@@ -187,20 +199,29 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         <CountryInput
           label="Country"
           countryValue={countryData.value}
+          isConsolidated={countryData.isConsolidated}
           onCountryChange={(val) => handleFormChange("Country", val)}
           onCodeChange={(val) => handleFormChange("CountryCode", val)}
         />
-        <ConsolidatedTextField
-          baseLabel="Country Code"
+        <TextField
+          label="Country Code"
           variant="outlined"
           size="small"
-          isConsolidated={countryCodeData.isConsolidated}
           value={countryCodeData.value}
           placeholder={
             formState.CountryCode === "(Mixed Values)" ? "(Mixed)" : ""
           }
           onChange={(e) => handleFormChange("CountryCode", e.target.value)}
           sx={{ width: 100, flexShrink: 0 }}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <ConsolidationAdornment
+                  show={!countryCodeData.isConsolidated}
+                />
+              ),
+            },
+          }}
         />
       </Box>
       <MapModal

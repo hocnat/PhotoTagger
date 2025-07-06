@@ -1,10 +1,10 @@
 import React from "react";
 import { SectionProps, Keyword } from "../../types";
 import FormSection from "./FormSection";
-import ConsolidatedTextField from "./ConsolidatedTextField";
 import { getFieldData } from "../../utils/metadataUtils";
-import { Autocomplete, Chip, Box, TextField, Tooltip } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { TextField, Autocomplete, Chip, Box, Stack } from "@mui/material";
+import ConsolidationAdornment from "./ConsolidationAdornment";
+import WarningIndicator from "./WarningIndicator";
 
 interface ContentSectionProps extends SectionProps {
   keywordSuggestions: string[];
@@ -23,25 +23,10 @@ const ContentSection: React.FC<ContentSectionProps> = ({
   const titleData = getFieldData(formState.Title, "");
   const keywordsData = getFieldData(formState.Keywords, []);
 
-  const keywordsLabel = (
-    <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
-      Keywords
-      {!keywordsData.isConsolidated && (
-        <Tooltip title="This value is not fully consolidated. Saving will fix this.">
-          <InfoOutlinedIcon
-            color="warning"
-            sx={{ ml: 0.5, fontSize: "1rem" }}
-          />
-        </Tooltip>
-      )}
-    </Box>
-  );
-
   return (
     <FormSection title="Content">
-      <ConsolidatedTextField
-        baseLabel="Title"
-        isConsolidated={titleData.isConsolidated}
+      <TextField
+        label="Title"
         variant="outlined"
         size="small"
         fullWidth
@@ -50,34 +35,50 @@ const ContentSection: React.FC<ContentSectionProps> = ({
           formState.Title === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
         onChange={(e) => handleFormChange("Title", e.target.value)}
-      />
-      <Autocomplete
-        freeSolo
-        options={keywordSuggestions}
-        filterOptions={(x) => x}
-        value={null}
-        onInputChange={onKeywordInputChange}
-        onChange={(event, newValue) => {
-          if (typeof newValue === "string" && newValue.trim() !== "") {
-            const newKeyword: Keyword = {
-              name: newValue.trim(),
-              status: "common",
-            };
-            if (!keywordsData.value.some((kw) => kw.name === newKeyword.name)) {
-              handleFormChange("Keywords", [...keywordsData.value, newKeyword]);
-            }
-          }
+        slotProps={{
+          input: {
+            endAdornment: (
+              <ConsolidationAdornment show={!titleData.isConsolidated} />
+            ),
+          },
         }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            variant="outlined"
-            size="small"
-            label={keywordsLabel}
-            placeholder="Add keyword and press Enter..."
-          />
-        )}
       />
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Autocomplete
+          sx={{ flexGrow: 1 }}
+          freeSolo
+          options={keywordSuggestions}
+          filterOptions={(x) => x}
+          value={null}
+          onInputChange={onKeywordInputChange}
+          onChange={(event, newValue) => {
+            if (typeof newValue === "string" && newValue.trim() !== "") {
+              const newKeyword: Keyword = {
+                name: newValue.trim(),
+                status: "common",
+              };
+              if (
+                !keywordsData.value.some((kw) => kw.name === newKeyword.name)
+              ) {
+                handleFormChange("Keywords", [
+                  ...keywordsData.value,
+                  newKeyword,
+                ]);
+              }
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              size="small"
+              label="Keywords"
+              placeholder="Add keyword..."
+            />
+          )}
+        />
+        {!keywordsData.isConsolidated && <WarningIndicator />}
+      </Stack>
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
         {Array.isArray(keywordsData.value) &&
           keywordsData.value.map((keyword) => (

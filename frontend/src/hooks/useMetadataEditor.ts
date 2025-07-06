@@ -58,7 +58,7 @@ export const useMetadataEditor = ({
           typeof existingField === "object" &&
           "isConsolidated" in existingField
             ? existingField.isConsolidated
-            : false;
+            : true;
         return {
           ...prevState,
           [fieldName]: { value: newValue, isConsolidated },
@@ -70,10 +70,18 @@ export const useMetadataEditor = ({
 
   const applyLocationPreset = useCallback(
     (data: LocationPresetData) => {
-      const newFormState: Partial<FormState> = { ...formState };
+      let newFormState = { ...formState };
       for (const [key, value] of Object.entries(data)) {
         if (value !== undefined) {
-          (newFormState as any)[key] = { value, isConsolidated: false };
+          const fieldName = key as keyof FormState;
+          const existingField = newFormState[fieldName];
+          const isConsolidated =
+            existingField &&
+            typeof existingField === "object" &&
+            "isConsolidated" in existingField
+              ? existingField.isConsolidated
+              : true;
+          newFormState[fieldName] = { value, isConsolidated };
         }
       }
       setFormState(newFormState);
@@ -87,15 +95,26 @@ export const useMetadataEditor = ({
 
   const handleSave = () => {
     setIsSaving(true);
+
     const new_metadata: { [key: string]: any } = {};
-    Object.entries(formState).forEach(([key, field]) => {
-      if (field && field !== "(Mixed Values)") {
-        new_metadata[key] =
-          key === "Keywords"
-            ? (field.value as Keyword[]).map((kw) => kw.name)
-            : field.value;
+    Object.entries(formState).forEach(([keyStr, currentField]) => {
+      const key = keyStr as keyof FormState;
+      const originalField = originalFormState[key];
+
+      if (JSON.stringify(currentField) !== JSON.stringify(originalField)) {
+        if (currentField && currentField !== "(Mixed Values)") {
+          new_metadata[key] =
+            key === "Keywords"
+              ? (currentField.value as Keyword[]).map((kw) => kw.name)
+              : currentField.value;
+        }
       }
     });
+
+    if (Object.keys(new_metadata).length === 0) {
+      setIsSaving(false);
+      return;
+    }
 
     const payload: SaveMetadataPayload = {
       files_to_update: imageFiles.map((file: ImageFile) => ({
@@ -113,11 +132,6 @@ export const useMetadataEditor = ({
     payload.keywords_to_learn = currentKeywords.filter(
       (kw) => !originalKeywords.includes(kw)
     );
-
-    if (payload.files_to_update.length === 0) {
-      setIsSaving(false);
-      return;
-    }
 
     apiService
       .saveMetadata(payload)

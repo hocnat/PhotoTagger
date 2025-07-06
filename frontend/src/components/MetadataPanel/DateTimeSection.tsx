@@ -1,11 +1,11 @@
 import React from "react";
 import { SectionProps } from "../../types";
 import FormSection from "./FormSection";
-import ConsolidatedTextField from "./ConsolidatedTextField";
 import { getFieldData } from "../../utils/metadataUtils";
-import { Box, Tooltip } from "@mui/material";
+import { Box, Stack, TextField } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ConsolidationAdornment from "./ConsolidationAdornment";
+import WarningIndicator from "./WarningIndicator";
 
 interface DateTimeSectionProps extends SectionProps {
   getDateTimeObject: () => Date | null;
@@ -19,62 +19,55 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
   const dateData = getFieldData(formState.DateTimeOriginal, "");
   const offsetData = getFieldData(formState.OffsetTimeOriginal, "");
 
-  const dateTimeOriginalLabel = (
-    <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
-      Create Date
-      {!dateData.isConsolidated && (
-        <Tooltip title="This value is not fully consolidated. Saving will fix this.">
-          <InfoOutlinedIcon
-            color="warning"
-            sx={{ ml: 0.5, fontSize: "1rem" }}
-          />
-        </Tooltip>
-      )}
-    </Box>
-  );
-
   return (
     <FormSection title="Date & Time">
       <Box sx={{ display: "flex", gap: 2 }}>
-        <DateTimePicker
-          label={dateTimeOriginalLabel}
-          value={getDateTimeObject()}
-          onChange={(date) => {
-            const newDateStr = date
-              ? `${date.getFullYear()}:${(date.getMonth() + 1)
-                  .toString()
-                  .padStart(2, "0")}:${date
-                  .getDate()
-                  .toString()
-                  .padStart(2, "0")} ${date
-                  .getHours()
-                  .toString()
-                  .padStart(2, "0")}:${date
-                  .getMinutes()
-                  .toString()
-                  .padStart(2, "0")}:${date
-                  .getSeconds()
-                  .toString()
-                  .padStart(2, "0")}`
-              : "";
-            handleFormChange("DateTimeOriginal", newDateStr);
-          }}
-          ampm={false}
-          format="yyyy-MM-dd HH:mm:ss"
-          slotProps={{
-            textField: {
-              size: "small",
-              variant: "outlined",
-              placeholder:
-                formState.DateTimeOriginal === "(Mixed Values)"
-                  ? "(Mixed Values)"
-                  : "",
-            },
-          }}
-        />
-        <ConsolidatedTextField
-          baseLabel="Offset Time Original"
-          isConsolidated={offsetData.isConsolidated}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ flex: "1 1 0", minWidth: 0 }}
+        >
+          <DateTimePicker
+            label="Date Time Original"
+            value={getDateTimeObject()}
+            onChange={(date) => {
+              const newDateStr = date
+                ? `${date.getFullYear()}:${(date.getMonth() + 1)
+                    .toString()
+                    .padStart(2, "0")}:${date
+                    .getDate()
+                    .toString()
+                    .padStart(2, "0")} ${date
+                    .getHours()
+                    .toString()
+                    .padStart(2, "0")}:${date
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}:${date
+                    .getSeconds()
+                    .toString()
+                    .padStart(2, "0")}`
+                : "";
+              handleFormChange("DateTimeOriginal", newDateStr);
+            }}
+            ampm={false}
+            format="yyyy-MM-dd HH:mm:ss"
+            slotProps={{
+              textField: {
+                size: "small",
+                variant: "outlined",
+                placeholder:
+                  formState.DateTimeOriginal === "(Mixed Values)"
+                    ? "(Mixed Values)"
+                    : "",
+              },
+            }}
+          />
+          {!dateData.isConsolidated && <WarningIndicator />}
+        </Stack>
+        <TextField
+          label="Offset Time Original"
           variant="outlined"
           size="small"
           value={
@@ -90,7 +83,14 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
           onChange={(e) =>
             handleFormChange("OffsetTimeOriginal", e.target.value)
           }
-          sx={{ width: "100%" }}
+          sx={{ width: 110, flexShrink: 0 }}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <ConsolidationAdornment show={!offsetData.isConsolidated} />
+              ),
+            },
+          }}
         />
       </Box>
     </FormSection>

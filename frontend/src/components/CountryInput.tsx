@@ -1,7 +1,6 @@
 import React from "react";
-
-// MUI Imports
 import { TextField, Autocomplete } from "@mui/material";
+import ConsolidationAdornment from "./MetadataPanel/ConsolidationAdornment";
 
 const countryData = require("country-list/data.json");
 
@@ -15,6 +14,7 @@ interface CountryInputProps {
   countryValue: string;
   onCountryChange: (newCountry: string) => void;
   onCodeChange: (newCode: string) => void;
+  isConsolidated: boolean;
 }
 
 const CountryInput: React.FC<CountryInputProps> = ({
@@ -22,6 +22,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
   countryValue,
   onCountryChange,
   onCodeChange,
+  isConsolidated,
 }) => {
   const handleAutocompleteChange = (
     event: any,
@@ -68,7 +69,17 @@ const CountryInput: React.FC<CountryInputProps> = ({
       options={countryData}
       sx={{ width: "100%" }}
       renderInput={(params) => (
-        <TextField {...params} label={label} variant="outlined" size="small" />
+        <TextField
+          {...params}
+          label={label}
+          variant="outlined"
+          size="small"
+          slotProps={{
+            input: {
+              endAdornment: <ConsolidationAdornment show={!isConsolidated} />,
+            },
+          }}
+        />
       )}
     />
   );
