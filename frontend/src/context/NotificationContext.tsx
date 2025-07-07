@@ -48,7 +48,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       {children}
       <Snackbar
         open={open}
-        autoHideDuration={6000}
+        autoHideDuration={severity === "error" ? null : 6000}
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >

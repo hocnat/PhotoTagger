@@ -69,8 +69,9 @@ def save_metadata():
                 run_exiftool_command(args + [file_update["path"]])
         return jsonify({"message": "Metadata saved successfully"})
     except Exception as e:
-        stderr = getattr(e, "stderr", b"").decode("utf-8", "ignore").strip()
+        stderr = getattr(e, "stderr", "").strip()
+        error_message = f"ExifTool failed: {stderr}"
         return (
-            jsonify({"error": "ExifTool failed to save", "details": stderr or str(e)}),
+            jsonify({"message": error_message, "details": str(e)}),
             500,
         )

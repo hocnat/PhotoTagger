@@ -249,7 +249,7 @@ def run_exiftool_command(args_list: list[str]):
         ) as f:
             f.write("\n".join(args_list))
             arg_file_path = f.name
-        command = [EXIFTOOL_PATH, "-overwrite_original", "-@", arg_file_path]
+        command = [EXIFTOOL_PATH, "-overwrite_original", "-m", "-@", arg_file_path]
         subprocess.run(
             command, capture_output=True, check=True, text=True, encoding="utf-8"
         )
