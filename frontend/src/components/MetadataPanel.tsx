@@ -31,7 +31,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     isMetadataLoading,
     isSaving,
     formState,
-    hasChanges,
+    isSaveable,
     keywordSuggestions,
     handleFormChange,
     handleLocationSet,
@@ -46,7 +46,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
         event.preventDefault();
 
-        if (hasChanges && !isSaving) {
+        if (isSaveable && !isSaving) {
           handleSave();
         }
       }
@@ -57,7 +57,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [hasChanges, isSaving, handleSave]);
+  }, [isSaveable, isSaving, handleSave]);
 
   if (selectedImageNames.length === 0) {
     return (
@@ -145,7 +145,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             color="primary"
             fullWidth
             onClick={handleSave}
-            disabled={isSaving || !hasChanges}
+            disabled={isSaving || !isSaveable}
             startIcon={
               isSaving ? (
                 <CircularProgress size={20} color="inherit" />

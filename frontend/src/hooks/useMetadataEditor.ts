@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   FormState,
   SaveMetadataPayload,
@@ -48,19 +48,39 @@ export const useMetadataEditor = ({
     setIsDirty(hasChanges);
   }, [hasChanges, setIsDirty]);
 
+  const needsConsolidation = useMemo(() => {
+    return Object.values(formState).some(
+      (field) => field && typeof field === "object" && !field.isConsolidated
+    );
+  }, [formState]);
+
+  const isSaveable = hasChanges || needsConsolidation;
+
   const handleFormChange = useCallback(
     (fieldName: keyof FormState, newValue: any) => {
       setFormState((prevState) => {
         const existingField = prevState[fieldName];
-        const isConsolidated =
+
+        let newIsConsolidatedStatus;
+
+        if (
           existingField &&
           typeof existingField === "object" &&
           "isConsolidated" in existingField
-            ? existingField.isConsolidated
-            : true;
+        ) {
+          newIsConsolidatedStatus = existingField.isConsolidated;
+        } else if (existingField === "(Mixed Values)") {
+          newIsConsolidatedStatus = false;
+        } else {
+          newIsConsolidatedStatus = true;
+        }
+
         return {
           ...prevState,
-          [fieldName]: { value: newValue, isConsolidated },
+          [fieldName]: {
+            value: newValue,
+            isConsolidated: newIsConsolidatedStatus,
+          },
         };
       });
     },
@@ -93,9 +113,9 @@ export const useMetadataEditor = ({
   };
 
   const handleSave = () => {
+    if (!isSaveable) return;
     setIsSaving(true);
 
-    // 1. Calculate the keyword delta from the UI changes.
     const originalUiKeywords = new Set(
       getValueFromState(originalFormState.Keywords)?.map((kw) => kw.name) || []
     );
@@ -113,20 +133,26 @@ export const useMetadataEditor = ({
       .map((file) => {
         const new_metadata: { [key: string]: any } = {};
 
-        // 2. Handle simple fields by checking for changes.
         Object.entries(formState).forEach(([keyStr, currentField]) => {
           const key = keyStr as keyof FormState;
           if (key === "Keywords") return;
 
           const originalField = originalFormState[key];
-          if (JSON.stringify(currentField) !== JSON.stringify(originalField)) {
+
+          const hasValueChanged =
+            JSON.stringify(currentField) !== JSON.stringify(originalField);
+          const fieldNeedsConsolidation =
+            currentField &&
+            typeof currentField === "object" &&
+            !currentField.isConsolidated;
+
+          if (hasValueChanged || fieldNeedsConsolidation) {
             if (currentField && currentField !== "(Mixed Values)") {
               new_metadata[key] = currentField.value;
             }
           }
         });
 
-        // 3. Handle keywords with special additive/subtractive logic for each file.
         const originalFileKeywords = new Set(
           file.metadata.Keywords?.value || []
         );
@@ -136,7 +162,6 @@ export const useMetadataEditor = ({
 
         const finalKeywordsForFile = Array.from(originalFileKeywords);
 
-        // Determine if this specific file's keywords have changed.
         const originalFormKeywordsForFile = new Set(
           getValueFromState(originalFormState.Keywords)?.map((k) => k.name)
         );
@@ -144,12 +169,17 @@ export const useMetadataEditor = ({
           [...originalFileKeywords].every((k) =>
             originalFormKeywordsForFile.has(k)
           ) &&
-          originalFileKeywords.size === originalFormKeywordsForFile.size &&
+          originalFileKeywords.size === originalFileKeywords.size &&
           addedKeywords.length === 0 &&
           removedKeywords.size === 0
         );
 
-        if (keywordsHaveChanged) {
+        const keywordsNeedConsolidation =
+          formState.Keywords &&
+          typeof formState.Keywords === "object" &&
+          !formState.Keywords.isConsolidated;
+
+        if (keywordsHaveChanged || keywordsNeedConsolidation) {
           new_metadata["Keywords"] = finalKeywordsForFile;
         }
 
@@ -166,7 +196,10 @@ export const useMetadataEditor = ({
 
     if (files_to_update.length === 0) {
       setIsSaving(false);
-      showNotification("No changes to save.", "info");
+      showNotification(
+        "No changes to save, but metadata was checked for consolidation.",
+        "info"
+      );
       return;
     }
 
@@ -217,6 +250,7 @@ export const useMetadataEditor = ({
     isMetadataLoading,
     isSaving,
     formState,
+    isSaveable,
     hasChanges,
     keywordSuggestions,
     handleFormChange,
