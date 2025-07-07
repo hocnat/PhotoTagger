@@ -1,14 +1,9 @@
 import React, { useState } from "react";
-import {
-  SectionProps,
-  LocationPreset,
-  LocationPresetData,
-  MetadataValue,
-} from "../../types";
+import { SectionProps, LocationPresetData, MetadataValue } from "../../types";
 import { useLocationPresets } from "../../hooks/useLocationPresets";
 import FormSection from "./FormSection";
-import CountryInput from "../CountryInput";
-import MapModal from "../MapModal";
+import CountryInput from "./CountryInput";
+import MapModal from "./MapModal";
 import { getFieldData } from "../../utils/metadataUtils";
 import {
   Box,

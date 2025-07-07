@@ -1,6 +1,6 @@
 import React from "react";
 import { TextField, Autocomplete } from "@mui/material";
-import ConsolidationAdornment from "./MetadataPanel/ConsolidationAdornment";
+import ConsolidationAdornment from "./ConsolidationAdornment";
 
 const countryData = require("country-list/data.json");
 

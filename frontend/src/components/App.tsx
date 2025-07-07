@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
-import MetadataPanel from "./MetadataPanel";
+import MetadataPanel from "./MetadataPanel/MetadataPanel";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { RenameDialog } from "./RenameDialog";
-import { SettingsDialog } from "./SettingsDialog";
+import { SettingsDialog } from "./SettingsDialog/SettingsDialog";
 import { useImageSelection } from "../hooks/useImageSelection";
 import { useImageLoader } from "../hooks/useImageLoader";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";

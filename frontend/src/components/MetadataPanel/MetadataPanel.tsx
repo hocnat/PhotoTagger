@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useMetadataEditor } from "../hooks/useMetadataEditor";
+import { useMetadataEditor } from "../../hooks/useMetadataEditor";
 
 import ImageModal from "./ImageModal";
-
-import ContentSection from "./MetadataPanel/ContentSection";
-import DateTimeSection from "./MetadataPanel/DateTimeSection";
-import LocationSection from "./MetadataPanel/LocationSection";
-import CreatorSection from "./MetadataPanel/CreatorSection";
+import ContentSection from "./ContentSection";
+import LocationSection from "./LocationSection";
+import DateTimeSection from "./DateTimeSection";
+import CreatorSection from "./CreatorSection";
 
 import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";

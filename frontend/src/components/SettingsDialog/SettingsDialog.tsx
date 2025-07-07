@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useSettings } from "../context/SettingsContext";
-import { useNotification } from "../hooks/useNotification";
-import { AppSettings, ExtensionRule } from "../types";
-import { ExtensionRuleEditor } from "./Settings/ExtensionRuleEditor";
+import { useSettings } from "../../context/SettingsContext";
+import { useNotification } from "../../hooks/useNotification";
+import { AppSettings, ExtensionRule } from "../../types";
+import { ExtensionRuleEditor } from "./ExtensionRuleEditor";
 import {
   Dialog,
   DialogTitle,
