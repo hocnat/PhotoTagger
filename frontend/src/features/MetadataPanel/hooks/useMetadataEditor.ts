@@ -50,7 +50,11 @@ export const useMetadataEditor = ({
 
   const needsConsolidation = useMemo(() => {
     return Object.values(formState).some(
-      (field) => field && typeof field === "object" && !field.isConsolidated
+      (field) =>
+        field &&
+        typeof field === "object" &&
+        "isConsolidated" in field &&
+        !field.isConsolidated
     );
   }, [formState]);
 
@@ -60,27 +64,15 @@ export const useMetadataEditor = ({
     (fieldName: keyof FormState, newValue: any) => {
       setFormState((prevState) => {
         const existingField = prevState[fieldName];
-
-        let newIsConsolidatedStatus;
-
-        if (
+        const isConsolidated =
           existingField &&
           typeof existingField === "object" &&
           "isConsolidated" in existingField
-        ) {
-          newIsConsolidatedStatus = existingField.isConsolidated;
-        } else if (existingField === "(Mixed Values)") {
-          newIsConsolidatedStatus = false;
-        } else {
-          newIsConsolidatedStatus = true;
-        }
-
+            ? existingField.isConsolidated
+            : true;
         return {
           ...prevState,
-          [fieldName]: {
-            value: newValue,
-            isConsolidated: newIsConsolidatedStatus,
-          },
+          [fieldName]: { value: newValue, isConsolidated },
         };
       });
     },
@@ -113,7 +105,10 @@ export const useMetadataEditor = ({
   };
 
   const handleSave = () => {
-    if (!isSaveable) return;
+    if (!isSaveable) {
+      showNotification("No changes to save.", "info");
+      return;
+    }
     setIsSaving(true);
 
     const originalUiKeywords = new Set(
@@ -138,7 +133,6 @@ export const useMetadataEditor = ({
           if (key === "Keywords") return;
 
           const originalField = originalFormState[key];
-
           const hasValueChanged =
             JSON.stringify(currentField) !== JSON.stringify(originalField);
           const fieldNeedsConsolidation =
@@ -156,23 +150,19 @@ export const useMetadataEditor = ({
         const originalFileKeywords = new Set(
           file.metadata.Keywords?.value || []
         );
+        const originalFileKeywordsForComparison = new Set(originalFileKeywords); // Create a copy for comparison
 
         addedKeywords.forEach((kw) => originalFileKeywords.add(kw));
         removedKeywords.forEach((kw) => originalFileKeywords.delete(kw));
 
         const finalKeywordsForFile = Array.from(originalFileKeywords);
 
-        const originalFormKeywordsForFile = new Set(
-          getValueFromState(originalFormState.Keywords)?.map((k) => k.name)
-        );
-        const keywordsHaveChanged = !(
-          [...originalFileKeywords].every((k) =>
-            originalFormKeywordsForFile.has(k)
-          ) &&
-          originalFileKeywords.size === originalFileKeywords.size &&
-          addedKeywords.length === 0 &&
-          removedKeywords.size === 0
-        );
+        const keywordsHaveChanged =
+          finalKeywordsForFile.length !==
+            originalFileKeywordsForComparison.size ||
+          !finalKeywordsForFile.every((k) =>
+            originalFileKeywordsForComparison.has(k)
+          );
 
         const keywordsNeedConsolidation =
           formState.Keywords &&
@@ -196,10 +186,7 @@ export const useMetadataEditor = ({
 
     if (files_to_update.length === 0) {
       setIsSaving(false);
-      showNotification(
-        "No changes to save, but metadata was checked for consolidation.",
-        "info"
-      );
+      showNotification("No changes to save.", "info");
       return;
     }
 
