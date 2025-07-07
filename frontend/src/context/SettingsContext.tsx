@@ -1,19 +1,17 @@
-import React, {
+import {
   createContext,
   useState,
   useEffect,
   useCallback,
   ReactNode,
-  useContext,
 } from "react";
-import * as apiService from "../services/apiService";
-import { AppSettings } from "../types";
+import { AppSettings } from "types";
+import * as apiService from "api/apiService";
 
-interface SettingsContextType {
+export interface SettingsContextType {
   settings: AppSettings | null;
+  saveSettings: (newSettings: AppSettings) => Promise<void>;
   isLoading: boolean;
-  saveSettings: (newSettings: Partial<AppSettings>) => Promise<void>;
-  updateLastOpenedFolder: (path: string) => Promise<void>;
 }
 
 export const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -30,53 +28,37 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchSettings = useCallback(() => {
-    apiService
-      .getSettings()
-      .then(setSettings)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+  const loadSettings = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const fetchedSettings = await apiService.getSettings();
+      setSettings(fetchedSettings);
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+    loadSettings();
+  }, [loadSettings]);
 
-  const saveSettings = useCallback(
-    async (newSettings: Partial<AppSettings>) => {
-      if (!settings) return;
-      const updatedSettings = { ...settings, ...newSettings };
-      const saved = await apiService.updateSettings(updatedSettings);
-      setSettings(saved);
-    },
-    [settings]
-  );
+  const saveSettings = async (newSettings: AppSettings) => {
+    try {
+      const updatedSettings = await apiService.updateSettings(newSettings);
+      setSettings(updatedSettings);
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+      throw error;
+    }
+  };
 
-  const updateLastOpenedFolder = useCallback(async (path: string) => {
-    await apiService.updateLastOpenedFolder(path);
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            appBehavior: { ...prev.appBehavior, lastOpenedFolder: path },
-          }
-        : null
-    );
-  }, []);
-
-  const value = { settings, isLoading, saveSettings, updateLastOpenedFolder };
+  const value = { settings, saveSettings, isLoading };
 
   return (
     <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );
-};
-
-export const useSettings = () => {
-  const context = useContext(SettingsContext);
-  if (context === undefined) {
-    throw new Error("useSettings must be used within a SettingsProvider");
-  }
-  return context;
 };
