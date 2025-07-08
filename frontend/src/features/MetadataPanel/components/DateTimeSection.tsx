@@ -48,6 +48,8 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
             }}
             ampm={false}
             format="yyyy-MM-dd HH:mm:ss"
+            views={["year", "month", "day", "hours", "minutes", "seconds"]}
+            timeSteps={{ minutes: 1, seconds: 1 }}
             sx={{ flexGrow: 1 }}
             slotProps={{
               textField: {
