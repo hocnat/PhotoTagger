@@ -62,6 +62,15 @@ export const useMetadataEditor = ({
 
   const isSaveable = hasChanges || needsConsolidation;
 
+  const isFieldDirty = useCallback(
+    (fieldName: keyof FormState): boolean => {
+      const currentValue = formState[fieldName];
+      const originalValue = originalFormState[fieldName];
+      return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
+    },
+    [formState, originalFormState]
+  );
+
   const handleFormChange = useCallback(
     (fieldName: keyof FormState, newValue: any) => {
       setFormState((prevState) => {
@@ -152,7 +161,7 @@ export const useMetadataEditor = ({
         const originalFileKeywords = new Set(
           file.metadata.Keywords?.value || []
         );
-        const originalFileKeywordsForComparison = new Set(originalFileKeywords); // Create a copy for comparison
+        const originalFileKeywordsForComparison = new Set(originalFileKeywords);
 
         addedKeywords.forEach((kw) => originalFileKeywords.add(kw));
         removedKeywords.forEach((kw) => originalFileKeywords.delete(kw));
@@ -250,5 +259,6 @@ export const useMetadataEditor = ({
     handleKeywordInputChange,
     getDateTimeObject,
     applyLocationPreset,
+    isFieldDirty,
   };
 };

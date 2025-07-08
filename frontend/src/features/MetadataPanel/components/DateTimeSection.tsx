@@ -2,19 +2,22 @@ import { Stack, TextField } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 import FormSection from "./FormSection";
-import { getFieldData } from "../utils/metadataUtils";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
-import { SectionProps } from "types";
+import { SectionProps, FormState } from "types";
+import { getFieldData } from "../utils/metadataUtils";
+import { getDirtyFieldSx } from "../utils/styleUtils";
 
 interface DateTimeSectionProps extends SectionProps {
   getDateTimeObject: () => Date | null;
+  isFieldDirty: (fieldName: keyof FormState) => boolean;
 }
 
 const DateTimeSection: React.FC<DateTimeSectionProps> = ({
   formState,
   handleFormChange,
   getDateTimeObject,
+  isFieldDirty,
 }) => {
   const dateData = getFieldData(formState.DateTimeOriginal, "");
   const offsetData = getFieldData(formState.OffsetTimeOriginal, "");
@@ -48,9 +51,11 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
             }}
             ampm={false}
             format="yyyy-MM-dd HH:mm:ss"
-            views={["year", "month", "day", "hours", "minutes", "seconds"]}
             timeSteps={{ minutes: 1, seconds: 1 }}
-            sx={{ flexGrow: 1 }}
+            sx={{
+              flexGrow: 1,
+              ...getDirtyFieldSx(isFieldDirty("DateTimeOriginal")),
+            }}
             slotProps={{
               textField: {
                 size: "small",
@@ -82,6 +87,7 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
           onChange={(e) =>
             handleFormChange("OffsetTimeOriginal", e.target.value)
           }
+          sx={getDirtyFieldSx(isFieldDirty("OffsetTimeOriginal"))}
           slotProps={{
             input: {
               endAdornment: (

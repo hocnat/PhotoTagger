@@ -61,6 +61,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleKeywordInputChange,
     getDateTimeObject,
     applyLocationPreset,
+    isFieldDirty,
   } = useMetadataEditor({
     selectedImageNames,
     folderPath,
@@ -103,15 +104,18 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               handleFormChange={handleFormChange}
               keywordSuggestions={keywordSuggestions}
               onKeywordInputChange={handleKeywordInputChange}
+              isFieldDirty={isFieldDirty}
             />
             <DateTimeSection
               formState={formState}
               handleFormChange={handleFormChange}
               getDateTimeObject={getDateTimeObject}
+              isFieldDirty={isFieldDirty}
             />
             <CreatorSection
               formState={formState}
               handleFormChange={handleFormChange}
+              isFieldDirty={isFieldDirty}
             />
           </Stack>
         </Grid>
@@ -123,6 +127,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               handleFormChange={handleFormChange}
               onLocationSet={handleLocationSet}
               applyLocationPreset={applyLocationPreset}
+              isFieldDirty={isFieldDirty}
             />
           </Stack>
         </Grid>

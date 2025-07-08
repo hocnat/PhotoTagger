@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { SectionProps, LocationPresetData, MetadataValue } from "types";
+import {
+  SectionProps,
+  LocationPresetData,
+  MetadataValue,
+  FormState,
+} from "types";
 import {
   Box,
   Button,
@@ -15,16 +20,18 @@ import {
 import MapIcon from "@mui/icons-material/Map";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
 
-import { useLocationPresets } from "../hooks/useLocationPresets";
 import FormSection from "./FormSection";
 import CountryInput from "./CountryInput";
 import MapModal from "./MapModal";
-import { getFieldData } from "../utils/metadataUtils";
 import ConsolidationAdornment from "./ConsolidationAdornment";
+import { useLocationPresets } from "../hooks/useLocationPresets";
+import { getFieldData } from "../utils/metadataUtils";
+import { getDirtyFieldSx } from "../utils/styleUtils";
 
 interface LocationSectionProps extends SectionProps {
   onLocationSet: (latlng: { lat: number; lng: number }) => void;
   applyLocationPreset: (data: LocationPresetData) => void;
+  isFieldDirty: (fieldName: keyof FormState) => boolean;
 }
 
 const parseGpsString = (
@@ -48,6 +55,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   handleFormChange,
   onLocationSet,
   applyLocationPreset,
+  isFieldDirty,
 }) => {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -147,6 +155,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             : "e.g., 48.8583, 2.2945"
         }
         onChange={(e) => handleFormChange("GPSPosition", e.target.value)}
+        sx={getDirtyFieldSx(isFieldDirty("GPSPosition"))}
         slotProps={{
           input: {
             endAdornment: (
@@ -181,6 +190,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
               formState[key] === "(Mixed Values)" ? "(Mixed Values)" : ""
             }
             onChange={(e) => handleFormChange(key, e.target.value)}
+            sx={getDirtyFieldSx(isFieldDirty(key))}
             slotProps={{
               input: {
                 endAdornment: (
@@ -198,6 +208,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           isConsolidated={countryData.isConsolidated}
           onCountryChange={(val) => handleFormChange("Country", val)}
           onCodeChange={(val) => handleFormChange("CountryCode", val)}
+          isDirty={isFieldDirty("Country") || isFieldDirty("CountryCode")}
         />
         <TextField
           label="Country Code"
@@ -208,7 +219,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             formState.CountryCode === "(Mixed Values)" ? "(Mixed)" : ""
           }
           onChange={(e) => handleFormChange("CountryCode", e.target.value)}
-          sx={{ width: 100, flexShrink: 0 }}
+          sx={{
+            width: 100,
+            flexShrink: 0,
+            ...getDirtyFieldSx(isFieldDirty("CountryCode")),
+          }}
           slotProps={{
             input: {
               endAdornment: (

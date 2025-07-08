@@ -1,10 +1,11 @@
-import { SectionProps, Keyword } from "types";
+import { SectionProps, Keyword, FormState } from "types";
 import { TextField, Autocomplete, Chip, Box, Stack } from "@mui/material";
 
 import FormSection from "./FormSection";
-import { getFieldData } from "../utils/metadataUtils";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
+import { getFieldData } from "../utils/metadataUtils";
+import { getDirtyFieldSx } from "../utils/styleUtils";
 
 interface ContentSectionProps extends SectionProps {
   keywordSuggestions: string[];
@@ -12,6 +13,7 @@ interface ContentSectionProps extends SectionProps {
     event: React.SyntheticEvent,
     newInputValue: string
   ) => void;
+  isFieldDirty: (fieldName: keyof FormState) => boolean;
 }
 
 const ContentSection: React.FC<ContentSectionProps> = ({
@@ -19,9 +21,12 @@ const ContentSection: React.FC<ContentSectionProps> = ({
   handleFormChange,
   keywordSuggestions,
   onKeywordInputChange,
+  isFieldDirty,
 }) => {
   const titleData = getFieldData(formState.Title, "");
   const keywordsData = getFieldData(formState.Keywords, []);
+
+  const areKeywordsDirty = isFieldDirty("Keywords");
 
   return (
     <FormSection title="Content">
@@ -35,6 +40,7 @@ const ContentSection: React.FC<ContentSectionProps> = ({
           formState.Title === "(Mixed Values)" ? "(Mixed Values)" : ""
         }
         onChange={(e) => handleFormChange("Title", e.target.value)}
+        sx={getDirtyFieldSx(isFieldDirty("Title"))}
         slotProps={{
           input: {
             endAdornment: (
@@ -79,7 +85,16 @@ const ContentSection: React.FC<ContentSectionProps> = ({
         />
         {!keywordsData.isConsolidated && <WarningIndicator />}
       </Stack>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 0.5,
+          mt: 1,
+          p: areKeywordsDirty ? 0.5 : 0,
+          ...getDirtyFieldSx(areKeywordsDirty),
+        }}
+      >
         {Array.isArray(keywordsData.value) &&
           keywordsData.value.map((keyword) => (
             <Chip

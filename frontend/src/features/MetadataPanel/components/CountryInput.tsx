@@ -1,5 +1,6 @@
 import { TextField, Autocomplete, Stack } from "@mui/material";
 import WarningIndicator from "./WarningIndicator";
+import { getDirtyFieldSx } from "../utils/styleUtils";
 
 const countryData = require("country-list/data.json");
 
@@ -14,6 +15,7 @@ interface CountryInputProps {
   onCountryChange: (newCountry: string) => void;
   onCodeChange: (newCode: string) => void;
   isConsolidated: boolean;
+  isDirty: boolean;
 }
 
 const CountryInput: React.FC<CountryInputProps> = ({
@@ -22,37 +24,31 @@ const CountryInput: React.FC<CountryInputProps> = ({
   onCountryChange,
   onCodeChange,
   isConsolidated,
+  isDirty,
 }) => {
   const handleAutocompleteChange = (
     event: any,
     newValue: Country | string | null
   ) => {
-    // Case 1: The input was cleared.
     if (!newValue) {
       onCountryChange("");
       onCodeChange("");
       return;
     }
 
-    // Case 2: User typed a custom string (freeSolo mode).
     if (typeof newValue === "string") {
-      // Find if the typed string matches a known country name (case-insensitive).
       const matchedCountry = countryData.find(
         (c: Country) => c.name.toLowerCase() === newValue.toLowerCase()
       );
       if (matchedCountry) {
-        // A match was found, update both name and code.
         onCountryChange(matchedCountry.name);
         onCodeChange(matchedCountry.code);
       } else {
-        // No match found, update the name but clear the code.
         onCountryChange(newValue);
         onCodeChange("");
       }
       return;
     }
-
-    // Case 3: User selected an item from the list (newValue is a Country object).
     onCountryChange(newValue.name);
     onCodeChange(newValue.code);
   };
@@ -74,6 +70,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
             label={label}
             variant="outlined"
             size="small"
+            sx={getDirtyFieldSx(isDirty)}
           />
         )}
       />
