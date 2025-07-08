@@ -1,5 +1,5 @@
-import { TextField, Autocomplete } from "@mui/material";
-import ConsolidationAdornment from "./ConsolidationAdornment";
+import { TextField, Autocomplete, Stack } from "@mui/material";
+import WarningIndicator from "./WarningIndicator";
 
 const countryData = require("country-list/data.json");
 
@@ -58,29 +58,27 @@ const CountryInput: React.FC<CountryInputProps> = ({
   };
 
   return (
-    <Autocomplete
-      value={countryValue}
-      onChange={handleAutocompleteChange}
-      freeSolo
-      getOptionLabel={(option: string | Country) => {
-        return typeof option === "string" ? option : option.name;
-      }}
-      options={countryData}
-      sx={{ width: "100%" }}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          variant="outlined"
-          size="small"
-          slotProps={{
-            input: {
-              endAdornment: <ConsolidationAdornment show={!isConsolidated} />,
-            },
-          }}
-        />
-      )}
-    />
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexGrow: 1 }}>
+      <Autocomplete
+        value={countryValue}
+        onChange={handleAutocompleteChange}
+        freeSolo
+        getOptionLabel={(option: string | Country) => {
+          return typeof option === "string" ? option : option.name;
+        }}
+        options={countryData}
+        sx={{ width: "100%" }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label={label}
+            variant="outlined"
+            size="small"
+          />
+        )}
+      />
+      {!isConsolidated && <WarningIndicator />}
+    </Stack>
   );
 };
 
