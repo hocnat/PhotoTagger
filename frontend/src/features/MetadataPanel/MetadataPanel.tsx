@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  IconButton,
+  Stack,
+  Grid,
+  Paper,
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SaveIcon from "@mui/icons-material/Save";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
@@ -15,13 +26,26 @@ interface MetadataPanelProps {
   folderPath: string;
   getImageUrl: (imageName: string) => string;
   setIsDirty: (isDirty: boolean) => void;
+  onClose: () => void;
+  onSaveSuccess: () => void;
 }
+
+const DrawerHeader = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  padding: theme.spacing(0, 1, 0, 2),
+  justifyContent: "space-between",
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  flexShrink: 0,
+}));
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
   selectedImageNames,
   folderPath,
   getImageUrl,
   setIsDirty,
+  onClose,
+  onSaveSuccess,
 }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -37,7 +61,12 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     handleKeywordInputChange,
     getDateTimeObject,
     applyLocationPreset,
-  } = useMetadataEditor({ selectedImageNames, folderPath, setIsDirty });
+  } = useMetadataEditor({
+    selectedImageNames,
+    folderPath,
+    setIsDirty,
+    onSaveSuccess,
+  });
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -57,34 +86,104 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     };
   }, [isSaveable, isSaving, handleSave]);
 
-  if (selectedImageNames.length === 0) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography>Select an image to view its metadata.</Typography>
-      </Box>
-    );
-  }
-
   const previewImageName =
     selectedImageNames.length === 1 ? selectedImageNames[0] : null;
 
+  const renderContent = () => {
+    if (isMetadataLoading) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+    return (
+      <Grid container spacing={3}>
+        {previewImageName ? (
+          <Grid size={{ xs: 12 }}>
+            <Button
+              variant="outlined"
+              startIcon={<VisibilityIcon />}
+              onClick={() => setIsPreviewOpen(true)}
+              fullWidth
+            >
+              Show Large Preview
+            </Button>
+          </Grid>
+        ) : null}
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Stack spacing={3} sx={{ height: "100%" }}>
+            <ContentSection
+              formState={formState}
+              handleFormChange={handleFormChange}
+              keywordSuggestions={keywordSuggestions}
+              onKeywordInputChange={handleKeywordInputChange}
+            />
+            <DateTimeSection
+              formState={formState}
+              handleFormChange={handleFormChange}
+              getDateTimeObject={getDateTimeObject}
+            />
+            <CreatorSection
+              formState={formState}
+              handleFormChange={handleFormChange}
+            />
+          </Stack>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Stack spacing={3} sx={{ height: "100%" }}>
+            <LocationSection
+              formState={formState}
+              handleFormChange={handleFormChange}
+              onLocationSet={handleLocationSet}
+              applyLocationPreset={applyLocationPreset}
+            />
+          </Stack>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              height: "100%",
+              minHeight: "200px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              p: 2,
+              borderColor: "rgba(0, 0, 0, 0.12)",
+              color: "text.disabled",
+            }}
+          >
+            <Typography variant="body2">
+              Location Shown
+              <br />
+              (Coming Soon)
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
+    );
+  };
+
   return (
-    <Box
-      sx={{ p: 2, display: "flex", flexDirection: "column", height: "100%" }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 1,
-        }}
-      >
-        <Typography variant="h6">Metadata</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {selectedImageNames.length} item(s) selected
-        </Typography>
-      </Box>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      <DrawerHeader>
+        <Box>
+          <Typography variant="h6" component="h2">
+            Metadata
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {selectedImageNames.length} item(s) selected
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} aria-label="close metadata panel">
+          <ChevronRightIcon />
+        </IconButton>
+      </DrawerHeader>
 
       {isPreviewOpen && previewImageName && (
         <ImageModal
@@ -95,53 +194,19 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         />
       )}
 
-      {isMetadataLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <Box
-          component="form"
-          sx={{ flexGrow: 1, overflowY: "auto", pr: 1, pl: 1, ml: -1 }}
-        >
-          {selectedImageNames.length === 1 && (
-            <Button
-              variant="outlined"
-              startIcon={<VisibilityIcon />}
-              onClick={() => setIsPreviewOpen(true)}
-              fullWidth
-              sx={{ mb: 2 }}
-            >
-              Show Large Preview
-            </Button>
-          )}
+      <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>{renderContent()}</Box>
 
-          <ContentSection
-            formState={formState}
-            handleFormChange={handleFormChange}
-            keywordSuggestions={keywordSuggestions}
-            onKeywordInputChange={handleKeywordInputChange}
-          />
-          <LocationSection
-            formState={formState}
-            handleFormChange={handleFormChange}
-            onLocationSet={handleLocationSet}
-            applyLocationPreset={applyLocationPreset}
-          />
-          <DateTimeSection
-            formState={formState}
-            handleFormChange={handleFormChange}
-            getDateTimeObject={getDateTimeObject}
-          />
-          <CreatorSection
-            formState={formState}
-            handleFormChange={handleFormChange}
-          />
-
+      <Box
+        sx={{
+          p: 2,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+          flexShrink: 0,
+        }}
+      >
+        <Stack direction="row" spacing={2} justifyContent="flex-end">
           <Button
             variant="contained"
             color="primary"
-            fullWidth
             onClick={handleSave}
             disabled={isSaving || !isSaveable}
             startIcon={
@@ -151,12 +216,11 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                 <SaveIcon />
               )
             }
-            sx={{ mt: 2 }}
           >
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
-        </Box>
-      )}
+        </Stack>
+      </Box>
     </Box>
   );
 };

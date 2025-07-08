@@ -1,10 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 
-/**
- * A hook to manage the "warn on unsaved changes" workflow.
- * @param isDirty A boolean indicating if there are unsaved changes.
- */
-export const useUnsavedChanges = (isDirty: boolean) => {
+export const useUnsavedChanges = () => {
+  const [isDirty, setIsDirty] = useState(false);
   const [isConfirmationOpen, setConfirmationOpen] = useState(false);
   const [actionToConfirm, setActionToConfirm] = useState<(() => void) | null>(
     null
@@ -44,10 +41,13 @@ export const useUnsavedChanges = (isDirty: boolean) => {
     if (actionToConfirm) {
       actionToConfirm();
     }
+    setIsDirty(false);
     handleClose();
   };
 
   return {
+    isDirty,
+    setIsDirty,
     promptAction,
     isConfirmationOpen,
     handleConfirm,

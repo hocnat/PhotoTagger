@@ -1,11 +1,11 @@
-import { SectionProps } from "types";
-import { Box, Stack, TextField } from "@mui/material";
+import { Stack, TextField } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 import FormSection from "./FormSection";
 import { getFieldData } from "../utils/metadataUtils";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
+import { SectionProps } from "types";
 
 interface DateTimeSectionProps extends SectionProps {
   getDateTimeObject: () => Date | null;
@@ -21,13 +21,8 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
 
   return (
     <FormSection title="Date & Time">
-      <Box sx={{ display: "flex", gap: 2 }}>
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{ flex: "1 1 0", minWidth: 0 }}
-        >
+      <Stack spacing={2}>
+        <Stack direction="row" spacing={1} alignItems="center">
           <DateTimePicker
             label="Date Time Original"
             value={getDateTimeObject()}
@@ -53,6 +48,7 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
             }}
             ampm={false}
             format="yyyy-MM-dd HH:mm:ss"
+            sx={{ flexGrow: 1 }}
             slotProps={{
               textField: {
                 size: "small",
@@ -69,6 +65,7 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
         <TextField
           label="Offset Time Original"
           variant="outlined"
+          fullWidth
           size="small"
           value={
             formState.OffsetTimeOriginal === "(Mixed Values)"
@@ -83,7 +80,6 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
           onChange={(e) =>
             handleFormChange("OffsetTimeOriginal", e.target.value)
           }
-          sx={{ width: 110, flexShrink: 0 }}
           slotProps={{
             input: {
               endAdornment: (
@@ -92,7 +88,7 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
             },
           }}
         />
-      </Box>
+      </Stack>
     </FormSection>
   );
 };

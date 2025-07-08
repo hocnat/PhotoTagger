@@ -9,21 +9,21 @@ export const useImageSelection = (images: string[]) => {
     lastSelectedIndex.current = null;
   }, [images]);
 
-  const handleImageClick = (
-    e: React.MouseEvent,
+  const handleSelectImage = (
+    event: React.MouseEvent,
     clickedImageName: string,
     clickedIndex: number
   ) => {
-    e.stopPropagation();
+    event.stopPropagation();
     const isSelected = selectedImages.includes(clickedImageName);
 
-    if (e.nativeEvent.shiftKey && lastSelectedIndex.current !== null) {
+    if (event.nativeEvent.shiftKey && lastSelectedIndex.current !== null) {
       const start = Math.min(lastSelectedIndex.current, clickedIndex);
       const end = Math.max(lastSelectedIndex.current, clickedIndex);
       const rangeSelection = images.slice(start, end + 1);
       const newSelection = new Set([...selectedImages, ...rangeSelection]);
       setSelectedImages(Array.from(newSelection));
-    } else if (e.nativeEvent.ctrlKey || e.nativeEvent.metaKey) {
+    } else if (event.nativeEvent.ctrlKey || event.nativeEvent.metaKey) {
       setSelectedImages(
         isSelected
           ? selectedImages.filter((name) => name !== clickedImageName)
@@ -31,14 +31,17 @@ export const useImageSelection = (images: string[]) => {
       );
       lastSelectedIndex.current = clickedIndex;
     } else {
-      setSelectedImages(
-        isSelected && selectedImages.length === 1 ? [] : [clickedImageName]
-      );
+      setSelectedImages([clickedImageName]);
       lastSelectedIndex.current = clickedIndex;
     }
   };
 
-  const handleBackgroundClick = () => {
+  const selectSingleImage = (imageName: string) => {
+    setSelectedImages([imageName]);
+    lastSelectedIndex.current = images.indexOf(imageName);
+  };
+
+  const clearSelection = () => {
     setSelectedImages([]);
     lastSelectedIndex.current = null;
   };
@@ -46,7 +49,8 @@ export const useImageSelection = (images: string[]) => {
   return {
     selectedImages,
     setSelectedImages,
-    handleImageClick,
-    handleBackgroundClick,
+    handleSelectImage,
+    selectSingleImage,
+    clearSelection,
   };
 };

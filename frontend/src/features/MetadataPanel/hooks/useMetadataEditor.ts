@@ -25,12 +25,14 @@ interface UseMetadataEditorProps {
   selectedImageNames: string[];
   folderPath: string;
   setIsDirty: (isDirty: boolean) => void;
+  onSaveSuccess: () => void;
 }
 
 export const useMetadataEditor = ({
   selectedImageNames,
   folderPath,
   setIsDirty,
+  onSaveSuccess,
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
@@ -199,7 +201,9 @@ export const useMetadataEditor = ({
       .saveMetadata(payload)
       .then(() => {
         showNotification("Metadata saved successfully.", "success");
+        setIsDirty(false);
         refetch();
+        onSaveSuccess();
       })
       .catch((err: ApiError) => {
         showNotification(

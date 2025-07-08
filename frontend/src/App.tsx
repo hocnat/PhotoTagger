@@ -11,10 +11,14 @@ import {
   Alert,
   Paper,
   IconButton,
+  Drawer,
+  CssBaseline,
+  Tooltip,
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
+import LabelOutlinedIcon from "@mui/icons-material/LabelOutlined";
+import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 import { MetadataPanel } from "./features/MetadataPanel";
@@ -28,12 +32,8 @@ import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
 
 import "./App.css";
 
-/**
- * Calculates the number of columns in the image grid by inspecting the
- * rendered positions of the image cards. This is a robust way to determine
- * the layout without relying on hardcoded CSS values.
- * @returns The number of columns in the grid.
- */
+const drawerWidth = 960;
+
 const getGridColumnCount = (): number => {
   const gridElement = document.querySelector(".image-grid");
   if (!gridElement) return 4;
@@ -50,8 +50,8 @@ const getGridColumnCount = (): number => {
 };
 
 const App: React.FC = () => {
-  const [isDirty, setIsDirty] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const {
     imageData,
@@ -65,16 +65,19 @@ const App: React.FC = () => {
   const {
     selectedImages,
     setSelectedImages,
-    handleImageClick,
-    handleBackgroundClick,
+    handleSelectImage,
+    selectSingleImage,
+    clearSelection,
   } = useImageSelection(imageData.files);
 
   const {
+    isDirty,
+    setIsDirty,
     promptAction,
     isConfirmationOpen,
     handleConfirm: handleUnsavedChangesConfirm,
     handleClose: handleUnsavedChangesClose,
-  } = useUnsavedChanges(isDirty);
+  } = useUnsavedChanges();
 
   const {
     openRenameDialog,
@@ -84,10 +87,37 @@ const App: React.FC = () => {
 
   const handleFetchImages = useCallback(() => {
     promptAction(() => {
+      setIsPanelOpen(false);
       setSelectedImages([]);
       loadImages(folderInput, () => setIsDirty(false));
     });
-  }, [promptAction, loadImages, folderInput, setSelectedImages]);
+  }, [promptAction, loadImages, folderInput, setSelectedImages, setIsDirty]);
+
+  const handlePanelOpen = () => {
+    if (selectedImages.length > 0) {
+      setIsPanelOpen(true);
+    }
+  };
+
+  const handlePanelClose = () => {
+    promptAction(() => setIsPanelOpen(false));
+  };
+
+  const handleSaveSuccess = () => {
+    setIsPanelOpen(false);
+  };
+
+  const handleImageDoubleClick = (imageName: string) => {
+    promptAction(() => {
+      selectSingleImage(imageName);
+      setIsDirty(false);
+      setIsPanelOpen(true);
+    });
+  };
+
+  const handleBackgroundClickWithPrompt = () => {
+    promptAction(clearSelection);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,25 +126,28 @@ const App: React.FC = () => {
         promptAction(() => setSelectedImages([...imageData.files]));
         return;
       }
-
-      if (document.activeElement !== document.body) return;
-
+      if (
+        e.key === "Enter" &&
+        selectedImages.length > 0 &&
+        !isPanelOpen &&
+        !isConfirmationOpen
+      ) {
+        e.preventDefault();
+        handlePanelOpen();
+        return;
+      }
+      if (document.activeElement !== document.body || isPanelOpen) return;
       const numImages = imageData.files.length;
       if (numImages === 0) return;
-
       if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         e.preventDefault();
-
         if (selectedImages.length > 1) return;
-
         const columns = getGridColumnCount();
-
         const currentIndex =
           selectedImages.length === 1
             ? imageData.files.indexOf(selectedImages[0])
             : -1;
         let newIndex = currentIndex;
-
         switch (e.key) {
           case "ArrowDown":
             newIndex = Math.min(currentIndex + columns, numImages - 1);
@@ -129,21 +162,30 @@ const App: React.FC = () => {
             newIndex = Math.min(currentIndex + 1, numImages - 1);
             break;
         }
-
         if (newIndex >= 0 && newIndex !== currentIndex) {
           promptAction(() => setSelectedImages([imageData.files[newIndex]]));
         }
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedImages, imageData.files, promptAction, setSelectedImages]);
+  }, [
+    selectedImages,
+    imageData.files,
+    promptAction,
+    setSelectedImages,
+    isPanelOpen,
+    isConfirmationOpen,
+  ]);
+
+  useEffect(() => {
+    if (selectedImages.length === 0 && isPanelOpen) {
+      setIsPanelOpen(false);
+    }
+  }, [selectedImages, isPanelOpen]);
 
   const getImageUrl = (imageName: string): string => {
-    if (!imageData.folder || !imageName) {
-      return "";
-    }
+    if (!imageData.folder || !imageName) return "";
     const fullPath = `${imageData.folder}\\${imageName}`;
     return `http://localhost:5000/api/image_data?path=${encodeURIComponent(
       fullPath
@@ -151,156 +193,193 @@ const App: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        bgcolor: "grey.100",
-      }}
-    >
-      <AppBar position="static">
+    <Box sx={{ display: "flex" }}>
+      <CssBaseline />
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
         <Toolbar>
           <PhotoLibraryIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             PhotoTagger
           </Typography>
-          <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
-            <SettingsIcon />
-          </IconButton>
+
+          <Tooltip title="Edit metadata for selected files">
+            <span>
+              {" "}
+              {/* Wrapper for disabled button */}
+              <IconButton
+                color="inherit"
+                aria-label="edit metadata"
+                onClick={handlePanelOpen}
+                disabled={selectedImages.length === 0}
+              >
+                <EditIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Rename selected files">
+            <span>
+              {" "}
+              {/* Wrapper for disabled button */}
+              <IconButton
+                color="inherit"
+                disabled={
+                  isLoading ||
+                  isRenamePreviewLoading ||
+                  selectedImages.length === 0
+                }
+                onClick={() =>
+                  openRenameDialog(
+                    selectedImages.map((name) => `${imageData.folder}\\${name}`)
+                  )
+                }
+              >
+                {isRenamePreviewLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  <LabelOutlinedIcon />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Settings">
+            <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
-      <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
-        <Box component="main" sx={{ flexGrow: 1, p: 2, overflowY: "auto" }}>
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              mb: 2,
-              alignItems: "center",
-              p: 2,
-              bgcolor: "background.paper",
-              borderRadius: 1,
-              boxShadow: 1,
-            }}
-          >
-            <TextField
-              fullWidth
-              label="Image Folder Path"
-              variant="outlined"
-              size="small"
-              value={folderInput}
-              onChange={(e) => setFolderInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleFetchImages();
-              }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleFetchImages}
-              disabled={isLoading || !folderInput}
-              startIcon={
-                isLoading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <FolderOpenIcon />
-                )
-              }
-            >
-              {isLoading ? "Loading..." : "Load"}
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              disabled={
-                isLoading ||
-                isRenamePreviewLoading ||
-                selectedImages.length === 0
-              }
-              onClick={() =>
-                openRenameDialog(
-                  selectedImages.map((name) => `${imageData.folder}\\${name}`)
-                )
-              }
-              startIcon={
-                isRenamePreviewLoading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <DriveFileRenameOutlineIcon />
-                )
-              }
-            >
-              Rename
-            </Button>
-          </Box>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          <Box
-            className="image-grid"
-            onClick={() => promptAction(handleBackgroundClick)}
-          >
-            {imageData.files.map((imageName, index) => {
-              const isSelected = selectedImages.includes(imageName);
-              const cardClassName = `image-card ${
-                isSelected ? "selected" : ""
-              }`.trim();
 
-              return (
-                <Paper
-                  elevation={isSelected ? 8 : 2}
-                  key={imageName}
-                  className={cardClassName}
-                  id={`image-card-${index}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    promptAction(() => handleImageClick(e, imageName, index));
-                  }}
-                >
-                  <img
-                    src={getImageUrl(imageName)}
-                    alt={imageName}
-                    className="thumbnail"
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      mt: 1,
-                      p: 0.5,
-                      display: "block",
-                      wordWrap: "break-word",
-                    }}
-                  >
-                    {imageName}
-                  </Typography>
-                </Paper>
-              );
-            })}
-          </Box>
-        </Box>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+        }}
+      >
+        <Toolbar /> {/* Spacer for content to be below app bar */}
         <Box
-          component="aside"
           sx={{
-            width: 400,
-            minWidth: 350,
-            borderLeft: "1px solid",
-            borderColor: "divider",
-            overflowY: "auto",
+            display: "flex",
+            gap: 2,
+            mb: 2,
+            alignItems: "center",
+            p: 2,
             bgcolor: "background.paper",
+            borderRadius: 1,
+            boxShadow: 1,
             flexShrink: 0,
+            flexWrap: "wrap",
           }}
         >
-          <MetadataPanel
-            key={selectedImages.join("-")}
-            selectedImageNames={selectedImages}
-            folderPath={imageData.folder}
-            getImageUrl={getImageUrl}
-            setIsDirty={setIsDirty}
+          <TextField
+            label="Image Folder Path"
+            variant="outlined"
+            size="small"
+            value={folderInput}
+            onChange={(e) => setFolderInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleFetchImages();
+            }}
+            sx={{ flex: "1 1 300px" }}
           />
+          <Button
+            variant="contained"
+            onClick={handleFetchImages}
+            disabled={isLoading || !folderInput}
+            startIcon={
+              isLoading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <FolderOpenIcon />
+              )
+            }
+          >
+            {isLoading ? "Loading..." : "Load"}
+          </Button>
+        </Box>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <Box
+          className="image-grid"
+          onClick={handleBackgroundClickWithPrompt}
+          sx={{
+            flexGrow: 1,
+            overflowY: "auto",
+            alignContent: "flex-start",
+            p: 1,
+          }}
+        >
+          {imageData.files.map((imageName, index) => {
+            const isSelected = selectedImages.includes(imageName);
+            return (
+              <Paper
+                elevation={isSelected ? 8 : 2}
+                key={imageName}
+                className={`image-card ${isSelected ? "selected" : ""}`.trim()}
+                id={`image-card-${index}`}
+                onClick={(e) =>
+                  promptAction(() => handleSelectImage(e, imageName, index))
+                }
+                onDoubleClick={() => handleImageDoubleClick(imageName)}
+              >
+                <img
+                  src={getImageUrl(imageName)}
+                  alt={imageName}
+                  className="thumbnail"
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    mt: 1,
+                    p: 0.5,
+                    display: "block",
+                    wordWrap: "break-word",
+                  }}
+                >
+                  {imageName}
+                </Typography>
+              </Paper>
+            );
+          })}
         </Box>
       </Box>
+
+      <Drawer
+        variant="temporary"
+        anchor="right"
+        open={isPanelOpen}
+        onClose={handlePanelClose}
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: drawerWidth,
+            boxSizing: "border-box",
+          },
+        }}
+      >
+        <MetadataPanel
+          key={selectedImages.join("-")}
+          selectedImageNames={selectedImages}
+          folderPath={imageData.folder}
+          getImageUrl={getImageUrl}
+          setIsDirty={setIsDirty}
+          onClose={handlePanelClose}
+          onSaveSuccess={handleSaveSuccess}
+        />
+      </Drawer>
+
       <UnsavedChangesDialog
         isOpen={isConfirmationOpen}
         onConfirm={handleUnsavedChangesConfirm}
