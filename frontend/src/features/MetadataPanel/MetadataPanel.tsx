@@ -12,7 +12,6 @@ import {
 import { styled } from "@mui/material/styles";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SaveIcon from "@mui/icons-material/Save";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { useMetadataEditor } from "./hooks/useMetadataEditor";
 import ImageModal from "./components/ImageModal";
@@ -20,6 +19,7 @@ import ContentSection from "./components/ContentSection";
 import LocationSection from "./components/LocationSection";
 import DateTimeSection from "./components/DateTimeSection";
 import CreatorSection from "./components/CreatorSection";
+import ImageCarousel from "./components/ImageCarousel";
 
 interface MetadataPanelProps {
   selectedImageNames: string[];
@@ -47,7 +47,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   onClose,
   onSaveSuccess,
 }) => {
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [modalImageName, setModalImageName] = useState<string | null>(null);
 
   const {
     isMetadataLoading,
@@ -86,9 +86,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     };
   }, [isSaveable, isSaving, handleSave]);
 
-  const previewImageName =
-    selectedImageNames.length === 1 ? selectedImageNames[0] : null;
-
   const renderContent = () => {
     if (isMetadataLoading) {
       return (
@@ -99,19 +96,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     }
     return (
       <Grid container spacing={3}>
-        {previewImageName ? (
-          <Grid size={{ xs: 12 }}>
-            <Button
-              variant="outlined"
-              startIcon={<VisibilityIcon />}
-              onClick={() => setIsPreviewOpen(true)}
-              fullWidth
-            >
-              Show Large Preview
-            </Button>
-          </Grid>
-        ) : null}
-
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3} sx={{ height: "100%" }}>
             <ContentSection
@@ -185,12 +169,20 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         </IconButton>
       </DrawerHeader>
 
-      {isPreviewOpen && previewImageName && (
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+        <ImageCarousel
+          imageNames={selectedImageNames}
+          getImageUrl={getImageUrl}
+          onImageClick={(imageName) => setModalImageName(imageName)}
+        />
+      </Box>
+
+      {modalImageName && (
         <ImageModal
-          isOpen={isPreviewOpen}
-          onClose={() => setIsPreviewOpen(false)}
-          imageUrl={getImageUrl(previewImageName)}
-          imageName={previewImageName}
+          isOpen={!!modalImageName}
+          onClose={() => setModalImageName(null)}
+          imageUrl={getImageUrl(modalImageName)}
+          imageName={modalImageName}
         />
       )}
 

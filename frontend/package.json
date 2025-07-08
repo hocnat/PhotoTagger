@@ -20,7 +20,9 @@
     "react-dom": "^19.1.0",
     "react-leaflet": "^5.0.0",
     "react-scripts": "5.0.1",
+    "react-slick": "^0.30.3",
     "react-zoom-pan-pinch": "^3.7.0",
+    "slick-carousel": "^1.8.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -53,6 +55,7 @@
     "@types/node": "^24.0.4",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/react-slick": "^0.23.13",
     "typescript": "^5.8.3"
   }
 }
