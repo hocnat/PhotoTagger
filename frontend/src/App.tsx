@@ -52,6 +52,7 @@ const getGridColumnCount = (): number => {
 const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const {
     imageData,
@@ -92,6 +93,13 @@ const App: React.FC = () => {
       loadImages(folderInput, () => setIsDirty(false));
     });
   }, [promptAction, loadImages, folderInput, setSelectedImages, setIsDirty]);
+
+  useEffect(() => {
+    if (folderInput && !isLoading && !initialLoadDone) {
+      handleFetchImages();
+      setInitialLoadDone(true);
+    }
+  }, [folderInput, isLoading, initialLoadDone, handleFetchImages]);
 
   const handlePanelOpen = () => {
     if (selectedImages.length > 0) {
