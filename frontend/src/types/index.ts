@@ -3,6 +3,18 @@ export interface MetadataValue<T> {
   isConsolidated: boolean;
 }
 
+export interface UniqueValue<T> {
+  status: "unique";
+  value: T;
+  isConsolidated: boolean;
+}
+
+export interface MixedValue {
+  status: "mixed";
+}
+
+export type AggregatedValue<T> = UniqueValue<T> | MixedValue;
+
 export interface FileUpdatePayload {
   path: string;
   original_metadata: { [key: string]: any };
@@ -101,29 +113,27 @@ export interface RawImageMetadata {
   Copyright?: MetadataValue<string>;
 }
 
-export type FormStateField<T> = MetadataValue<T> | "(Mixed Values)";
-
 export interface FormState {
-  Title: FormStateField<string>;
-  Keywords: FormStateField<Keyword[]>;
-  LatitudeCreated?: FormStateField<string>;
-  LongitudeCreated?: FormStateField<string>;
-  LocationCreated?: FormStateField<string>;
-  CityCreated?: FormStateField<string>;
-  StateCreated?: FormStateField<string>;
-  CountryCreated?: FormStateField<string>;
-  CountryCodeCreated?: FormStateField<string>;
-  LatitudeShown?: FormStateField<string>;
-  LongitudeShown?: FormStateField<string>;
-  LocationShown?: FormStateField<string>;
-  CityShown?: FormStateField<string>;
-  StateShown?: FormStateField<string>;
-  CountryShown?: FormStateField<string>;
-  CountryCodeShown?: FormStateField<string>;
-  DateTimeOriginal?: FormStateField<string>;
-  OffsetTimeOriginal?: FormStateField<string>;
-  Creator: FormStateField<string>;
-  Copyright: FormStateField<string>;
+  Title: AggregatedValue<string>;
+  Keywords: AggregatedValue<Keyword[]>;
+  LatitudeCreated?: AggregatedValue<string>;
+  LongitudeCreated?: AggregatedValue<string>;
+  LocationCreated?: AggregatedValue<string>;
+  CityCreated?: AggregatedValue<string>;
+  StateCreated?: AggregatedValue<string>;
+  CountryCreated?: AggregatedValue<string>;
+  CountryCodeCreated?: AggregatedValue<string>;
+  LatitudeShown?: AggregatedValue<string>;
+  LongitudeShown?: AggregatedValue<string>;
+  LocationShown?: AggregatedValue<string>;
+  CityShown?: AggregatedValue<string>;
+  StateShown?: AggregatedValue<string>;
+  CountryShown?: AggregatedValue<string>;
+  CountryCodeShown?: AggregatedValue<string>;
+  DateTimeOriginal?: AggregatedValue<string>;
+  OffsetTimeOriginal?: AggregatedValue<string>;
+  Creator: AggregatedValue<string>;
+  Copyright: AggregatedValue<string>;
 }
 
 export type LocationFieldKeys =

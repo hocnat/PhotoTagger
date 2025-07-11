@@ -4,7 +4,6 @@ import {
   SaveMetadataPayload,
   ApiError,
   LocationPresetData,
-  MetadataValue,
   FileUpdatePayload,
   LocationFieldKeys,
 } from "types";
@@ -21,15 +20,6 @@ interface LocationFieldNamesMap {
   state: LocationFieldKeys;
   country: LocationFieldKeys;
   countryCode: LocationFieldKeys;
-}
-
-function getValueFromState<T>(
-  field: MetadataValue<T> | "(Mixed Values)" | undefined
-): T | undefined {
-  if (field && typeof field === "object" && "value" in field) {
-    return field.value;
-  }
-  return undefined;
 }
 
 interface UseMetadataEditorProps {
@@ -63,11 +53,7 @@ export const useMetadataEditor = ({
 
   const needsConsolidation = useMemo(() => {
     return Object.values(formState).some(
-      (field) =>
-        field &&
-        typeof field === "object" &&
-        "isConsolidated" in field &&
-        !field.isConsolidated
+      (field) => field && field.status === "unique" && !field.isConsolidated
     );
   }, [formState]);
 
@@ -87,14 +73,16 @@ export const useMetadataEditor = ({
       setFormState((prevState) => {
         const existingField = prevState[fieldName];
         const isConsolidated =
-          existingField &&
-          typeof existingField === "object" &&
-          "isConsolidated" in existingField
+          existingField && existingField.status === "unique"
             ? existingField.isConsolidated
             : true;
         return {
           ...prevState,
-          [fieldName]: { value: newValue, isConsolidated },
+          [fieldName]: {
+            status: "unique",
+            value: newValue,
+            isConsolidated,
+          },
         };
       });
     },
@@ -120,12 +108,14 @@ export const useMetadataEditor = ({
         if (formKey && value !== undefined) {
           const existingField = newFormState[formKey];
           const isConsolidated =
-            existingField &&
-            typeof existingField === "object" &&
-            "isConsolidated" in existingField
+            existingField && existingField.status === "unique"
               ? existingField.isConsolidated
               : true;
-          newFormState[formKey] = { value, isConsolidated };
+          newFormState[formKey] = {
+            status: "unique",
+            value,
+            isConsolidated,
+          };
         }
       }
       setFormState(newFormState);
@@ -149,12 +139,16 @@ export const useMetadataEditor = ({
     }
     setIsSaving(true);
 
-    const originalUiKeywords = new Set(
-      getValueFromState(originalFormState.Keywords)?.map((kw) => kw.name) || []
-    );
-    const currentUiKeywords = new Set(
-      getValueFromState(formState.Keywords)?.map((kw) => kw.name) || []
-    );
+    const originalKeywords =
+      originalFormState.Keywords?.status === "unique"
+        ? originalFormState.Keywords.value
+        : [];
+    const currentKeywords =
+      formState.Keywords?.status === "unique" ? formState.Keywords.value : [];
+
+    const originalUiKeywords = new Set(originalKeywords.map((kw) => kw.name));
+    const currentUiKeywords = new Set(currentKeywords.map((kw) => kw.name));
+
     const addedKeywords = [...currentUiKeywords].filter(
       (kw) => !originalUiKeywords.has(kw)
     );
@@ -168,18 +162,16 @@ export const useMetadataEditor = ({
 
         Object.entries(formState).forEach(([keyStr, currentField]) => {
           const key = keyStr as keyof FormState;
-          if (key === "Keywords") return;
+          if (key === "Keywords" || !currentField) return;
 
           const originalField = originalFormState[key];
           const hasValueChanged =
             JSON.stringify(currentField) !== JSON.stringify(originalField);
           const fieldNeedsConsolidation =
-            currentField &&
-            typeof currentField === "object" &&
-            !currentField.isConsolidated;
+            currentField.status === "unique" && !currentField.isConsolidated;
 
           if (hasValueChanged || fieldNeedsConsolidation) {
-            if (currentField && currentField !== "(Mixed Values)") {
+            if (currentField.status === "unique") {
               new_metadata[key] = currentField.value;
             }
           }
@@ -203,8 +195,7 @@ export const useMetadataEditor = ({
           );
 
         const keywordsNeedConsolidation =
-          formState.Keywords &&
-          typeof formState.Keywords === "object" &&
+          formState.Keywords?.status === "unique" &&
           !formState.Keywords.isConsolidated;
 
         if (keywordsHaveChanged || keywordsNeedConsolidation) {
@@ -265,8 +256,10 @@ export const useMetadataEditor = ({
   };
 
   const getDateTimeObject = (): Date | null => {
-    const dateStr = getValueFromState(formState.DateTimeOriginal);
-    if (!dateStr) return null;
+    const field = formState.DateTimeOriginal;
+    if (field?.status !== "unique" || !field.value) return null;
+    const dateStr = field.value;
+
     const parsableDateStr =
       dateStr.substring(0, 10).replace(/:/g, "-") + "T" + dateStr.substring(11);
     const date = new Date(parsableDateStr);

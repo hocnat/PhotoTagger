@@ -5,27 +5,28 @@ import {
   Keyword,
   MetadataValue,
   RawImageMetadata,
+  UniqueValue,
 } from "types";
 
-const defaultEmptyValues: { [K in keyof FormState]?: any } = {
-  Title: { value: "", isConsolidated: true },
-  Creator: { value: "", isConsolidated: true },
-  Copyright: { value: "", isConsolidated: true },
-  Keywords: { value: [], isConsolidated: true },
-  LatitudeCreated: { value: "", isConsolidated: true },
-  LongitudeCreated: { value: "", isConsolidated: true },
-  LocationCreated: { value: "", isConsolidated: true },
-  CityCreated: { value: "", isConsolidated: true },
-  StateCreated: { value: "", isConsolidated: true },
-  CountryCreated: { value: "", isConsolidated: true },
-  CountryCodeCreated: { value: "", isConsolidated: true },
-  LatitudeShown: { value: "", isConsolidated: true },
-  LongitudeShown: { value: "", isConsolidated: true },
-  LocationShown: { value: "", isConsolidated: true },
-  CityShown: { value: "", isConsolidated: true },
-  StateShown: { value: "", isConsolidated: true },
-  CountryShown: { value: "", isConsolidated: true },
-  CountryCodeShown: { value: "", isConsolidated: true },
+const defaultEmptyValues: { [K in keyof FormState]?: UniqueValue<any> } = {
+  Title: { status: "unique", value: "", isConsolidated: true },
+  Creator: { status: "unique", value: "", isConsolidated: true },
+  Copyright: { status: "unique", value: "", isConsolidated: true },
+  Keywords: { status: "unique", value: [], isConsolidated: true },
+  LatitudeCreated: { status: "unique", value: "", isConsolidated: true },
+  LongitudeCreated: { status: "unique", value: "", isConsolidated: true },
+  LocationCreated: { status: "unique", value: "", isConsolidated: true },
+  CityCreated: { status: "unique", value: "", isConsolidated: true },
+  StateCreated: { status: "unique", value: "", isConsolidated: true },
+  CountryCreated: { status: "unique", value: "", isConsolidated: true },
+  CountryCodeCreated: { status: "unique", value: "", isConsolidated: true },
+  LatitudeShown: { status: "unique", value: "", isConsolidated: true },
+  LongitudeShown: { status: "unique", value: "", isConsolidated: true },
+  LocationShown: { status: "unique", value: "", isConsolidated: true },
+  CityShown: { status: "unique", value: "", isConsolidated: true },
+  StateShown: { status: "unique", value: "", isConsolidated: true },
+  CountryShown: { status: "unique", value: "", isConsolidated: true },
+  CountryCodeShown: { status: "unique", value: "", isConsolidated: true },
 };
 
 export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
@@ -53,6 +54,7 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
         ] as MetadataValue<any>;
         if (field) {
           (newAggregatedState as any)[key] = {
+            status: "unique",
             value: field.value ?? "",
             isConsolidated: field.isConsolidated ?? true,
           };
@@ -61,11 +63,16 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
 
       if (Keywords && Keywords.value) {
         newAggregatedState.Keywords = {
+          status: "unique",
           value: Keywords.value.map((kw) => ({ name: kw, status: "common" })),
           isConsolidated: Keywords.isConsolidated,
         };
       } else {
-        newAggregatedState.Keywords = { value: [], isConsolidated: true };
+        newAggregatedState.Keywords = {
+          status: "unique",
+          value: [],
+          isConsolidated: true,
+        };
       }
 
       for (const key in defaultEmptyValues) {
@@ -98,7 +105,7 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
           existingFields.length > 0 &&
           existingFields.length < imageFiles.length
         ) {
-          newAggregatedState[key] = "(Mixed Values)";
+          newAggregatedState[key] = { status: "mixed" };
           return;
         }
 
@@ -119,11 +126,12 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
             (field) => field.isConsolidated ?? true
           );
           newAggregatedState[key] = {
+            status: "unique",
             value: existingFields[0].value ?? "",
             isConsolidated: allConsolidated,
           };
         } else {
-          newAggregatedState[key] = "(Mixed Values)";
+          newAggregatedState[key] = { status: "mixed" };
         }
       });
 
@@ -146,6 +154,7 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
       );
 
       newAggregatedState.Keywords = {
+        status: "unique",
         value: keywordValue,
         isConsolidated: allFilesHaveConsolidatedKeywords,
       };

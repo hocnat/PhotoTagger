@@ -5,7 +5,6 @@ import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
 import { SectionProps, FormState } from "types";
-import { getFieldData } from "../utils/metadataUtils";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 
 interface DateTimeSectionProps extends SectionProps {
@@ -19,8 +18,8 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
   getDateTimeObject,
   isFieldDirty,
 }) => {
-  const dateData = getFieldData(formState.DateTimeOriginal, "");
-  const offsetData = getFieldData(formState.OffsetTimeOriginal, "");
+  const dateField = formState.DateTimeOriginal;
+  const offsetField = formState.OffsetTimeOriginal;
 
   return (
     <FormSection title="Date & Time">
@@ -61,28 +60,22 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
                 size: "small",
                 variant: "outlined",
                 placeholder:
-                  formState.DateTimeOriginal === "(Mixed Values)"
-                    ? "(Mixed Values)"
-                    : "",
+                  dateField?.status === "mixed" ? "(Mixed Values)" : "",
               },
             }}
           />
-          {!dateData.isConsolidated && <WarningIndicator />}
+          {dateField?.status === "unique" && !dateField.isConsolidated && (
+            <WarningIndicator />
+          )}
         </Stack>
         <TextField
           label="Offset Time Original"
           variant="outlined"
           fullWidth
           size="small"
-          value={
-            formState.OffsetTimeOriginal === "(Mixed Values)"
-              ? ""
-              : offsetData.value
-          }
+          value={offsetField?.status === "unique" ? offsetField.value : ""}
           placeholder={
-            formState.OffsetTimeOriginal === "(Mixed Values)"
-              ? "(Mixed Values)"
-              : "+01:00"
+            offsetField?.status === "mixed" ? "(Mixed Values)" : "+01:00"
           }
           onChange={(e) =>
             handleFormChange("OffsetTimeOriginal", e.target.value)
@@ -91,7 +84,12 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
           slotProps={{
             input: {
               endAdornment: (
-                <ConsolidationAdornment show={!offsetData.isConsolidated} />
+                <ConsolidationAdornment
+                  show={
+                    offsetField?.status === "unique" &&
+                    !offsetField.isConsolidated
+                  }
+                />
               ),
             },
           }}
