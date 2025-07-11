@@ -26,6 +26,7 @@ import MapModal from "./MapModal";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import { useLocationPresets } from "../hooks/useLocationPresets";
 import { getDirtyFieldSx } from "../utils/styleUtils";
+import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 
 interface LocationFieldNamesMap {
   latitude: LocationFieldKeys;
@@ -93,7 +94,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       latitudeField?.status === "mixed" ||
       longitudeField?.status === "mixed"
     ) {
-      return "(Mixed Values)";
+      return getPlaceholder(latitudeField); // or longitudeField, same result
     }
     if (
       latitudeField?.status === "unique" &&
@@ -211,7 +212,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         value={gpsDisplayValue === "(Mixed Values)" ? "" : gpsDisplayValue}
         placeholder={
           gpsDisplayValue === "(Mixed Values)"
-            ? "(Mixed Values)"
+            ? gpsDisplayValue
             : "e.g., 48.8583, 2.2945"
         }
         onChange={handleGpsInputChange}
@@ -253,8 +254,8 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             label={label}
             variant="outlined"
             size="small"
-            value={field?.status === "unique" ? field.value || "" : ""}
-            placeholder={field?.status === "mixed" ? "(Mixed Values)" : ""}
+            value={getDisplayValue(field)}
+            placeholder={getPlaceholder(field)}
             onChange={(e) => handleFormChange(formKey, e.target.value)}
             sx={getDirtyFieldSx(isFieldDirty(formKey))}
             slotProps={{
@@ -272,9 +273,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
         <CountryInput
           label="Country"
-          countryValue={
-            countryField?.status === "unique" ? countryField.value || "" : ""
-          }
+          countryValue={getDisplayValue(countryField)}
           isConsolidated={
             countryField?.status === "unique"
               ? countryField.isConsolidated
@@ -291,12 +290,8 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           label="Country Code"
           variant="outlined"
           size="small"
-          value={
-            countryCodeField?.status === "unique"
-              ? countryCodeField.value || ""
-              : ""
-          }
-          placeholder={countryCodeField?.status === "mixed" ? "(Mixed)" : ""}
+          value={getDisplayValue(countryCodeField)}
+          placeholder={getPlaceholder(countryCodeField) || "(Mixed)"}
           onChange={(e) =>
             handleFormChange(fieldNames.countryCode, e.target.value)
           }
@@ -325,7 +320,9 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         onLocationSet={(latlng) =>
           onLocationSet(fieldNames.latitude, fieldNames.longitude, latlng)
         }
-        initialCoords={parseGpsString(gpsDisplayValue)}
+        initialCoords={parseGpsString(
+          gpsDisplayValue !== "(Mixed Values)" ? gpsDisplayValue : undefined
+        )}
       />
       <Dialog open={isSaveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
         <DialogTitle>Save Location Preset</DialogTitle>

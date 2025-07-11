@@ -1,20 +1,36 @@
-import { MetadataValue } from "types";
+import { AggregatedValue } from "types";
+
+export const MIXED_VALUES_PLACEHOLDER = "(Mixed Values)";
 
 /**
- * A shared utility function to safely extract the value and consolidation status
- * from a metadata field object. It provides sensible defaults for empty or
- * mixed-value fields.
- * @param field The metadata field from the form state.
- * @param defaultValue The default value to return if the field is empty.
- * @returns An object containing the field's `value` and `isConsolidated` status.
+ * Gets the display value for a form field.
+ * If the field has a unique value, it returns it; otherwise, it returns an empty string.
+ * This is used for the `value` prop of an input.
+ * @param field The AggregatedValue field from the form state.
+ * @returns The value to display or an empty string.
  */
-export const getFieldData = <T>(
-  field: MetadataValue<T> | "(Mixed Values)" | undefined,
-  defaultValue: T
-): { value: T; isConsolidated: boolean } => {
-  if (field && typeof field === "object" && "value" in field) {
-    return { value: field.value, isConsolidated: field.isConsolidated };
+export function getDisplayValue<T>(
+  field: AggregatedValue<T> | undefined
+): T | "" {
+  if (field?.status === "unique") {
+    // Return empty string for null or undefined values to prevent React controlled/uncontrolled warnings.
+    return field.value ?? "";
   }
-  // For empty fields or "(Mixed Values)", return the default value and assume consolidated.
-  return { value: defaultValue, isConsolidated: true };
-};
+  return "";
+}
+
+/**
+ * Gets the placeholder text for a form field.
+ * If the field has mixed values, it returns the placeholder text; otherwise, it returns an empty string.
+ * This is used for the `placeholder` prop of an input.
+ * @param field The AggregatedValue field from the form state.
+ * @returns The placeholder text or an empty string.
+ */
+export function getPlaceholder(
+  field: AggregatedValue<any> | undefined
+): string {
+  if (field?.status === "mixed") {
+    return MIXED_VALUES_PLACEHOLDER;
+  }
+  return "";
+}

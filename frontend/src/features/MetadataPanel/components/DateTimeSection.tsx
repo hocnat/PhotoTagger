@@ -6,6 +6,7 @@ import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
 import { SectionProps, FormState } from "types";
 import { getDirtyFieldSx } from "../utils/styleUtils";
+import { getPlaceholder } from "../utils/metadataUtils";
 
 interface DateTimeSectionProps extends SectionProps {
   getDateTimeObject: () => Date | null;
@@ -59,8 +60,7 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
               textField: {
                 size: "small",
                 variant: "outlined",
-                placeholder:
-                  dateField?.status === "mixed" ? "(Mixed Values)" : "",
+                placeholder: getPlaceholder(dateField),
               },
             }}
           />
@@ -73,10 +73,10 @@ const DateTimeSection: React.FC<DateTimeSectionProps> = ({
           variant="outlined"
           fullWidth
           size="small"
-          value={offsetField?.status === "unique" ? offsetField.value : ""}
-          placeholder={
-            offsetField?.status === "mixed" ? "(Mixed Values)" : "+01:00"
+          value={
+            offsetField?.status === "unique" ? offsetField.value || "" : ""
           }
+          placeholder={getPlaceholder(offsetField) || "+01:00"}
           onChange={(e) =>
             handleFormChange("OffsetTimeOriginal", e.target.value)
           }

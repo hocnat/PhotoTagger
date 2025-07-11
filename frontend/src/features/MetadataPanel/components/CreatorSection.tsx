@@ -4,6 +4,7 @@ import { TextField } from "@mui/material";
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import { getDirtyFieldSx } from "../utils/styleUtils";
+import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 
 interface CreatorSectionProps extends SectionProps {
   isFieldDirty: (fieldName: keyof FormState) => boolean;
@@ -23,8 +24,8 @@ const CreatorSection: React.FC<CreatorSectionProps> = ({
         variant="outlined"
         size="small"
         fullWidth
-        value={field?.status === "unique" ? field.value : ""}
-        placeholder={field?.status === "mixed" ? "(Mixed Values)" : ""}
+        value={getDisplayValue(field)}
+        placeholder={getPlaceholder(field)}
         onChange={(e) => handleFormChange("Creator", e.target.value)}
         sx={getDirtyFieldSx(isFieldDirty("Creator"))}
         slotProps={{

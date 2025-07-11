@@ -5,6 +5,7 @@ import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
+import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 
 interface ContentSectionProps extends SectionProps {
   keywordSuggestions: string[];
@@ -25,6 +26,8 @@ const ContentSection: React.FC<ContentSectionProps> = ({
   const titleField = formState.Title;
   const keywordsField = formState.Keywords;
 
+  const areKeywordsDirty = isFieldDirty("Keywords");
+
   return (
     <FormSection title="Content">
       <TextField
@@ -32,8 +35,8 @@ const ContentSection: React.FC<ContentSectionProps> = ({
         variant="outlined"
         size="small"
         fullWidth
-        value={titleField?.status === "unique" ? titleField.value : ""}
-        placeholder={titleField?.status === "mixed" ? "(Mixed Values)" : ""}
+        value={getDisplayValue(titleField)}
+        placeholder={getPlaceholder(titleField)}
         onChange={(e) => handleFormChange("Title", e.target.value)}
         sx={getDirtyFieldSx(isFieldDirty("Title"))}
         slotProps={{
@@ -92,8 +95,8 @@ const ContentSection: React.FC<ContentSectionProps> = ({
           flexWrap: "wrap",
           gap: 0.5,
           mt: 1,
-          p: isFieldDirty("Keywords") ? 0.5 : 0,
-          ...getDirtyFieldSx(isFieldDirty("Keywords")),
+          p: areKeywordsDirty ? 0.5 : 0,
+          ...getDirtyFieldSx(areKeywordsDirty),
         }}
       >
         {keywordsField?.status === "unique" &&
