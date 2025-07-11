@@ -6,11 +6,22 @@ import {
   LocationPresetData,
   MetadataValue,
   FileUpdatePayload,
+  LocationFieldKeys,
 } from "types";
 import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
+
+interface LocationFieldNamesMap {
+  latitude: LocationFieldKeys;
+  longitude: LocationFieldKeys;
+  location: LocationFieldKeys;
+  city: LocationFieldKeys;
+  state: LocationFieldKeys;
+  country: LocationFieldKeys;
+  countryCode: LocationFieldKeys;
+}
 
 function getValueFromState<T>(
   field: MetadataValue<T> | "(Mixed Values)" | undefined
@@ -91,19 +102,30 @@ export const useMetadataEditor = ({
   );
 
   const applyLocationPreset = useCallback(
-    (data: LocationPresetData) => {
+    (data: LocationPresetData, targetFields: LocationFieldNamesMap) => {
       let newFormState = { ...formState };
-      for (const [key, value] of Object.entries(data)) {
-        if (value !== undefined) {
-          const fieldName = key as keyof FormState;
-          const existingField = newFormState[fieldName];
+
+      const keyMap: { [key in keyof LocationPresetData]?: keyof FormState } = {
+        Latitude: targetFields.latitude,
+        Longitude: targetFields.longitude,
+        Location: targetFields.location,
+        City: targetFields.city,
+        State: targetFields.state,
+        Country: targetFields.country,
+        CountryCode: targetFields.countryCode,
+      };
+
+      for (const [presetKey, value] of Object.entries(data)) {
+        const formKey = keyMap[presetKey as keyof LocationPresetData];
+        if (formKey && value !== undefined) {
+          const existingField = newFormState[formKey];
           const isConsolidated =
             existingField &&
             typeof existingField === "object" &&
             "isConsolidated" in existingField
               ? existingField.isConsolidated
               : true;
-          newFormState[fieldName] = { value, isConsolidated };
+          newFormState[formKey] = { value, isConsolidated };
         }
       }
       setFormState(newFormState);
@@ -111,8 +133,13 @@ export const useMetadataEditor = ({
     [formState, setFormState]
   );
 
-  const handleLocationSet = (latlng: { lat: number; lng: number }) => {
-    handleFormChange("GPSPosition", `${latlng.lat}, ${latlng.lng}`);
+  const handleLocationSet = (
+    latFieldName: keyof FormState,
+    lonFieldName: keyof FormState,
+    latlng: { lat: number; lng: number }
+  ) => {
+    handleFormChange(latFieldName, String(latlng.lat));
+    handleFormChange(lonFieldName, String(latlng.lng));
   };
 
   const handleSave = () => {

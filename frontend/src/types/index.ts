@@ -31,7 +31,8 @@ export interface ApiError {
 }
 
 export interface LocationPresetData {
-  GPSPosition?: string;
+  Latitude?: string;
+  Longitude?: string;
   Location?: string;
   City?: string;
   State?: string;
@@ -80,12 +81,20 @@ export interface RawImageMetadata {
   [key: string]: any;
   Title?: MetadataValue<string>;
   Keywords?: MetadataValue<string[]>;
-  GPSPosition?: MetadataValue<string>;
-  Location?: MetadataValue<string>;
-  City?: MetadataValue<string>;
-  State?: MetadataValue<string>;
-  Country?: MetadataValue<string>;
-  CountryCode?: MetadataValue<string>;
+  LatitudeCreated?: MetadataValue<string>;
+  LongitudeCreated?: MetadataValue<string>;
+  LocationCreated?: MetadataValue<string>;
+  CityCreated?: MetadataValue<string>;
+  StateCreated?: MetadataValue<string>;
+  CountryCreated?: MetadataValue<string>;
+  CountryCodeCreated?: MetadataValue<string>;
+  LatitudeShown?: MetadataValue<string>;
+  LongitudeShown?: MetadataValue<string>;
+  LocationShown?: MetadataValue<string>;
+  CityShown?: MetadataValue<string>;
+  StateShown?: MetadataValue<string>;
+  CountryShown?: MetadataValue<string>;
+  CountryCodeShown?: MetadataValue<string>;
   DateTimeOriginal?: MetadataValue<string>;
   OffsetTimeOriginal?: MetadataValue<string>;
   Creator?: MetadataValue<string>;
@@ -97,17 +106,41 @@ export type FormStateField<T> = MetadataValue<T> | "(Mixed Values)";
 export interface FormState {
   Title: FormStateField<string>;
   Keywords: FormStateField<Keyword[]>;
-  GPSPosition?: FormStateField<string>;
-  Location?: FormStateField<string>;
-  City?: FormStateField<string>;
-  State?: FormStateField<string>;
-  Country?: FormStateField<string>;
-  CountryCode?: FormStateField<string>;
+  LatitudeCreated?: FormStateField<string>;
+  LongitudeCreated?: FormStateField<string>;
+  LocationCreated?: FormStateField<string>;
+  CityCreated?: FormStateField<string>;
+  StateCreated?: FormStateField<string>;
+  CountryCreated?: FormStateField<string>;
+  CountryCodeCreated?: FormStateField<string>;
+  LatitudeShown?: FormStateField<string>;
+  LongitudeShown?: FormStateField<string>;
+  LocationShown?: FormStateField<string>;
+  CityShown?: FormStateField<string>;
+  StateShown?: FormStateField<string>;
+  CountryShown?: FormStateField<string>;
+  CountryCodeShown?: FormStateField<string>;
   DateTimeOriginal?: FormStateField<string>;
   OffsetTimeOriginal?: FormStateField<string>;
   Creator: FormStateField<string>;
   Copyright: FormStateField<string>;
 }
+
+export type LocationFieldKeys =
+  | "LatitudeCreated"
+  | "LongitudeCreated"
+  | "LocationCreated"
+  | "CityCreated"
+  | "StateCreated"
+  | "CountryCreated"
+  | "CountryCodeCreated"
+  | "LatitudeShown"
+  | "LongitudeShown"
+  | "LocationShown"
+  | "CityShown"
+  | "StateShown"
+  | "CountryShown"
+  | "CountryCodeShown";
 
 export interface ImageFile {
   filename: string;

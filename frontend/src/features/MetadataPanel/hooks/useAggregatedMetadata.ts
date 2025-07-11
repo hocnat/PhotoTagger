@@ -12,6 +12,20 @@ const defaultEmptyValues: { [K in keyof FormState]?: any } = {
   Creator: { value: "", isConsolidated: true },
   Copyright: { value: "", isConsolidated: true },
   Keywords: { value: [], isConsolidated: true },
+  LatitudeCreated: { value: "", isConsolidated: true },
+  LongitudeCreated: { value: "", isConsolidated: true },
+  LocationCreated: { value: "", isConsolidated: true },
+  CityCreated: { value: "", isConsolidated: true },
+  StateCreated: { value: "", isConsolidated: true },
+  CountryCreated: { value: "", isConsolidated: true },
+  CountryCodeCreated: { value: "", isConsolidated: true },
+  LatitudeShown: { value: "", isConsolidated: true },
+  LongitudeShown: { value: "", isConsolidated: true },
+  LocationShown: { value: "", isConsolidated: true },
+  CityShown: { value: "", isConsolidated: true },
+  StateShown: { value: "", isConsolidated: true },
+  CountryShown: { value: "", isConsolidated: true },
+  CountryCodeShown: { value: "", isConsolidated: true },
 };
 
 export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
@@ -45,7 +59,6 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
         }
       }
 
-      // Transform Keywords from string[] to Keyword[]
       if (Keywords && Keywords.value) {
         newAggregatedState.Keywords = {
           value: Keywords.value.map((kw) => ({ name: kw, status: "common" })),
@@ -55,7 +68,6 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
         newAggregatedState.Keywords = { value: [], isConsolidated: true };
       }
 
-      // Ensure all default fields are present
       for (const key in defaultEmptyValues) {
         if (!newAggregatedState[key as keyof FormState]) {
           newAggregatedState[key as keyof FormState] =
@@ -63,7 +75,6 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
         }
       }
     } else {
-      // --- Multi-image aggregation logic ---
       const allPossibleKeys = new Set<keyof Omit<FormState, "Keywords">>();
       imageFiles.forEach((file) => {
         Object.keys(file.metadata).forEach((key) => {
@@ -116,7 +127,6 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
         }
       });
 
-      // Keyword aggregation for multiple images
       const allKeywords = new Map<string, { count: number }>();
       imageFiles.forEach((file) => {
         const keywords = file.metadata.Keywords?.value || [];

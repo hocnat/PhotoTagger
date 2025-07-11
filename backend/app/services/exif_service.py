@@ -18,31 +18,76 @@ TAG_MAP = {
         "sources": {"XMP-dc:Subject": {"write_mode": "always"}},
         "handler": "list",
     },
-    "GPSPosition": {
-        "sources": {"Composite:GPSPosition": {"write_mode": "always"}},
+    "LatitudeCreated": {
+        "sources": {
+            "XMP-iptcExt:LocationCreatedGPSLatitude": {"write_mode": "always"},
+            "XMP-exif:GPSLatitude": {"write_mode": "if_exists"},
+        },
         "read_format": "#",
         "handler": "simple",
     },
-    "Location": {
+    "LongitudeCreated": {
+        "sources": {
+            "XMP-iptcExt:LocationCreatedGPSLongitude": {"write_mode": "always"},
+            "XMP-exif:GPSLongitude": {"write_mode": "if_exists"},
+        },
+        "read_format": "#",
+        "handler": "simple",
+    },
+    "LocationCreated": {
         "sources": {"XMP-iptcExt:LocationCreatedSublocation": {"write_mode": "always"}},
         "handler": "simple",
     },
-    "City": {
+    "CityCreated": {
         "sources": {"XMP-iptcExt:LocationCreatedCity": {"write_mode": "always"}},
         "handler": "simple",
     },
-    "State": {
+    "StateCreated": {
         "sources": {
             "XMP-iptcExt:LocationCreatedProvinceState": {"write_mode": "always"}
         },
         "handler": "simple",
     },
-    "Country": {
+    "CountryCreated": {
         "sources": {"XMP-iptcExt:LocationCreatedCountryName": {"write_mode": "always"}},
         "handler": "simple",
     },
-    "CountryCode": {
+    "CountryCodeCreated": {
         "sources": {"XMP-iptcExt:LocationCreatedCountryCode": {"write_mode": "always"}},
+        "handler": "simple",
+    },
+    "LatitudeShown": {
+        "sources": {
+            "XMP-iptcExt:LocationShownGPSLatitude": {"write_mode": "always"},
+        },
+        "read_format": "#",
+        "handler": "simple",
+    },
+    "LongitudeShown": {
+        "sources": {
+            "XMP-iptcExt:LocationShownGPSLongitude": {"write_mode": "always"},
+        },
+        "read_format": "#",
+        "handler": "simple",
+    },
+    "LocationShown": {
+        "sources": {"XMP-iptcExt:LocationShownSublocation": {"write_mode": "always"}},
+        "handler": "simple",
+    },
+    "CityShown": {
+        "sources": {"XMP-iptcExt:LocationShownCity": {"write_mode": "always"}},
+        "handler": "simple",
+    },
+    "StateShown": {
+        "sources": {"XMP-iptcExt:LocationShownProvinceState": {"write_mode": "always"}},
+        "handler": "simple",
+    },
+    "CountryShown": {
+        "sources": {"XMP-iptcExt:LocationShownCountryName": {"write_mode": "always"}},
+        "handler": "simple",
+    },
+    "CountryCodeShown": {
+        "sources": {"XMP-iptcExt:LocationShownCountryCode": {"write_mode": "always"}},
         "handler": "simple",
     },
     "DateTimeOriginal": {
@@ -186,9 +231,6 @@ def read_metadata_for_files(file_paths: list[str]) -> list[dict]:
                             if offset:
                                 offset_field["value"] = offset
                                 offset_field["isConsolidated"] = False
-            gps_field = final_item.get("GPSPosition")
-            if gps_field and isinstance(gps_field.get("value"), str):
-                gps_field["value"] = gps_field["value"].replace(" ", ", ", 1)
             keywords_field = final_item.get("Keywords")
             if keywords_field and isinstance(keywords_field.get("value"), str):
                 keywords_field["value"] = [keywords_field["value"]]

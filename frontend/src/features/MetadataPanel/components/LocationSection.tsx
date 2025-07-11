@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   SectionProps,
   LocationPresetData,
   MetadataValue,
   FormState,
+  LocationFieldKeys,
 } from "types";
 import {
   Box,
@@ -28,9 +29,28 @@ import { useLocationPresets } from "../hooks/useLocationPresets";
 import { getFieldData } from "../utils/metadataUtils";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 
+interface LocationFieldNamesMap {
+  latitude: LocationFieldKeys;
+  longitude: LocationFieldKeys;
+  location: LocationFieldKeys;
+  city: LocationFieldKeys;
+  state: LocationFieldKeys;
+  country: LocationFieldKeys;
+  countryCode: LocationFieldKeys;
+}
+
 interface LocationSectionProps extends SectionProps {
-  onLocationSet: (latlng: { lat: number; lng: number }) => void;
-  applyLocationPreset: (data: LocationPresetData) => void;
+  title: string;
+  fieldNames: LocationFieldNamesMap;
+  onLocationSet: (
+    latFieldName: keyof FormState,
+    lonFieldName: keyof FormState,
+    latlng: { lat: number; lng: number }
+  ) => void;
+  applyLocationPreset: (
+    data: LocationPresetData,
+    targetFields: LocationFieldNamesMap
+  ) => void;
   isFieldDirty: (fieldName: keyof FormState) => boolean;
 }
 
@@ -53,6 +73,8 @@ const parseGpsString = (
 const LocationSection: React.FC<LocationSectionProps> = ({
   formState,
   handleFormChange,
+  title,
+  fieldNames,
   onLocationSet,
   applyLocationPreset,
   isFieldDirty,
@@ -62,6 +84,38 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   const [presetName, setPresetName] = useState("");
   const { presets, addPreset, trackUsage } = useLocationPresets();
 
+  const latitudeData = getFieldData(formState[fieldNames.latitude], "");
+  const longitudeData = getFieldData(formState[fieldNames.longitude], "");
+  const cityData = getFieldData(formState[fieldNames.city], "");
+  const countryData = getFieldData(formState[fieldNames.country], "");
+  const countryCodeData = getFieldData(formState[fieldNames.countryCode], "");
+
+  const gpsDisplayValue = useMemo(() => {
+    if (
+      formState[fieldNames.latitude] === "(Mixed Values)" ||
+      formState[fieldNames.longitude] === "(Mixed Values)"
+    ) {
+      return "(Mixed Values)";
+    }
+    if (latitudeData.value && longitudeData.value) {
+      return `${latitudeData.value}, ${longitudeData.value}`;
+    }
+    return "";
+  }, [formState, fieldNames, latitudeData, longitudeData]);
+
+  const handleGpsInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const coords = parseGpsString(value);
+    if (coords) {
+      handleFormChange(fieldNames.latitude, String(coords.lat));
+      handleFormChange(fieldNames.longitude, String(coords.lng));
+    } else {
+      const parts = value.split(",");
+      handleFormChange(fieldNames.latitude, parts[0] || "");
+      handleFormChange(fieldNames.longitude, parts[1] || "");
+    }
+  };
+
   const handleOpenSaveDialog = () => {
     setPresetName("");
     setSaveDialogOpen(true);
@@ -69,26 +123,29 @@ const LocationSection: React.FC<LocationSectionProps> = ({
 
   const handleSavePreset = () => {
     const dataToSave: LocationPresetData = {};
-    const locationKeys: (keyof LocationPresetData)[] = [
-      "GPSPosition",
-      "Location",
-      "City",
-      "State",
-      "Country",
-      "CountryCode",
-    ];
 
-    locationKeys.forEach((key) => {
-      const field = formState[key];
+    const addToPreset = (
+      genericKey: keyof LocationPresetData,
+      formKey: keyof FormState
+    ) => {
+      const field = formState[formKey];
       if (
         field &&
         typeof field === "object" &&
         "value" in field &&
         field.value
       ) {
-        (dataToSave as any)[key] = field.value;
+        (dataToSave as any)[genericKey] = field.value;
       }
-    });
+    };
+
+    addToPreset("Latitude", fieldNames.latitude);
+    addToPreset("Longitude", fieldNames.longitude);
+    addToPreset("Location", fieldNames.location);
+    addToPreset("City", fieldNames.city);
+    addToPreset("State", fieldNames.state);
+    addToPreset("Country", fieldNames.country);
+    addToPreset("CountryCode", fieldNames.countryCode);
 
     if (Object.keys(dataToSave).length > 0) {
       addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
@@ -97,24 +154,26 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     }
   };
 
-  const gpsPositionData = getFieldData(formState.GPSPosition, "");
-  const cityData = getFieldData(formState.City, "");
-  const countryData = getFieldData(formState.Country, "");
-  const countryCodeData = getFieldData(formState.CountryCode, "");
-
   const locationFieldsPopulated =
-    gpsPositionData.value.trim() !== "" ||
-    cityData.value.trim() !== "" ||
-    countryData.value.trim() !== "";
+    (String(latitudeData.value || "").trim() !== "" &&
+      String(longitudeData.value || "").trim() !== "") ||
+    String(cityData.value || "").trim() !== "" ||
+    String(countryData.value || "").trim() !== "";
 
-  const textFields: { key: keyof LocationPresetData; label: string }[] = [
-    { key: "Location", label: "Location" },
-    { key: "City", label: "City" },
-    { key: "State", label: "State" },
+  const textFields: {
+    key: keyof Omit<
+      LocationFieldNamesMap,
+      "latitude" | "longitude" | "country" | "countryCode"
+    >;
+    label: string;
+  }[] = [
+    { key: "location", label: "Location" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
   ];
 
   return (
-    <FormSection title="Location">
+    <FormSection title={title}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Autocomplete
           fullWidth
@@ -122,7 +181,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           getOptionLabel={(option) => option.name}
           onChange={(event, newValue) => {
             if (newValue) {
-              applyLocationPreset(newValue.data);
+              applyLocationPreset(newValue.data, fieldNames);
               trackUsage(newValue.id);
             }
           }}
@@ -144,22 +203,25 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         label="GPS Position"
         variant="outlined"
         size="small"
-        value={
-          formState.GPSPosition === "(Mixed Values)"
-            ? ""
-            : gpsPositionData.value
-        }
+        value={gpsDisplayValue === "(Mixed Values)" ? "" : gpsDisplayValue}
         placeholder={
-          formState.GPSPosition === "(Mixed Values)"
+          gpsDisplayValue === "(Mixed Values)"
             ? "(Mixed Values)"
             : "e.g., 48.8583, 2.2945"
         }
-        onChange={(e) => handleFormChange("GPSPosition", e.target.value)}
-        sx={getDirtyFieldSx(isFieldDirty("GPSPosition"))}
+        onChange={handleGpsInputChange}
+        sx={getDirtyFieldSx(
+          isFieldDirty(fieldNames.latitude) ||
+            isFieldDirty(fieldNames.longitude)
+        )}
         slotProps={{
           input: {
             endAdornment: (
-              <ConsolidationAdornment show={!gpsPositionData.isConsolidated} />
+              <ConsolidationAdornment
+                show={
+                  !latitudeData.isConsolidated || !longitudeData.isConsolidated
+                }
+              />
             ),
           },
         }}
@@ -174,23 +236,28 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         Select on Map
       </Button>
       {textFields.map(({ key, label }) => {
+        const formKey = fieldNames[key];
         const fieldData = getFieldData(
-          formState[key] as MetadataValue<string> | "(Mixed Values)",
+          formState[formKey] as MetadataValue<string> | "(Mixed Values)",
           ""
         );
         return (
           <TextField
-            key={key}
+            key={formKey}
             fullWidth
             label={label}
             variant="outlined"
             size="small"
-            value={formState[key] === "(Mixed Values)" ? "" : fieldData.value}
-            placeholder={
-              formState[key] === "(Mixed Values)" ? "(Mixed Values)" : ""
+            value={
+              formState[formKey] === "(Mixed Values)"
+                ? ""
+                : fieldData.value || ""
             }
-            onChange={(e) => handleFormChange(key, e.target.value)}
-            sx={getDirtyFieldSx(isFieldDirty(key))}
+            placeholder={
+              formState[formKey] === "(Mixed Values)" ? "(Mixed Values)" : ""
+            }
+            onChange={(e) => handleFormChange(formKey, e.target.value)}
+            sx={getDirtyFieldSx(isFieldDirty(formKey))}
             slotProps={{
               input: {
                 endAdornment: (
@@ -204,25 +271,32 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
         <CountryInput
           label="Country"
-          countryValue={countryData.value}
+          countryValue={countryData.value || ""}
           isConsolidated={countryData.isConsolidated}
-          onCountryChange={(val) => handleFormChange("Country", val)}
-          onCodeChange={(val) => handleFormChange("CountryCode", val)}
-          isDirty={isFieldDirty("Country") || isFieldDirty("CountryCode")}
+          onCountryChange={(val) => handleFormChange(fieldNames.country, val)}
+          onCodeChange={(val) => handleFormChange(fieldNames.countryCode, val)}
+          isDirty={
+            isFieldDirty(fieldNames.country) ||
+            isFieldDirty(fieldNames.countryCode)
+          }
         />
         <TextField
           label="Country Code"
           variant="outlined"
           size="small"
-          value={countryCodeData.value}
+          value={countryCodeData.value || ""}
           placeholder={
-            formState.CountryCode === "(Mixed Values)" ? "(Mixed)" : ""
+            formState[fieldNames.countryCode] === "(Mixed Values)"
+              ? "(Mixed)"
+              : ""
           }
-          onChange={(e) => handleFormChange("CountryCode", e.target.value)}
+          onChange={(e) =>
+            handleFormChange(fieldNames.countryCode, e.target.value)
+          }
           sx={{
             width: 100,
             flexShrink: 0,
-            ...getDirtyFieldSx(isFieldDirty("CountryCode")),
+            ...getDirtyFieldSx(isFieldDirty(fieldNames.countryCode)),
           }}
           slotProps={{
             input: {
@@ -238,8 +312,10 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <MapModal
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
-        onLocationSet={onLocationSet}
-        initialCoords={parseGpsString(gpsPositionData.value)}
+        onLocationSet={(latlng) =>
+          onLocationSet(fieldNames.latitude, fieldNames.longitude, latlng)
+        }
+        initialCoords={parseGpsString(gpsDisplayValue)}
       />
       <Dialog open={isSaveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
         <DialogTitle>Save Location Preset</DialogTitle>

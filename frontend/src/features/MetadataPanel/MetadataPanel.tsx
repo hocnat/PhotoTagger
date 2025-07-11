@@ -7,7 +7,6 @@ import {
   IconButton,
   Stack,
   Grid,
-  Paper,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -123,6 +122,16 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3} sx={{ height: "100%" }}>
             <LocationSection
+              title="Location Created"
+              fieldNames={{
+                latitude: "LatitudeCreated",
+                longitude: "LongitudeCreated",
+                location: "LocationCreated",
+                city: "CityCreated",
+                state: "StateCreated",
+                country: "CountryCreated",
+                countryCode: "CountryCodeCreated",
+              }}
               formState={formState}
               handleFormChange={handleFormChange}
               onLocationSet={handleLocationSet}
@@ -133,26 +142,25 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
-          <Paper
-            variant="outlined"
-            sx={{
-              height: "100%",
-              minHeight: "200px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-              p: 2,
-              borderColor: "rgba(0, 0, 0, 0.12)",
-              color: "text.disabled",
-            }}
-          >
-            <Typography variant="body2">
-              Location Shown
-              <br />
-              (Coming Soon)
-            </Typography>
-          </Paper>
+          <Stack spacing={3} sx={{ height: "100%" }}>
+            <LocationSection
+              title="Location Shown"
+              fieldNames={{
+                latitude: "LatitudeShown",
+                longitude: "LongitudeShown",
+                location: "LocationShown",
+                city: "CityShown",
+                state: "StateShown",
+                country: "CountryShown",
+                countryCode: "CountryCodeShown",
+              }}
+              formState={formState}
+              handleFormChange={handleFormChange}
+              onLocationSet={handleLocationSet}
+              applyLocationPreset={applyLocationPreset}
+              isFieldDirty={isFieldDirty}
+            />
+          </Stack>
         </Grid>
       </Grid>
     );
