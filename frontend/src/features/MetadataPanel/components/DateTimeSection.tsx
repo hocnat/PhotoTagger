@@ -4,21 +4,13 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
-import { SectionProps, FormState } from "types";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getPlaceholder } from "../utils/metadataUtils";
+import { useMetadata } from "../context/MetadataEditorContext";
 
-interface DateTimeSectionProps extends SectionProps {
-  getDateTimeObject: () => Date | null;
-  isFieldDirty: (fieldName: keyof FormState) => boolean;
-}
-
-const DateTimeSection: React.FC<DateTimeSectionProps> = ({
-  formState,
-  handleFormChange,
-  getDateTimeObject,
-  isFieldDirty,
-}) => {
+const DateTimeSection: React.FC = () => {
+  const { formState, handleFormChange, getDateTimeObject, isFieldDirty } =
+    useMetadata();
   const dateField = formState.DateTimeOriginal;
   const offsetField = formState.OffsetTimeOriginal;
 

@@ -1,20 +1,13 @@
-import { SectionProps, FormState } from "types";
 import { TextField } from "@mui/material";
 
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
+import { useMetadata } from "../context/MetadataEditorContext";
 
-interface CreatorSectionProps extends SectionProps {
-  isFieldDirty: (fieldName: keyof FormState) => boolean;
-}
-
-const CreatorSection: React.FC<CreatorSectionProps> = ({
-  formState,
-  handleFormChange,
-  isFieldDirty,
-}) => {
+const CreatorSection: React.FC = () => {
+  const { formState, handleFormChange, isFieldDirty } = useMetadata();
   const field = formState.Creator;
 
   return (

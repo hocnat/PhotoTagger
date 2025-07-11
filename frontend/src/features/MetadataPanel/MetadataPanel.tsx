@@ -13,6 +13,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SaveIcon from "@mui/icons-material/Save";
 
 import { useMetadataEditor } from "./hooks/useMetadataEditor";
+import { MetadataEditorProvider } from "./context/MetadataEditorContext";
 import ImageModal from "./components/ImageModal";
 import ContentSection from "./components/ContentSection";
 import LocationSection from "./components/LocationSection";
@@ -48,39 +49,26 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 }) => {
   const [modalImageName, setModalImageName] = useState<string | null>(null);
 
-  const {
-    isMetadataLoading,
-    isSaving,
-    formState,
-    isSaveable,
-    keywordSuggestions,
-    handleFormChange,
-    handleLocationSet,
-    handleSave,
-    handleKeywordInputChange,
-    getDateTimeObject,
-    applyLocationPreset,
-    isFieldDirty,
-  } = useMetadataEditor({
+  const metadataEditor = useMetadataEditor({
     selectedImageNames,
     folderPath,
     setIsDirty,
     onSaveSuccess,
   });
 
+  const { isMetadataLoading, isSaving, isSaveable, handleSave } =
+    metadataEditor;
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
         event.preventDefault();
-
         if (isSaveable && !isSaving) {
           handleSave();
         }
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -98,24 +86,9 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3} sx={{ height: "100%" }}>
-            <ContentSection
-              formState={formState}
-              handleFormChange={handleFormChange}
-              keywordSuggestions={keywordSuggestions}
-              onKeywordInputChange={handleKeywordInputChange}
-              isFieldDirty={isFieldDirty}
-            />
-            <DateTimeSection
-              formState={formState}
-              handleFormChange={handleFormChange}
-              getDateTimeObject={getDateTimeObject}
-              isFieldDirty={isFieldDirty}
-            />
-            <CreatorSection
-              formState={formState}
-              handleFormChange={handleFormChange}
-              isFieldDirty={isFieldDirty}
-            />
+            <ContentSection />
+            <DateTimeSection />
+            <CreatorSection />
           </Stack>
         </Grid>
 
@@ -132,11 +105,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                 country: "CountryCreated",
                 countryCode: "CountryCodeCreated",
               }}
-              formState={formState}
-              handleFormChange={handleFormChange}
-              onLocationSet={handleLocationSet}
-              applyLocationPreset={applyLocationPreset}
-              isFieldDirty={isFieldDirty}
             />
           </Stack>
         </Grid>
@@ -154,11 +122,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
                 country: "CountryShown",
                 countryCode: "CountryCodeShown",
               }}
-              formState={formState}
-              handleFormChange={handleFormChange}
-              onLocationSet={handleLocationSet}
-              applyLocationPreset={applyLocationPreset}
-              isFieldDirty={isFieldDirty}
             />
           </Stack>
         </Grid>
@@ -167,66 +130,70 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <DrawerHeader>
-        <Box>
-          <Typography variant="h6" component="h2">
-            Metadata
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {selectedImageNames.length} item(s) selected
-          </Typography>
+    <MetadataEditorProvider value={metadataEditor}>
+      <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+        <DrawerHeader>
+          <Box>
+            <Typography variant="h6" component="h2">
+              Metadata
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {selectedImageNames.length} item(s) selected
+            </Typography>
+          </Box>
+          <IconButton onClick={onClose} aria-label="close metadata panel">
+            <ChevronRightIcon />
+          </IconButton>
+        </DrawerHeader>
+
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+          <ImageCarousel
+            imageNames={selectedImageNames}
+            getImageUrl={getImageUrl}
+            onImageClick={(imageName) => setModalImageName(imageName)}
+          />
         </Box>
-        <IconButton onClick={onClose} aria-label="close metadata panel">
-          <ChevronRightIcon />
-        </IconButton>
-      </DrawerHeader>
 
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-        <ImageCarousel
-          imageNames={selectedImageNames}
-          getImageUrl={getImageUrl}
-          onImageClick={(imageName) => setModalImageName(imageName)}
-        />
+        {modalImageName && (
+          <ImageModal
+            isOpen={!!modalImageName}
+            onClose={() => setModalImageName(null)}
+            imageUrl={getImageUrl(modalImageName)}
+            imageName={modalImageName}
+          />
+        )}
+
+        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
+          {renderContent()}
+        </Box>
+
+        <Box
+          sx={{
+            p: 2,
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+            flexShrink: 0,
+          }}
+        >
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSave}
+              disabled={isSaving || !isSaveable}
+              startIcon={
+                isSaving ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <SaveIcon />
+                )
+              }
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </Stack>
+        </Box>
       </Box>
-
-      {modalImageName && (
-        <ImageModal
-          isOpen={!!modalImageName}
-          onClose={() => setModalImageName(null)}
-          imageUrl={getImageUrl(modalImageName)}
-          imageName={modalImageName}
-        />
-      )}
-
-      <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>{renderContent()}</Box>
-
-      <Box
-        sx={{
-          p: 2,
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-          flexShrink: 0,
-        }}
-      >
-        <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSave}
-            disabled={isSaving || !isSaveable}
-            startIcon={
-              isSaving ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <SaveIcon />
-              )
-            }
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </Stack>
-      </Box>
-    </Box>
+    </MetadataEditorProvider>
   );
 };
 

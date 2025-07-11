@@ -1,4 +1,4 @@
-import { SectionProps, Keyword, FormState } from "types";
+import { Keyword } from "types";
 import { TextField, Autocomplete, Chip, Box, Stack } from "@mui/material";
 
 import FormSection from "./FormSection";
@@ -6,23 +6,16 @@ import ConsolidationAdornment from "./ConsolidationAdornment";
 import WarningIndicator from "./WarningIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
+import { useMetadata } from "../context/MetadataEditorContext";
 
-interface ContentSectionProps extends SectionProps {
-  keywordSuggestions: string[];
-  onKeywordInputChange: (
-    event: React.SyntheticEvent,
-    newInputValue: string
-  ) => void;
-  isFieldDirty: (fieldName: keyof FormState) => boolean;
-}
-
-const ContentSection: React.FC<ContentSectionProps> = ({
-  formState,
-  handleFormChange,
-  keywordSuggestions,
-  onKeywordInputChange,
-  isFieldDirty,
-}) => {
+const ContentSection: React.FC = () => {
+  const {
+    formState,
+    handleFormChange,
+    keywordSuggestions,
+    handleKeywordInputChange,
+    isFieldDirty,
+  } = useMetadata();
   const titleField = formState.Title;
   const keywordsField = formState.Keywords;
 
@@ -58,7 +51,7 @@ const ContentSection: React.FC<ContentSectionProps> = ({
           options={keywordSuggestions}
           filterOptions={(x) => x}
           value={null}
-          onInputChange={onKeywordInputChange}
+          onInputChange={handleKeywordInputChange}
           onChange={(event, newValue) => {
             if (typeof newValue === "string" && newValue.trim() !== "") {
               const newKeyword: Keyword = {

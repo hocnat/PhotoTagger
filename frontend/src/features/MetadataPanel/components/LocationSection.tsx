@@ -20,13 +20,14 @@ import {
 import MapIcon from "@mui/icons-material/Map";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
 
+import { useLocationPresets } from "../hooks/useLocationPresets";
 import FormSection from "./FormSection";
 import CountryInput from "./CountryInput";
 import MapModal from "./MapModal";
 import ConsolidationAdornment from "./ConsolidationAdornment";
-import { useLocationPresets } from "../hooks/useLocationPresets";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
+import { useMetadata } from "../context/MetadataEditorContext";
 
 interface LocationFieldNamesMap {
   latitude: LocationFieldKeys;
@@ -38,19 +39,9 @@ interface LocationFieldNamesMap {
   countryCode: LocationFieldKeys;
 }
 
-interface LocationSectionProps extends SectionProps {
+interface LocationSectionProps {
   title: string;
   fieldNames: LocationFieldNamesMap;
-  onLocationSet: (
-    latFieldName: keyof FormState,
-    lonFieldName: keyof FormState,
-    latlng: { lat: number; lng: number }
-  ) => void;
-  applyLocationPreset: (
-    data: LocationPresetData,
-    targetFields: LocationFieldNamesMap
-  ) => void;
-  isFieldDirty: (fieldName: keyof FormState) => boolean;
 }
 
 const parseGpsString = (
@@ -70,14 +61,17 @@ const parseGpsString = (
 };
 
 const LocationSection: React.FC<LocationSectionProps> = ({
-  formState,
-  handleFormChange,
   title,
   fieldNames,
-  onLocationSet,
-  applyLocationPreset,
-  isFieldDirty,
 }) => {
+  const {
+    formState,
+    handleFormChange,
+    handleLocationSet,
+    applyLocationPreset,
+    isFieldDirty,
+  } = useMetadata();
+
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
@@ -94,7 +88,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       latitudeField?.status === "mixed" ||
       longitudeField?.status === "mixed"
     ) {
-      return getPlaceholder(latitudeField); // or longitudeField, same result
+      return getPlaceholder(latitudeField);
     }
     if (
       latitudeField?.status === "unique" &&
@@ -318,7 +312,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         onLocationSet={(latlng) =>
-          onLocationSet(fieldNames.latitude, fieldNames.longitude, latlng)
+          handleLocationSet(fieldNames.latitude, fieldNames.longitude, latlng)
         }
         initialCoords={parseGpsString(
           gpsDisplayValue !== "(Mixed Values)" ? gpsDisplayValue : undefined
