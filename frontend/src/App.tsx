@@ -25,10 +25,13 @@ import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
 import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
+import {
+  UnsavedChangesProvider,
+  useUnsavedChangesContext,
+} from "./context/UnsavedChangesContext";
 
 import { useImageLoader, useImageSelection } from "./features/ImageGrid/hooks";
 import { useRenameDialog } from "./features/RenameDialog";
-import { useUnsavedChanges } from "./hooks/useUnsavedChanges";
 
 import "./App.css";
 
@@ -49,7 +52,7 @@ const getGridColumnCount = (): number => {
   return cards.length;
 };
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
@@ -72,13 +75,12 @@ const App: React.FC = () => {
   } = useImageSelection(imageData.files);
 
   const {
-    isDirty,
     setIsDirty,
     promptAction,
     isConfirmationOpen,
     handleConfirm: handleUnsavedChangesConfirm,
     handleClose: handleUnsavedChangesClose,
-  } = useUnsavedChanges();
+  } = useUnsavedChangesContext();
 
   const {
     openRenameDialog,
@@ -382,7 +384,6 @@ const App: React.FC = () => {
           selectedImageNames={selectedImages}
           folderPath={imageData.folder}
           getImageUrl={getImageUrl}
-          setIsDirty={setIsDirty}
           onClose={handlePanelClose}
           onSaveSuccess={handleSaveSuccess}
         />
@@ -399,6 +400,14 @@ const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
       />
     </Box>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <UnsavedChangesProvider>
+      <AppContent />
+    </UnsavedChangesProvider>
   );
 };
 

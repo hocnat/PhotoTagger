@@ -1,13 +1,8 @@
 import { createContext, useContext } from "react";
 import { useMetadataEditor } from "../hooks/useMetadataEditor";
 
-// The type of the context value will be the return type of our hook.
-// This ensures that the context and the hook are always in sync.
 type MetadataEditorContextType = ReturnType<typeof useMetadataEditor>;
 
-// Create the context with an initial undefined value.
-// The provider will always supply a value, but this helps catch bugs
-// where a component tries to consume the context outside of a provider.
 const MetadataEditorContext = createContext<
   MetadataEditorContextType | undefined
 >(undefined);

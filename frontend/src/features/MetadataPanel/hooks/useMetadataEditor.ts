@@ -11,6 +11,7 @@ import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
+import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
 
 interface LocationFieldNamesMap {
   latitude: LocationFieldKeys;
@@ -25,19 +26,18 @@ interface LocationFieldNamesMap {
 interface UseMetadataEditorProps {
   selectedImageNames: string[];
   folderPath: string;
-  setIsDirty: (isDirty: boolean) => void;
   onSaveSuccess: () => void;
 }
 
 export const useMetadataEditor = ({
   selectedImageNames,
   folderPath,
-  setIsDirty,
   onSaveSuccess,
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const { showNotification } = useNotification();
+  const { setIsDirty } = useUnsavedChangesContext();
 
   const {
     imageFiles,

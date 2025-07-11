@@ -25,7 +25,6 @@ interface MetadataPanelProps {
   selectedImageNames: string[];
   folderPath: string;
   getImageUrl: (imageName: string) => string;
-  setIsDirty: (isDirty: boolean) => void;
   onClose: () => void;
   onSaveSuccess: () => void;
 }
@@ -43,7 +42,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   selectedImageNames,
   folderPath,
   getImageUrl,
-  setIsDirty,
   onClose,
   onSaveSuccess,
 }) => {
@@ -52,7 +50,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   const metadataEditor = useMetadataEditor({
     selectedImageNames,
     folderPath,
-    setIsDirty,
     onSaveSuccess,
   });
 
