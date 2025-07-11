@@ -29,8 +29,12 @@ import {
   UnsavedChangesProvider,
   useUnsavedChangesContext,
 } from "./context/UnsavedChangesContext";
+import {
+  ImageSelectionProvider,
+  useImageSelectionContext,
+} from "./context/ImageSelectionContext";
 
-import { useImageLoader, useImageSelection } from "./features/ImageGrid/hooks";
+import { useImageLoader } from "./features/ImageGrid/hooks";
 import { useRenameDialog } from "./features/RenameDialog";
 
 import "./App.css";
@@ -72,8 +76,7 @@ const AppContent: React.FC = () => {
     handleSelectImage,
     selectSingleImage,
     clearSelection,
-  } = useImageSelection(imageData.files);
-
+  } = useImageSelectionContext();
   const {
     setIsDirty,
     promptAction,
@@ -192,7 +195,7 @@ const AppContent: React.FC = () => {
     if (selectedImages.length === 0 && isPanelOpen) {
       setIsPanelOpen(false);
     }
-  }, [selectedImages, isPanelOpen]);
+  }, [selectedImages.length, isPanelOpen]);
 
   const getImageUrl = (imageName: string): string => {
     if (!imageData.folder || !imageName) return "";
@@ -217,8 +220,6 @@ const AppContent: React.FC = () => {
 
           <Tooltip title="Edit metadata for selected files">
             <span>
-              {" "}
-              {/* Wrapper for disabled button */}
               <IconButton
                 color="inherit"
                 aria-label="edit metadata"
@@ -232,8 +233,6 @@ const AppContent: React.FC = () => {
 
           <Tooltip title="Rename selected files">
             <span>
-              {" "}
-              {/* Wrapper for disabled button */}
               <IconButton
                 color="inherit"
                 disabled={
@@ -241,11 +240,7 @@ const AppContent: React.FC = () => {
                   isRenamePreviewLoading ||
                   selectedImages.length === 0
                 }
-                onClick={() =>
-                  openRenameDialog(
-                    selectedImages.map((name) => `${imageData.folder}\\${name}`)
-                  )
-                }
+                onClick={openRenameDialog}
               >
                 {isRenamePreviewLoading ? (
                   <CircularProgress size={24} color="inherit" />
@@ -274,7 +269,7 @@ const AppContent: React.FC = () => {
           height: "100vh",
         }}
       >
-        <Toolbar /> {/* Spacer for content to be below app bar */}
+        <Toolbar />
         <Box
           sx={{
             display: "flex",
@@ -379,14 +374,15 @@ const AppContent: React.FC = () => {
           },
         }}
       >
-        <MetadataPanel
-          key={selectedImages.join("-")}
-          selectedImageNames={selectedImages}
-          folderPath={imageData.folder}
-          getImageUrl={getImageUrl}
-          onClose={handlePanelClose}
-          onSaveSuccess={handleSaveSuccess}
-        />
+        {selectedImages.length > 0 && (
+          <MetadataPanel
+            key={selectedImages.join("-")}
+            folderPath={imageData.folder}
+            getImageUrl={getImageUrl}
+            onClose={handlePanelClose}
+            onSaveSuccess={handleSaveSuccess}
+          />
+        )}
       </Drawer>
 
       <UnsavedChangesDialog
@@ -406,7 +402,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <UnsavedChangesProvider>
-      <AppContent />
+      <ImageSelectionProvider>
+        <AppContent />
+      </ImageSelectionProvider>
     </UnsavedChangesProvider>
   );
 };

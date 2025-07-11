@@ -12,6 +12,7 @@ import { useNotification } from "hooks/useNotification";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
 import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
+import { useImageSelectionContext } from "context/ImageSelectionContext";
 
 interface LocationFieldNamesMap {
   latitude: LocationFieldKeys;
@@ -24,13 +25,11 @@ interface LocationFieldNamesMap {
 }
 
 interface UseMetadataEditorProps {
-  selectedImageNames: string[];
   folderPath: string;
   onSaveSuccess: () => void;
 }
 
 export const useMetadataEditor = ({
-  selectedImageNames,
   folderPath,
   onSaveSuccess,
 }: UseMetadataEditorProps) => {
@@ -38,12 +37,13 @@ export const useMetadataEditor = ({
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const { showNotification } = useNotification();
   const { setIsDirty } = useUnsavedChangesContext();
+  const { selectedImages } = useImageSelectionContext();
 
   const {
     imageFiles,
     isLoading: isMetadataLoading,
     refetch,
-  } = useSelectionDataLoader(selectedImageNames, folderPath);
+  } = useSelectionDataLoader(selectedImages, folderPath);
   const { formState, setFormState, hasChanges, originalFormState } =
     useAggregatedMetadata(imageFiles);
 

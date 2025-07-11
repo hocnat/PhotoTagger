@@ -14,6 +14,7 @@ import SaveIcon from "@mui/icons-material/Save";
 
 import { useMetadataEditor } from "./hooks/useMetadataEditor";
 import { MetadataEditorProvider } from "./context/MetadataEditorContext";
+import { useImageSelectionContext } from "context/ImageSelectionContext";
 import ImageModal from "./components/ImageModal";
 import ContentSection from "./components/ContentSection";
 import LocationSection from "./components/LocationSection";
@@ -22,7 +23,6 @@ import CreatorSection from "./components/CreatorSection";
 import ImageCarousel from "./components/ImageCarousel";
 
 interface MetadataPanelProps {
-  selectedImageNames: string[];
   folderPath: string;
   getImageUrl: (imageName: string) => string;
   onClose: () => void;
@@ -39,16 +39,15 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 }));
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
-  selectedImageNames,
   folderPath,
   getImageUrl,
   onClose,
   onSaveSuccess,
 }) => {
   const [modalImageName, setModalImageName] = useState<string | null>(null);
+  const { selectedImages } = useImageSelectionContext();
 
   const metadataEditor = useMetadataEditor({
-    selectedImageNames,
     folderPath,
     onSaveSuccess,
   });
@@ -135,7 +134,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               Metadata
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {selectedImageNames.length} item(s) selected
+              {selectedImages.length} item(s) selected
             </Typography>
           </Box>
           <IconButton onClick={onClose} aria-label="close metadata panel">
@@ -145,7 +144,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
 
         <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
           <ImageCarousel
-            imageNames={selectedImageNames}
+            imageNames={selectedImages}
             getImageUrl={getImageUrl}
             onImageClick={(imageName) => setModalImageName(imageName)}
           />
