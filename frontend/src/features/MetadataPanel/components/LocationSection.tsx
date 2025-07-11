@@ -1,10 +1,5 @@
 import { useState, useMemo } from "react";
-import {
-  SectionProps,
-  LocationPresetData,
-  FormState,
-  LocationFieldKeys,
-} from "types";
+import { SectionProps, LocationPresetData, FormState } from "types";
 import {
   Box,
   Button,
@@ -30,13 +25,13 @@ import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
 
 interface LocationFieldNamesMap {
-  latitude: LocationFieldKeys;
-  longitude: LocationFieldKeys;
-  location: LocationFieldKeys;
-  city: LocationFieldKeys;
-  state: LocationFieldKeys;
-  country: LocationFieldKeys;
-  countryCode: LocationFieldKeys;
+  latitude: keyof FormState;
+  longitude: keyof FormState;
+  location: keyof FormState;
+  city: keyof FormState;
+  state: keyof FormState;
+  country: keyof FormState;
+  countryCode: keyof FormState;
 }
 
 interface LocationSectionProps {
@@ -248,7 +243,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             label={label}
             variant="outlined"
             size="small"
-            value={getDisplayValue(field)}
+            value={getDisplayValue(field as any)}
             placeholder={getPlaceholder(field)}
             onChange={(e) => handleFormChange(formKey, e.target.value)}
             sx={getDirtyFieldSx(isFieldDirty(formKey))}
@@ -267,7 +262,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
         <CountryInput
           label="Country"
-          countryValue={getDisplayValue(countryField)}
+          countryValue={getDisplayValue(countryField as any)}
           isConsolidated={
             countryField?.status === "unique"
               ? countryField.isConsolidated
@@ -284,7 +279,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           label="Country Code"
           variant="outlined"
           size="small"
-          value={getDisplayValue(countryCodeField)}
+          value={getDisplayValue(countryCodeField as any)}
           placeholder={getPlaceholder(countryCodeField) || "(Mixed)"}
           onChange={(e) =>
             handleFormChange(fieldNames.countryCode, e.target.value)

@@ -136,22 +136,6 @@ export interface FormState {
   Copyright: AggregatedValue<string>;
 }
 
-export type LocationFieldKeys =
-  | "LatitudeCreated"
-  | "LongitudeCreated"
-  | "LocationCreated"
-  | "CityCreated"
-  | "StateCreated"
-  | "CountryCreated"
-  | "CountryCodeCreated"
-  | "LatitudeShown"
-  | "LongitudeShown"
-  | "LocationShown"
-  | "CityShown"
-  | "StateShown"
-  | "CountryShown"
-  | "CountryCodeShown";
-
 export interface ImageFile {
   filename: string;
   metadata: RawImageMetadata;

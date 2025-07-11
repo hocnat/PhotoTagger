@@ -5,7 +5,6 @@ import {
   ApiError,
   LocationPresetData,
   FileUpdatePayload,
-  LocationFieldKeys,
 } from "types";
 import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
@@ -15,13 +14,13 @@ import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
 import { useImageSelectionContext } from "context/ImageSelectionContext";
 
 interface LocationFieldNamesMap {
-  latitude: LocationFieldKeys;
-  longitude: LocationFieldKeys;
-  location: LocationFieldKeys;
-  city: LocationFieldKeys;
-  state: LocationFieldKeys;
-  country: LocationFieldKeys;
-  countryCode: LocationFieldKeys;
+  latitude: keyof FormState;
+  longitude: keyof FormState;
+  location: keyof FormState;
+  city: keyof FormState;
+  state: keyof FormState;
+  country: keyof FormState;
+  countryCode: keyof FormState;
 }
 
 interface UseMetadataEditorProps {
