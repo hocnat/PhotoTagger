@@ -98,20 +98,11 @@ export const useMetadataEditor = ({
       blockName: "LocationCreated" | "LocationShown"
     ) => {
       let newBlockState = { ...formState[blockName] } as LocationData;
-      const keyMap: { [key in keyof LocationPresetData]?: keyof LocationData } =
-        {
-          Latitude: "Latitude",
-          Longitude: "Longitude",
-          Location: "Location",
-          City: "City",
-          State: "State",
-          Country: "Country",
-          CountryCode: "CountryCode",
-        };
 
-      for (const [presetKey, value] of Object.entries(data)) {
-        const formKey = keyMap[presetKey as keyof LocationPresetData];
-        if (formKey && value !== undefined) {
+      for (const [key, value] of Object.entries(data)) {
+        const formKey = key as keyof LocationData;
+
+        if (formKey in newBlockState && value !== undefined) {
           (newBlockState[formKey] as any) = {
             status: "unique",
             value,
