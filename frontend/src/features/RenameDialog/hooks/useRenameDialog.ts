@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { ApiError, RenamePreviewItem, RenameFileResult } from "types";
 import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
-import { useImageSelectionContext } from "context/ImageSelectionContext";
 
 interface UseRenameDialogProps {
   onRenameComplete: () => void;
@@ -14,11 +13,9 @@ export const useRenameDialog = ({ onRenameComplete }: UseRenameDialogProps) => {
   const [previewData, setPreviewData] = useState<RenamePreviewItem[]>([]);
   const filesToRenameRef = useRef<string[]>([]);
   const { showNotification } = useNotification();
-  const { selectedImages } = useImageSelectionContext();
 
-  const openRenameDialog = () => {
-    if (selectedImages.length === 0) return;
-    const filePaths = selectedImages.map((name) => `${name}`);
+  const openRenameDialog = (filePaths: string[]) => {
+    if (filePaths.length === 0) return;
     filesToRenameRef.current = filePaths;
     setIsLoading(true);
     apiService

@@ -34,7 +34,7 @@ import {
   useImageSelectionContext,
 } from "./context/ImageSelectionContext";
 
-import { useImageLoader } from "./features/ImageGrid/hooks";
+import { useImageLoader, useImageSelection } from "./features/ImageGrid/hooks";
 import { useRenameDialog } from "./features/RenameDialog";
 
 import "./App.css";
@@ -240,7 +240,12 @@ const AppContent: React.FC = () => {
                   isRenamePreviewLoading ||
                   selectedImages.length === 0
                 }
-                onClick={openRenameDialog}
+                onClick={() => {
+                  const fullPaths = selectedImages.map(
+                    (name) => `${imageData.folder}\\${name}`
+                  );
+                  openRenameDialog(fullPaths);
+                }}
               >
                 {isRenamePreviewLoading ? (
                   <CircularProgress size={24} color="inherit" />
