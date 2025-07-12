@@ -6,7 +6,6 @@ import {
   LocationPresetData,
   FileUpdatePayload,
   ChipData,
-  RawImageMetadata,
   LocationData,
 } from "types";
 import * as apiService from "api/apiService";
@@ -14,35 +13,57 @@ import { useNotification } from "hooks/useNotification";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
 import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
-import { useImageSelectionContext } from "context/ImageSelectionContext";
 
 interface UseMetadataEditorProps {
   folderPath: string;
   onSaveSuccess: () => void;
 }
 
+/**
+ * The primary business logic hook for the metadata editing panel.
+ * It orchestrates data loading, state aggregation, user input, and saving operations.
+ * This hook acts as the "ViewModel" for the entire metadata feature, providing all
+ * necessary state and actions to its consumers via the MetadataEditorContext.
+ */
 export const useMetadataEditor = ({
   folderPath,
   onSaveSuccess,
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const { showNotification } = useNotification();
   const { setIsDirty } = useUnsavedChangesContext();
-  const { selectedImages } = useImageSelectionContext();
 
+  // Step 1: Load the raw metadata for the current selection.
   const {
     imageFiles,
     isLoading: isMetadataLoading,
     refetch,
-  } = useSelectionDataLoader(selectedImages, folderPath);
+    error: selectionError,
+  } = useSelectionDataLoader();
+
+  // This effect propagates critical data-loading errors from the child hook
+  // (`useSelectionDataLoader`) to the main error state of this parent hook.
+  // This allows the UI to display a single, centralized error message if the
+  // initial metadata for the selection cannot be loaded.
+  useEffect(() => {
+    setError(selectionError);
+  }, [selectionError]);
+
+  // Step 2: Aggregate the raw data into a hierarchical form state for the UI.
   const { formState, setFormState, hasChanges, originalFormState } =
     useAggregatedMetadata(imageFiles);
 
+  // This effect synchronizes the local `hasChanges` state with the global
+  // `isDirty` state from the UnsavedChangesContext.
   useEffect(() => {
     setIsDirty(hasChanges);
   }, [hasChanges, setIsDirty]);
 
+  // A memoized calculation to determine if there is anything to save.
+  // A save is needed if the form has user-initiated changes OR if any
+  // field is not consolidated across its underlying EXIF/XMP tags.
   const needsConsolidation = useMemo(() => {
     if (!formState) return false;
     for (const block of Object.values(formState)) {
@@ -58,8 +79,14 @@ export const useMetadataEditor = ({
 
   const isSaveable = hasChanges || needsConsolidation;
 
+  /**
+   * Checks if a specific field has been modified from its original state.
+   */
   const isFieldDirty = useCallback(
-    (blockName: keyof FormState, fieldName: keyof any): boolean => {
+    <T extends keyof FormState>(
+      blockName: T,
+      fieldName: keyof FormState[T]
+    ): boolean => {
       const currentBlock = formState[blockName];
       const originalBlock = originalFormState[blockName];
       if (!currentBlock || !originalBlock) return false;
@@ -70,43 +97,54 @@ export const useMetadataEditor = ({
     [formState, originalFormState]
   );
 
-  const handleFieldChange = <T extends keyof FormState>(
-    blockName: T,
-    fieldName: keyof FormState[T],
-    newValue: any
-  ) => {
-    setFormState((prevState) => {
-      const block = prevState[blockName];
-      if (!block) return prevState;
-      const field = (block as any)[fieldName];
-      if (field === undefined) return prevState;
-      const newField = {
-        status: "unique" as const,
-        value: newValue,
-        isConsolidated: field.status === "unique" ? field.isConsolidated : true,
-      };
-      return {
-        ...prevState,
-        [blockName]: { ...block, [fieldName]: newField },
-      };
-    });
-  };
+  /**
+   * A generic handler to update a single field within a block of the form state.
+   * This is the primary updater function called by UI components.
+   */
+  const handleFieldChange = useCallback(
+    <T extends keyof FormState>(
+      blockName: T,
+      fieldName: keyof FormState[T],
+      newValue: any
+    ) => {
+      setFormState((prevState) => {
+        const block = prevState[blockName];
+        if (!block) return prevState;
+        const field = (block as any)[fieldName];
+        if (field === undefined) return prevState;
+        // When a user edits a field, it becomes a 'unique' value. We preserve its
+        // consolidation status if it was already unique.
+        const newField = {
+          status: "unique" as const,
+          value: newValue,
+          isConsolidated:
+            field.status === "unique" ? field.isConsolidated : true,
+        };
+        return {
+          ...prevState,
+          [blockName]: { ...block, [fieldName]: newField },
+        };
+      });
+    },
+    [setFormState]
+  );
 
+  /**
+   * Applies all fields from a location preset to the specified location block.
+   */
   const applyLocationPreset = useCallback(
     (
       data: LocationPresetData,
       blockName: "LocationCreated" | "LocationShown"
     ) => {
       let newBlockState = { ...formState[blockName] } as LocationData;
-
       for (const [key, value] of Object.entries(data)) {
         const formKey = key as keyof LocationData;
-
         if (formKey in newBlockState && value !== undefined) {
           (newBlockState[formKey] as any) = {
             status: "unique",
             value,
-            isConsolidated: true,
+            isConsolidated: true, // Applying a preset makes fields consolidated by definition.
           };
         }
       }
@@ -118,6 +156,10 @@ export const useMetadataEditor = ({
     [formState, setFormState]
   );
 
+  /**
+   * Updates the latitude and longitude fields for a specific location block,
+   * typically after a selection from the map modal.
+   */
   const handleLocationSet = (
     blockName: "LocationCreated" | "LocationShown",
     latlng: { lat: number; lng: number }
@@ -126,6 +168,10 @@ export const useMetadataEditor = ({
     handleFieldChange(blockName, "Longitude", String(latlng.lng));
   };
 
+  /**
+   * The main save handler. It flattens the hierarchical form state, calculates
+   * keyword diffs, constructs the API payload, and sends it to the backend.
+   */
   const handleSave = () => {
     if (!isSaveable || !formState || !originalFormState) {
       showNotification("No changes to save.", "info");
@@ -133,6 +179,7 @@ export const useMetadataEditor = ({
     }
     setIsSaving(true);
 
+    // --- Keyword Diff Calculation ---
     const originalKeywords: ChipData[] =
       originalFormState.Content?.Keywords.status === "unique"
         ? originalFormState.Content.Keywords.value
@@ -150,73 +197,105 @@ export const useMetadataEditor = ({
       [...originalUiKeywords].filter((kw) => !currentUiKeywords.has(kw))
     );
 
+    // --- Payload Construction ---
     const files_to_update = imageFiles
       .map((file) => {
         const new_metadata: { [key: string]: any } = {};
 
-        const addDirtyFieldToPayload = (
-          blockName: keyof FormState,
-          fieldName: keyof any,
-          targetKey: keyof RawImageMetadata
-        ) => {
-          if (isFieldDirty(blockName, fieldName)) {
-            const field = (formState as any)?.[blockName]?.[fieldName];
-            if (field?.status === "unique") {
-              new_metadata[targetKey] = field.value;
-            }
-          }
-        };
+        // This explicit block flattens the hierarchical form state back into the
+        // flat structure required by the backend API.
+        if (isFieldDirty("Content", "Title")) {
+          const field = formState.Content?.Title;
+          if (field?.status === "unique") new_metadata.Title = field.value;
+        }
+        if (isFieldDirty("Creator", "Creator")) {
+          const field = formState.Creator?.Creator;
+          if (field?.status === "unique") new_metadata.Creator = field.value;
+        }
+        if (isFieldDirty("Creator", "Copyright")) {
+          const field = formState.Creator?.Copyright;
+          if (field?.status === "unique") new_metadata.Copyright = field.value;
+        }
+        if (isFieldDirty("DateTime", "DateTimeOriginal")) {
+          const field = formState.DateTime?.DateTimeOriginal;
+          if (field?.status === "unique")
+            new_metadata.DateTimeOriginal = field.value;
+        }
+        if (isFieldDirty("DateTime", "OffsetTimeOriginal")) {
+          const field = formState.DateTime?.OffsetTimeOriginal;
+          if (field?.status === "unique")
+            new_metadata.OffsetTimeOriginal = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "Latitude")) {
+          const field = formState.LocationCreated?.Latitude;
+          if (field?.status === "unique")
+            new_metadata.LatitudeCreated = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "Longitude")) {
+          const field = formState.LocationCreated?.Longitude;
+          if (field?.status === "unique")
+            new_metadata.LongitudeCreated = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "Location")) {
+          const field = formState.LocationCreated?.Location;
+          if (field?.status === "unique")
+            new_metadata.LocationCreated = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "City")) {
+          const field = formState.LocationCreated?.City;
+          if (field?.status === "unique")
+            new_metadata.CityCreated = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "State")) {
+          const field = formState.LocationCreated?.State;
+          if (field?.status === "unique")
+            new_metadata.StateCreated = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "Country")) {
+          const field = formState.LocationCreated?.Country;
+          if (field?.status === "unique")
+            new_metadata.CountryCreated = field.value;
+        }
+        if (isFieldDirty("LocationCreated", "CountryCode")) {
+          const field = formState.LocationCreated?.CountryCode;
+          if (field?.status === "unique")
+            new_metadata.CountryCodeCreated = field.value;
+        }
+        if (isFieldDirty("LocationShown", "Latitude")) {
+          const field = formState.LocationShown?.Latitude;
+          if (field?.status === "unique")
+            new_metadata.LatitudeShown = field.value;
+        }
+        if (isFieldDirty("LocationShown", "Longitude")) {
+          const field = formState.LocationShown?.Longitude;
+          if (field?.status === "unique")
+            new_metadata.LongitudeShown = field.value;
+        }
+        if (isFieldDirty("LocationShown", "Location")) {
+          const field = formState.LocationShown?.Location;
+          if (field?.status === "unique")
+            new_metadata.LocationShown = field.value;
+        }
+        if (isFieldDirty("LocationShown", "City")) {
+          const field = formState.LocationShown?.City;
+          if (field?.status === "unique") new_metadata.CityShown = field.value;
+        }
+        if (isFieldDirty("LocationShown", "State")) {
+          const field = formState.LocationShown?.State;
+          if (field?.status === "unique") new_metadata.StateShown = field.value;
+        }
+        if (isFieldDirty("LocationShown", "Country")) {
+          const field = formState.LocationShown?.Country;
+          if (field?.status === "unique")
+            new_metadata.CountryShown = field.value;
+        }
+        if (isFieldDirty("LocationShown", "CountryCode")) {
+          const field = formState.LocationShown?.CountryCode;
+          if (field?.status === "unique")
+            new_metadata.CountryCodeShown = field.value;
+        }
 
-        addDirtyFieldToPayload("Content", "Title", "Title");
-        addDirtyFieldToPayload("Creator", "Creator", "Creator");
-        addDirtyFieldToPayload("Creator", "Copyright", "Copyright");
-        addDirtyFieldToPayload(
-          "DateTime",
-          "DateTimeOriginal",
-          "DateTimeOriginal"
-        );
-        addDirtyFieldToPayload(
-          "DateTime",
-          "OffsetTimeOriginal",
-          "OffsetTimeOriginal"
-        );
-
-        addDirtyFieldToPayload(
-          "LocationCreated",
-          "Latitude",
-          "LatitudeCreated"
-        );
-        addDirtyFieldToPayload(
-          "LocationCreated",
-          "Longitude",
-          "LongitudeCreated"
-        );
-        addDirtyFieldToPayload(
-          "LocationCreated",
-          "Location",
-          "LocationCreated"
-        );
-        addDirtyFieldToPayload("LocationCreated", "City", "CityCreated");
-        addDirtyFieldToPayload("LocationCreated", "State", "StateCreated");
-        addDirtyFieldToPayload("LocationCreated", "Country", "CountryCreated");
-        addDirtyFieldToPayload(
-          "LocationCreated",
-          "CountryCode",
-          "CountryCodeCreated"
-        );
-
-        addDirtyFieldToPayload("LocationShown", "Latitude", "LatitudeShown");
-        addDirtyFieldToPayload("LocationShown", "Longitude", "LongitudeShown");
-        addDirtyFieldToPayload("LocationShown", "Location", "LocationShown");
-        addDirtyFieldToPayload("LocationShown", "City", "CityShown");
-        addDirtyFieldToPayload("LocationShown", "State", "StateShown");
-        addDirtyFieldToPayload("LocationShown", "Country", "CountryShown");
-        addDirtyFieldToPayload(
-          "LocationShown",
-          "CountryCode",
-          "CountryCodeShown"
-        );
-
+        // Keywords are handled with special additive/subtractive logic.
         const originalFileKeywords = new Set(
           file.metadata.Keywords?.value || []
         );
@@ -269,6 +348,9 @@ export const useMetadataEditor = ({
       .finally(() => setIsSaving(false));
   };
 
+  /**
+   * Fetches keyword suggestions from the backend based on user input.
+   */
   const handleKeywordInputChange = (
     event: React.SyntheticEvent,
     newInputValue: string
@@ -283,6 +365,10 @@ export const useMetadataEditor = ({
     }
   };
 
+  /**
+   * A helper to convert the date string from the form state into a Date
+   * object suitable for the DateTimePicker component.
+   */
   const getDateTimeObject = (): Date | null => {
     const field = formState.DateTime?.DateTimeOriginal;
     if (field?.status !== "unique" || !field.value) return null;
@@ -294,6 +380,7 @@ export const useMetadataEditor = ({
   };
 
   return {
+    error,
     isMetadataLoading,
     isSaving,
     formState,

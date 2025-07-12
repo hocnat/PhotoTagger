@@ -33,8 +33,11 @@ import {
   ImageSelectionProvider,
   useImageSelectionContext,
 } from "./context/ImageSelectionContext";
+import {
+  ImageLoaderProvider,
+  useImageLoaderContext,
+} from "./context/ImageLoaderContext";
 
-import { useImageLoader, useImageSelection } from "./features/ImageGrid/hooks";
 import { useRenameDialog } from "./features/RenameDialog";
 
 import "./App.css";
@@ -68,8 +71,7 @@ const AppContent: React.FC = () => {
     isLoading,
     error,
     loadImages,
-  } = useImageLoader();
-
+  } = useImageLoaderContext();
   const {
     selectedImages,
     setSelectedImages,
@@ -89,7 +91,7 @@ const AppContent: React.FC = () => {
     openRenameDialog,
     isRenamePreviewLoading,
     dialogProps: renameDialogProps,
-  } = useRenameDialog({ onRenameComplete: () => loadImages(imageData.folder) });
+  } = useRenameDialog();
 
   const handleFetchImages = useCallback(() => {
     promptAction(() => {
@@ -106,11 +108,11 @@ const AppContent: React.FC = () => {
     }
   }, [folderInput, isLoading, initialLoadDone, handleFetchImages]);
 
-  const handlePanelOpen = () => {
+  const handlePanelOpen = useCallback(() => {
     if (selectedImages.length > 0) {
       setIsPanelOpen(true);
     }
-  };
+  }, [selectedImages.length]);
 
   const handlePanelClose = () => {
     promptAction(() => setIsPanelOpen(false));
@@ -189,6 +191,7 @@ const AppContent: React.FC = () => {
     setSelectedImages,
     isPanelOpen,
     isConfirmationOpen,
+    handlePanelOpen,
   ]);
 
   useEffect(() => {
@@ -407,9 +410,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <UnsavedChangesProvider>
-      <ImageSelectionProvider>
-        <AppContent />
-      </ImageSelectionProvider>
+      <ImageLoaderProvider>
+        <ImageSelectionProvider>
+          <AppContent />
+        </ImageSelectionProvider>
+      </ImageLoaderProvider>
     </UnsavedChangesProvider>
   );
 };

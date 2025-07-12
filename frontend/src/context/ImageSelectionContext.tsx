@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useImageSelection } from "features/ImageGrid/hooks/useImageSelection";
-import { useImageLoader } from "features/ImageGrid/hooks/useImageLoader";
+import { useImageLoaderContext } from "./ImageLoaderContext";
 
 type ImageSelectionContextType = ReturnType<typeof useImageSelection>;
 
@@ -30,9 +30,7 @@ export const ImageSelectionProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  // We need image data to initialize the selection hook.
-  // This is a good example of co-locating related hooks.
-  const { imageData } = useImageLoader();
+  const { imageData } = useImageLoaderContext();
   const imageSelection = useImageSelection(imageData.files);
 
   return (

@@ -126,11 +126,16 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     Longitude.status === "unique" &&
     String(Latitude.value || "").trim() !== "" &&
     String(Longitude.value || "").trim() !== "";
+  const hasLocation =
+    Location.status === "unique" && String(Location.value || "").trim() !== "";
   const hasCity =
     City.status === "unique" && String(City.value || "").trim() !== "";
+  const hasState =
+    State.status === "unique" && String(State.value || "").trim() !== "";
   const hasCountry =
     Country.status === "unique" && String(Country.value || "").trim() !== "";
-  const locationFieldsPopulated = hasGps || hasCity || hasCountry;
+  const locationFieldsPopulated =
+    hasGps || hasLocation || hasCity || hasState || hasCountry;
 
   const textFields: { key: keyof typeof locationData; label: string }[] = [
     { key: "Location", label: "Location" },

@@ -5,7 +5,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import Slider from "react-slick";
 
 function NextArrow(props: any) {
-  const { className, style, onClick } = props;
+  const { onClick } = props;
   return (
     <IconButton
       onClick={onClick}
@@ -28,7 +28,7 @@ function NextArrow(props: any) {
 }
 
 function PrevArrow(props: any) {
-  const { className, style, onClick } = props;
+  const { onClick } = props;
   return (
     <IconButton
       onClick={onClick}

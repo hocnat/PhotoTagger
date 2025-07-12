@@ -1,5 +1,4 @@
 import { TextField } from "@mui/material";
-
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import { getDirtyFieldSx } from "../utils/styleUtils";
@@ -49,7 +48,10 @@ const CreatorSection: React.FC = () => {
         onChange={(e) =>
           handleFieldChange("Creator", "Copyright", e.target.value)
         }
-        sx={{ mt: 2, ...getDirtyFieldSx(isFieldDirty("Creator", "Copyright")) }}
+        sx={{
+          mt: 2,
+          ...getDirtyFieldSx(isFieldDirty("Creator", "Copyright")),
+        }}
         slotProps={{
           input: {
             endAdornment: (
