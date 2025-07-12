@@ -7,8 +7,11 @@ import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
 
 const CreatorSection: React.FC = () => {
-  const { formState, handleFormChange, isFieldDirty } = useMetadata();
-  const field = formState.Creator;
+  const { formState, handleFieldChange, isFieldDirty } = useMetadata();
+  if (!formState.Creator) return null;
+
+  const { Creator: creatorField, Copyright: copyrightField } =
+    formState.Creator;
 
   return (
     <FormSection title="Creator">
@@ -17,15 +20,44 @@ const CreatorSection: React.FC = () => {
         variant="outlined"
         size="small"
         fullWidth
-        value={getDisplayValue(field)}
-        placeholder={getPlaceholder(field)}
-        onChange={(e) => handleFormChange("Creator", e.target.value)}
-        sx={getDirtyFieldSx(isFieldDirty("Creator"))}
+        value={getDisplayValue(creatorField)}
+        placeholder={getPlaceholder(creatorField)}
+        onChange={(e) =>
+          handleFieldChange("Creator", "Creator", e.target.value)
+        }
+        sx={getDirtyFieldSx(isFieldDirty("Creator", "Creator"))}
         slotProps={{
           input: {
             endAdornment: (
               <ConsolidationAdornment
-                show={field?.status === "unique" && !field.isConsolidated}
+                show={
+                  creatorField.status === "unique" &&
+                  !creatorField.isConsolidated
+                }
+              />
+            ),
+          },
+        }}
+      />
+      <TextField
+        label="Copyright"
+        variant="outlined"
+        size="small"
+        fullWidth
+        value={getDisplayValue(copyrightField)}
+        placeholder={getPlaceholder(copyrightField)}
+        onChange={(e) =>
+          handleFieldChange("Creator", "Copyright", e.target.value)
+        }
+        sx={{ mt: 2, ...getDirtyFieldSx(isFieldDirty("Creator", "Copyright")) }}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <ConsolidationAdornment
+                show={
+                  copyrightField.status === "unique" &&
+                  !copyrightField.isConsolidated
+                }
               />
             ),
           },

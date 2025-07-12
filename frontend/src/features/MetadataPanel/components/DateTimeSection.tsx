@@ -9,10 +9,13 @@ import { getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
 
 const DateTimeSection: React.FC = () => {
-  const { formState, handleFormChange, getDateTimeObject, isFieldDirty } =
+  const { formState, handleFieldChange, getDateTimeObject, isFieldDirty } =
     useMetadata();
-  const dateField = formState.DateTimeOriginal;
-  const offsetField = formState.OffsetTimeOriginal;
+
+  if (!formState.DateTime) return null;
+
+  const { DateTimeOriginal: dateField, OffsetTimeOriginal: offsetField } =
+    formState.DateTime;
 
   return (
     <FormSection title="Date & Time">
@@ -39,14 +42,15 @@ const DateTimeSection: React.FC = () => {
                     .toString()
                     .padStart(2, "0")}`
                 : "";
-              handleFormChange("DateTimeOriginal", newDateStr);
+              handleFieldChange("DateTime", "DateTimeOriginal", newDateStr);
             }}
             ampm={false}
             format="yyyy-MM-dd HH:mm:ss"
+            views={["year", "month", "day", "hours", "minutes", "seconds"]}
             timeSteps={{ minutes: 1, seconds: 1 }}
             sx={{
               flexGrow: 1,
-              ...getDirtyFieldSx(isFieldDirty("DateTimeOriginal")),
+              ...getDirtyFieldSx(isFieldDirty("DateTime", "DateTimeOriginal")),
             }}
             slotProps={{
               textField: {
@@ -56,7 +60,7 @@ const DateTimeSection: React.FC = () => {
               },
             }}
           />
-          {dateField?.status === "unique" && !dateField.isConsolidated && (
+          {dateField.status === "unique" && !dateField.isConsolidated && (
             <WarningIndicator />
           )}
         </Stack>
@@ -65,20 +69,18 @@ const DateTimeSection: React.FC = () => {
           variant="outlined"
           fullWidth
           size="small"
-          value={
-            offsetField?.status === "unique" ? offsetField.value || "" : ""
-          }
+          value={offsetField.status === "unique" ? offsetField.value || "" : ""}
           placeholder={getPlaceholder(offsetField) || "+01:00"}
           onChange={(e) =>
-            handleFormChange("OffsetTimeOriginal", e.target.value)
+            handleFieldChange("DateTime", "OffsetTimeOriginal", e.target.value)
           }
-          sx={getDirtyFieldSx(isFieldDirty("OffsetTimeOriginal"))}
+          sx={getDirtyFieldSx(isFieldDirty("DateTime", "OffsetTimeOriginal"))}
           slotProps={{
             input: {
               endAdornment: (
                 <ConsolidationAdornment
                   show={
-                    offsetField?.status === "unique" &&
+                    offsetField.status === "unique" &&
                     !offsetField.isConsolidated
                   }
                 />

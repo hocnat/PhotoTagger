@@ -1,4 +1,4 @@
-import { Keyword } from "types";
+import { ChipData } from "types";
 import { TextField, Autocomplete, Chip, Box, Stack } from "@mui/material";
 
 import FormSection from "./FormSection";
@@ -11,15 +11,16 @@ import { useMetadata } from "../context/MetadataEditorContext";
 const ContentSection: React.FC = () => {
   const {
     formState,
-    handleFormChange,
+    handleFieldChange,
     keywordSuggestions,
     handleKeywordInputChange,
     isFieldDirty,
   } = useMetadata();
-  const titleField = formState.Title;
-  const keywordsField = formState.Keywords;
 
-  const areKeywordsDirty = isFieldDirty("Keywords");
+  if (!formState.Content) return null;
+
+  const { Title: titleField, Keywords: keywordsField } = formState.Content;
+  const areKeywordsDirty = isFieldDirty("Content", "Keywords");
 
   return (
     <FormSection title="Content">
@@ -30,14 +31,14 @@ const ContentSection: React.FC = () => {
         fullWidth
         value={getDisplayValue(titleField)}
         placeholder={getPlaceholder(titleField)}
-        onChange={(e) => handleFormChange("Title", e.target.value)}
-        sx={getDirtyFieldSx(isFieldDirty("Title"))}
+        onChange={(e) => handleFieldChange("Content", "Title", e.target.value)}
+        sx={getDirtyFieldSx(isFieldDirty("Content", "Title"))}
         slotProps={{
           input: {
             endAdornment: (
               <ConsolidationAdornment
                 show={
-                  titleField?.status === "unique" && !titleField.isConsolidated
+                  titleField.status === "unique" && !titleField.isConsolidated
                 }
               />
             ),
@@ -54,15 +55,15 @@ const ContentSection: React.FC = () => {
           onInputChange={handleKeywordInputChange}
           onChange={(event, newValue) => {
             if (typeof newValue === "string" && newValue.trim() !== "") {
-              const newKeyword: Keyword = {
+              const newKeyword: ChipData = {
                 name: newValue.trim(),
                 status: "common",
               };
               if (
-                keywordsField?.status === "unique" &&
+                keywordsField.status === "unique" &&
                 !keywordsField.value.some((kw) => kw.name === newKeyword.name)
               ) {
-                handleFormChange("Keywords", [
+                handleFieldChange("Content", "Keywords", [
                   ...keywordsField.value,
                   newKeyword,
                 ]);
@@ -79,8 +80,9 @@ const ContentSection: React.FC = () => {
             />
           )}
         />
-        {keywordsField?.status === "unique" &&
-          !keywordsField.isConsolidated && <WarningIndicator />}
+        {keywordsField.status === "unique" && !keywordsField.isConsolidated && (
+          <WarningIndicator />
+        )}
       </Stack>
       <Box
         sx={{
@@ -92,7 +94,7 @@ const ContentSection: React.FC = () => {
           ...getDirtyFieldSx(areKeywordsDirty),
         }}
       >
-        {keywordsField?.status === "unique" &&
+        {keywordsField.status === "unique" &&
           keywordsField.value.map((keyword) => (
             <Chip
               key={keyword.name}
@@ -105,11 +107,11 @@ const ContentSection: React.FC = () => {
                   : {}
               }
               onDelete={() => {
-                if (keywordsField?.status === "unique") {
+                if (keywordsField.status === "unique") {
                   const updatedKeywords = keywordsField.value.filter(
                     (kw) => kw.name !== keyword.name
                   );
-                  handleFormChange("Keywords", updatedKeywords);
+                  handleFieldChange("Content", "Keywords", updatedKeywords);
                 }
               }}
             />

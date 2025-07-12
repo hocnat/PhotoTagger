@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { SectionProps, LocationPresetData, FormState } from "types";
+import { LocationPresetData } from "types";
 import {
   Box,
   Button,
@@ -24,19 +24,9 @@ import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
 
-interface LocationFieldNamesMap {
-  latitude: keyof FormState;
-  longitude: keyof FormState;
-  location: keyof FormState;
-  city: keyof FormState;
-  state: keyof FormState;
-  country: keyof FormState;
-  countryCode: keyof FormState;
-}
-
 interface LocationSectionProps {
   title: string;
-  fieldNames: LocationFieldNamesMap;
+  dataBlockName: "LocationCreated" | "LocationShown";
 }
 
 const parseGpsString = (
@@ -57,11 +47,11 @@ const parseGpsString = (
 
 const LocationSection: React.FC<LocationSectionProps> = ({
   title,
-  fieldNames,
+  dataBlockName,
 }) => {
   const {
     formState,
-    handleFormChange,
+    handleFieldChange,
     handleLocationSet,
     applyLocationPreset,
     isFieldDirty,
@@ -72,40 +62,41 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   const [presetName, setPresetName] = useState("");
   const { presets, addPreset, trackUsage } = useLocationPresets();
 
-  const latitudeField = formState[fieldNames.latitude];
-  const longitudeField = formState[fieldNames.longitude];
-  const cityField = formState[fieldNames.city];
-  const countryField = formState[fieldNames.country];
-  const countryCodeField = formState[fieldNames.countryCode];
+  const locationData = formState[dataBlockName];
 
   const gpsDisplayValue = useMemo(() => {
-    if (
-      latitudeField?.status === "mixed" ||
-      longitudeField?.status === "mixed"
-    ) {
-      return getPlaceholder(latitudeField);
+    if (!locationData) return "";
+
+    const { Latitude, Longitude } = locationData;
+
+    if (Latitude.status === "mixed" || Longitude.status === "mixed") {
+      return getPlaceholder(Latitude);
     }
     if (
-      latitudeField?.status === "unique" &&
-      longitudeField?.status === "unique" &&
-      latitudeField.value &&
-      longitudeField.value
+      Latitude.status === "unique" &&
+      Longitude.status === "unique" &&
+      (Latitude.value || Longitude.value)
     ) {
-      return `${latitudeField.value}, ${longitudeField.value}`;
+      return `${Latitude.value || ""}, ${Longitude.value || ""}`;
     }
     return "";
-  }, [latitudeField, longitudeField]);
+  }, [locationData]);
+
+  if (!locationData) return null;
+
+  const { Latitude, Longitude, Location, City, State, Country, CountryCode } =
+    locationData;
 
   const handleGpsInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const coords = parseGpsString(value);
     if (coords) {
-      handleFormChange(fieldNames.latitude, String(coords.lat));
-      handleFormChange(fieldNames.longitude, String(coords.lng));
+      handleFieldChange(dataBlockName, "Latitude", String(coords.lat));
+      handleFieldChange(dataBlockName, "Longitude", String(coords.lng));
     } else {
       const parts = value.split(",");
-      handleFormChange(fieldNames.latitude, parts[0] || "");
-      handleFormChange(fieldNames.longitude, parts[1] || "");
+      handleFieldChange(dataBlockName, "Latitude", parts[0] || "");
+      handleFieldChange(dataBlockName, "Longitude", parts[1] || "");
     }
   };
 
@@ -119,21 +110,20 @@ const LocationSection: React.FC<LocationSectionProps> = ({
 
     const addToPreset = (
       genericKey: keyof LocationPresetData,
-      formKey: keyof FormState
+      field: (typeof locationData)[keyof typeof locationData]
     ) => {
-      const field = formState[formKey];
-      if (field?.status === "unique" && field.value) {
+      if (field.status === "unique" && field.value) {
         (dataToSave as any)[genericKey] = field.value;
       }
     };
 
-    addToPreset("Latitude", fieldNames.latitude);
-    addToPreset("Longitude", fieldNames.longitude);
-    addToPreset("Location", fieldNames.location);
-    addToPreset("City", fieldNames.city);
-    addToPreset("State", fieldNames.state);
-    addToPreset("Country", fieldNames.country);
-    addToPreset("CountryCode", fieldNames.countryCode);
+    addToPreset("Latitude", Latitude);
+    addToPreset("Longitude", Longitude);
+    addToPreset("Location", Location);
+    addToPreset("City", City);
+    addToPreset("State", State);
+    addToPreset("Country", Country);
+    addToPreset("CountryCode", CountryCode);
 
     if (Object.keys(dataToSave).length > 0) {
       addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
@@ -143,28 +133,20 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   };
 
   const hasGps =
-    latitudeField?.status === "unique" &&
-    longitudeField?.status === "unique" &&
-    String(latitudeField.value || "").trim() !== "" &&
-    String(longitudeField.value || "").trim() !== "";
+    Latitude.status === "unique" &&
+    Longitude.status === "unique" &&
+    String(Latitude.value || "").trim() !== "" &&
+    String(Longitude.value || "").trim() !== "";
   const hasCity =
-    cityField?.status === "unique" &&
-    String(cityField.value || "").trim() !== "";
+    City.status === "unique" && String(City.value || "").trim() !== "";
   const hasCountry =
-    countryField?.status === "unique" &&
-    String(countryField.value || "").trim() !== "";
+    Country.status === "unique" && String(Country.value || "").trim() !== "";
   const locationFieldsPopulated = hasGps || hasCity || hasCountry;
 
-  const textFields: {
-    key: keyof Omit<
-      LocationFieldNamesMap,
-      "latitude" | "longitude" | "country" | "countryCode"
-    >;
-    label: string;
-  }[] = [
-    { key: "location", label: "Location" },
-    { key: "city", label: "City" },
-    { key: "state", label: "State" },
+  const textFields: { key: keyof typeof locationData; label: string }[] = [
+    { key: "Location", label: "Location" },
+    { key: "City", label: "City" },
+    { key: "State", label: "State" },
   ];
 
   return (
@@ -176,7 +158,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           getOptionLabel={(option) => option.name}
           onChange={(event, newValue) => {
             if (newValue) {
-              applyLocationPreset(newValue.data, fieldNames);
+              applyLocationPreset(newValue.data, dataBlockName);
               trackUsage(newValue.id);
             }
           }}
@@ -206,18 +188,16 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         }
         onChange={handleGpsInputChange}
         sx={getDirtyFieldSx(
-          isFieldDirty(fieldNames.latitude) ||
-            isFieldDirty(fieldNames.longitude)
+          isFieldDirty(dataBlockName, "Latitude") ||
+            isFieldDirty(dataBlockName, "Longitude")
         )}
         slotProps={{
           input: {
             endAdornment: (
               <ConsolidationAdornment
                 show={
-                  (latitudeField?.status === "unique" &&
-                    !latitudeField.isConsolidated) ||
-                  (longitudeField?.status === "unique" &&
-                    !longitudeField.isConsolidated)
+                  (Latitude.status === "unique" && !Latitude.isConsolidated) ||
+                  (Longitude.status === "unique" && !Longitude.isConsolidated)
                 }
               />
             ),
@@ -234,24 +214,25 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         Select on Map
       </Button>
       {textFields.map(({ key, label }) => {
-        const formKey = fieldNames[key];
-        const field = formState[formKey];
+        const field = locationData[key];
         return (
           <TextField
-            key={formKey}
+            key={key}
             fullWidth
             label={label}
             variant="outlined"
             size="small"
-            value={getDisplayValue(field as any)}
+            value={getDisplayValue(field)}
             placeholder={getPlaceholder(field)}
-            onChange={(e) => handleFormChange(formKey, e.target.value)}
-            sx={getDirtyFieldSx(isFieldDirty(formKey))}
+            onChange={(e) =>
+              handleFieldChange(dataBlockName, key, e.target.value)
+            }
+            sx={getDirtyFieldSx(isFieldDirty(dataBlockName, key))}
             slotProps={{
               input: {
                 endAdornment: (
                   <ConsolidationAdornment
-                    show={field?.status === "unique" && !field.isConsolidated}
+                    show={field.status === "unique" && !field.isConsolidated}
                   />
                 ),
               },
@@ -262,40 +243,42 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
         <CountryInput
           label="Country"
-          countryValue={getDisplayValue(countryField as any)}
+          countryValue={getDisplayValue(Country)}
           isConsolidated={
-            countryField?.status === "unique"
-              ? countryField.isConsolidated
-              : true
+            Country.status === "unique" ? Country.isConsolidated : true
           }
-          onCountryChange={(val) => handleFormChange(fieldNames.country, val)}
-          onCodeChange={(val) => handleFormChange(fieldNames.countryCode, val)}
+          onCountryChange={(val) =>
+            handleFieldChange(dataBlockName, "Country", val)
+          }
+          onCodeChange={(val) =>
+            handleFieldChange(dataBlockName, "CountryCode", val)
+          }
           isDirty={
-            isFieldDirty(fieldNames.country) ||
-            isFieldDirty(fieldNames.countryCode)
+            isFieldDirty(dataBlockName, "Country") ||
+            isFieldDirty(dataBlockName, "CountryCode")
           }
         />
         <TextField
           label="Country Code"
           variant="outlined"
           size="small"
-          value={getDisplayValue(countryCodeField as any)}
-          placeholder={getPlaceholder(countryCodeField) || "(Mixed)"}
+          value={getDisplayValue(CountryCode)}
+          placeholder={getPlaceholder(CountryCode) || "(Mixed)"}
           onChange={(e) =>
-            handleFormChange(fieldNames.countryCode, e.target.value)
+            handleFieldChange(dataBlockName, "CountryCode", e.target.value)
           }
           sx={{
             width: 100,
             flexShrink: 0,
-            ...getDirtyFieldSx(isFieldDirty(fieldNames.countryCode)),
+            ...getDirtyFieldSx(isFieldDirty(dataBlockName, "CountryCode")),
           }}
           slotProps={{
             input: {
               endAdornment: (
                 <ConsolidationAdornment
                   show={
-                    countryCodeField?.status === "unique" &&
-                    !countryCodeField.isConsolidated
+                    CountryCode.status === "unique" &&
+                    !CountryCode.isConsolidated
                   }
                 />
               ),
@@ -306,9 +289,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <MapModal
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
-        onLocationSet={(latlng) =>
-          handleLocationSet(fieldNames.latitude, fieldNames.longitude, latlng)
-        }
+        onLocationSet={(latlng) => handleLocationSet(dataBlockName, latlng)}
         initialCoords={parseGpsString(
           gpsDisplayValue !== "(Mixed Values)" ? gpsDisplayValue : undefined
         )}

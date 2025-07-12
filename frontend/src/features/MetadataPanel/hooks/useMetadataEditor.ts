@@ -5,6 +5,9 @@ import {
   ApiError,
   LocationPresetData,
   FileUpdatePayload,
+  ChipData,
+  RawImageMetadata,
+  LocationData,
 } from "types";
 import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
@@ -12,16 +15,6 @@ import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
 import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
 import { useImageSelectionContext } from "context/ImageSelectionContext";
-
-interface LocationFieldNamesMap {
-  latitude: keyof FormState;
-  longitude: keyof FormState;
-  location: keyof FormState;
-  city: keyof FormState;
-  state: keyof FormState;
-  country: keyof FormState;
-  countryCode: keyof FormState;
-}
 
 interface UseMetadataEditorProps {
   folderPath: string;
@@ -51,103 +44,114 @@ export const useMetadataEditor = ({
   }, [hasChanges, setIsDirty]);
 
   const needsConsolidation = useMemo(() => {
-    return Object.values(formState).some(
-      (field) => field && field.status === "unique" && !field.isConsolidated
-    );
+    if (!formState) return false;
+    for (const block of Object.values(formState)) {
+      if (!block) continue;
+      for (const field of Object.values(block)) {
+        if (field.status === "unique" && !field.isConsolidated) {
+          return true;
+        }
+      }
+    }
+    return false;
   }, [formState]);
 
   const isSaveable = hasChanges || needsConsolidation;
 
   const isFieldDirty = useCallback(
-    (fieldName: keyof FormState): boolean => {
-      const currentValue = formState[fieldName];
-      const originalValue = originalFormState[fieldName];
-      return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
+    (blockName: keyof FormState, fieldName: keyof any): boolean => {
+      const currentBlock = formState[blockName];
+      const originalBlock = originalFormState[blockName];
+      if (!currentBlock || !originalBlock) return false;
+      const currentField = (currentBlock as any)[fieldName];
+      const originalField = (originalBlock as any)[fieldName];
+      return JSON.stringify(currentField) !== JSON.stringify(originalField);
     },
     [formState, originalFormState]
   );
 
-  const handleFormChange = useCallback(
-    (fieldName: keyof FormState, newValue: any) => {
-      setFormState((prevState) => {
-        const existingField = prevState[fieldName];
-        const isConsolidated =
-          existingField && existingField.status === "unique"
-            ? existingField.isConsolidated
-            : true;
-        return {
-          ...prevState,
-          [fieldName]: {
-            status: "unique",
-            value: newValue,
-            isConsolidated,
-          },
-        };
-      });
-    },
-    [setFormState]
-  );
+  const handleFieldChange = <T extends keyof FormState>(
+    blockName: T,
+    fieldName: keyof FormState[T],
+    newValue: any
+  ) => {
+    setFormState((prevState) => {
+      const block = prevState[blockName];
+      if (!block) return prevState;
+      const field = (block as any)[fieldName];
+      if (field === undefined) return prevState;
+      const newField = {
+        status: "unique" as const,
+        value: newValue,
+        isConsolidated: field.status === "unique" ? field.isConsolidated : true,
+      };
+      return {
+        ...prevState,
+        [blockName]: { ...block, [fieldName]: newField },
+      };
+    });
+  };
 
   const applyLocationPreset = useCallback(
-    (data: LocationPresetData, targetFields: LocationFieldNamesMap) => {
-      let newFormState = { ...formState };
-
-      const keyMap: { [key in keyof LocationPresetData]?: keyof FormState } = {
-        Latitude: targetFields.latitude,
-        Longitude: targetFields.longitude,
-        Location: targetFields.location,
-        City: targetFields.city,
-        State: targetFields.state,
-        Country: targetFields.country,
-        CountryCode: targetFields.countryCode,
-      };
+    (
+      data: LocationPresetData,
+      blockName: "LocationCreated" | "LocationShown"
+    ) => {
+      let newBlockState = { ...formState[blockName] } as LocationData;
+      const keyMap: { [key in keyof LocationPresetData]?: keyof LocationData } =
+        {
+          Latitude: "Latitude",
+          Longitude: "Longitude",
+          Location: "Location",
+          City: "City",
+          State: "State",
+          Country: "Country",
+          CountryCode: "CountryCode",
+        };
 
       for (const [presetKey, value] of Object.entries(data)) {
         const formKey = keyMap[presetKey as keyof LocationPresetData];
         if (formKey && value !== undefined) {
-          const existingField = newFormState[formKey];
-          const isConsolidated =
-            existingField && existingField.status === "unique"
-              ? existingField.isConsolidated
-              : true;
-          newFormState[formKey] = {
+          (newBlockState[formKey] as any) = {
             status: "unique",
             value,
-            isConsolidated,
+            isConsolidated: true,
           };
         }
       }
-      setFormState(newFormState);
+      setFormState((prevState) => ({
+        ...prevState,
+        [blockName]: newBlockState,
+      }));
     },
     [formState, setFormState]
   );
 
   const handleLocationSet = (
-    latFieldName: keyof FormState,
-    lonFieldName: keyof FormState,
+    blockName: "LocationCreated" | "LocationShown",
     latlng: { lat: number; lng: number }
   ) => {
-    handleFormChange(latFieldName, String(latlng.lat));
-    handleFormChange(lonFieldName, String(latlng.lng));
+    handleFieldChange(blockName, "Latitude", String(latlng.lat));
+    handleFieldChange(blockName, "Longitude", String(latlng.lng));
   };
 
   const handleSave = () => {
-    if (!isSaveable) {
+    if (!isSaveable || !formState || !originalFormState) {
       showNotification("No changes to save.", "info");
       return;
     }
     setIsSaving(true);
 
-    const originalKeywords =
-      originalFormState.Keywords?.status === "unique"
-        ? originalFormState.Keywords.value
+    const originalKeywords: ChipData[] =
+      originalFormState.Content?.Keywords.status === "unique"
+        ? originalFormState.Content.Keywords.value
         : [];
-    const currentKeywords =
-      formState.Keywords?.status === "unique" ? formState.Keywords.value : [];
-
+    const currentKeywords: ChipData[] =
+      formState.Content?.Keywords.status === "unique"
+        ? formState.Content.Keywords.value
+        : [];
     const originalUiKeywords = new Set(originalKeywords.map((kw) => kw.name));
     const currentUiKeywords = new Set(currentKeywords.map((kw) => kw.name));
-
     const addedKeywords = [...currentUiKeywords].filter(
       (kw) => !originalUiKeywords.has(kw)
     );
@@ -159,46 +163,80 @@ export const useMetadataEditor = ({
       .map((file) => {
         const new_metadata: { [key: string]: any } = {};
 
-        Object.entries(formState).forEach(([keyStr, currentField]) => {
-          const key = keyStr as keyof FormState;
-          if (key === "Keywords" || !currentField) return;
-
-          const originalField = originalFormState[key];
-          const hasValueChanged =
-            JSON.stringify(currentField) !== JSON.stringify(originalField);
-          const fieldNeedsConsolidation =
-            currentField.status === "unique" && !currentField.isConsolidated;
-
-          if (hasValueChanged || fieldNeedsConsolidation) {
-            if (currentField.status === "unique") {
-              new_metadata[key] = currentField.value;
+        const addDirtyFieldToPayload = (
+          blockName: keyof FormState,
+          fieldName: keyof any,
+          targetKey: keyof RawImageMetadata
+        ) => {
+          if (isFieldDirty(blockName, fieldName)) {
+            const field = (formState as any)?.[blockName]?.[fieldName];
+            if (field?.status === "unique") {
+              new_metadata[targetKey] = field.value;
             }
           }
-        });
+        };
+
+        addDirtyFieldToPayload("Content", "Title", "Title");
+        addDirtyFieldToPayload("Creator", "Creator", "Creator");
+        addDirtyFieldToPayload("Creator", "Copyright", "Copyright");
+        addDirtyFieldToPayload(
+          "DateTime",
+          "DateTimeOriginal",
+          "DateTimeOriginal"
+        );
+        addDirtyFieldToPayload(
+          "DateTime",
+          "OffsetTimeOriginal",
+          "OffsetTimeOriginal"
+        );
+
+        addDirtyFieldToPayload(
+          "LocationCreated",
+          "Latitude",
+          "LatitudeCreated"
+        );
+        addDirtyFieldToPayload(
+          "LocationCreated",
+          "Longitude",
+          "LongitudeCreated"
+        );
+        addDirtyFieldToPayload(
+          "LocationCreated",
+          "Location",
+          "LocationCreated"
+        );
+        addDirtyFieldToPayload("LocationCreated", "City", "CityCreated");
+        addDirtyFieldToPayload("LocationCreated", "State", "StateCreated");
+        addDirtyFieldToPayload("LocationCreated", "Country", "CountryCreated");
+        addDirtyFieldToPayload(
+          "LocationCreated",
+          "CountryCode",
+          "CountryCodeCreated"
+        );
+
+        addDirtyFieldToPayload("LocationShown", "Latitude", "LatitudeShown");
+        addDirtyFieldToPayload("LocationShown", "Longitude", "LongitudeShown");
+        addDirtyFieldToPayload("LocationShown", "Location", "LocationShown");
+        addDirtyFieldToPayload("LocationShown", "City", "CityShown");
+        addDirtyFieldToPayload("LocationShown", "State", "StateShown");
+        addDirtyFieldToPayload("LocationShown", "Country", "CountryShown");
+        addDirtyFieldToPayload(
+          "LocationShown",
+          "CountryCode",
+          "CountryCodeShown"
+        );
 
         const originalFileKeywords = new Set(
           file.metadata.Keywords?.value || []
         );
-        const originalFileKeywordsForComparison = new Set(originalFileKeywords);
-
-        addedKeywords.forEach((kw) => originalFileKeywords.add(kw));
-        removedKeywords.forEach((kw) => originalFileKeywords.delete(kw));
-
-        const finalKeywordsForFile = Array.from(originalFileKeywords);
-
         const keywordsHaveChanged =
-          finalKeywordsForFile.length !==
-            originalFileKeywordsForComparison.size ||
-          !finalKeywordsForFile.every((k) =>
-            originalFileKeywordsForComparison.has(k)
-          );
+          addedKeywords.length > 0 || removedKeywords.size > 0;
 
-        const keywordsNeedConsolidation =
-          formState.Keywords?.status === "unique" &&
-          !formState.Keywords.isConsolidated;
-
-        if (keywordsHaveChanged || keywordsNeedConsolidation) {
-          new_metadata["Keywords"] = finalKeywordsForFile;
+        if (keywordsHaveChanged) {
+          const finalKeywords = new Set(originalFileKeywords);
+          addedKeywords.forEach((kw) => finalKeywords.add(kw));
+          removedKeywords.forEach((kw) => finalKeywords.delete(kw));
+          new_metadata["Keywords"] = Array.from(finalKeywords);
         }
 
         if (Object.keys(new_metadata).length > 0) {
@@ -255,10 +293,9 @@ export const useMetadataEditor = ({
   };
 
   const getDateTimeObject = (): Date | null => {
-    const field = formState.DateTimeOriginal;
+    const field = formState.DateTime?.DateTimeOriginal;
     if (field?.status !== "unique" || !field.value) return null;
     const dateStr = field.value;
-
     const parsableDateStr =
       dateStr.substring(0, 10).replace(/:/g, "-") + "T" + dateStr.substring(11);
     const date = new Date(parsableDateStr);
@@ -272,7 +309,7 @@ export const useMetadataEditor = ({
     isSaveable,
     hasChanges,
     keywordSuggestions,
-    handleFormChange,
+    handleFieldChange,
     handleLocationSet,
     handleSave,
     handleKeywordInputChange,

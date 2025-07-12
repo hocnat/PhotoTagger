@@ -1,94 +1,93 @@
-export interface MetadataValue<T> {
-  value: T;
-  isConsolidated: boolean;
+// ====================================================================================
+// Core Aggregated Data Structures
+// These types define the hierarchical shape of metadata after being processed for the UI.
+// They are used to manage the form state during editing.
+// ====================================================================================
+
+/**
+ * The root of the hierarchical form state, combining all data blocks.
+ */
+export interface FormState {
+  Content: ContentData;
+  DateTime: DateTimeData;
+  Creator: CreatorData;
+  LocationCreated: LocationData;
+  LocationShown: LocationData;
 }
 
+export interface ContentData {
+  Title: AggregatedValue<string>;
+  Keywords: AggregatedValue<ChipData[]>;
+}
+
+export interface DateTimeData {
+  DateTimeOriginal: AggregatedValue<string>;
+  OffsetTimeOriginal: AggregatedValue<string>;
+}
+
+export interface CreatorData {
+  Creator: AggregatedValue<string>;
+  Copyright: AggregatedValue<string>;
+}
+
+export interface LocationData {
+  Latitude: AggregatedValue<string>;
+  Longitude: AggregatedValue<string>;
+  Location: AggregatedValue<string>;
+  City: AggregatedValue<string>;
+  State: AggregatedValue<string>;
+  Country: AggregatedValue<string>;
+  CountryCode: AggregatedValue<string>;
+}
+
+/**
+ * A discriminated union to represent a value aggregated from multiple images.
+ * This is the primary data structure for the form state.
+ */
+export type AggregatedValue<T> = UniqueValue<T> | MixedValue;
+
+/**
+ * Represents a field where all selected images have the same unique value.
+ */
 export interface UniqueValue<T> {
   status: "unique";
   value: T;
   isConsolidated: boolean;
 }
 
+/**
+ * Represents a field where selected images have different values.
+ */
 export interface MixedValue {
   status: "mixed";
 }
 
-export type AggregatedValue<T> = UniqueValue<T> | MixedValue;
-
-export interface FileUpdatePayload {
-  path: string;
-  original_metadata: { [key: string]: any };
-  new_metadata: { [key: string]: string | string[] | number | undefined };
-}
-
-export interface SaveMetadataPayload {
-  files_to_update: FileUpdatePayload[];
-  keywords_to_learn: string[];
-}
-
-export interface RenameFileResult {
-  original: string;
-  new: string;
-  status: string;
-}
-
-export interface RenamePreviewItem {
-  original: string;
-  new: string;
-}
-
-export interface ApiError {
-  message: string;
-  details?: any;
-}
-
-export interface LocationPresetData {
-  Latitude?: string;
-  Longitude?: string;
-  Location?: string;
-  City?: string;
-  State?: string;
-  Country?: string;
-  CountryCode?: string;
-}
-
-export interface LocationPreset {
-  id: string;
-  name: string;
-  useCount: number;
-  lastUsed: string | null;
-  createdAt: string;
-  data: LocationPresetData;
-}
-
-export interface ExtensionRule {
-  extension: string;
-  casing: "lowercase" | "uppercase";
-}
-export interface AppSettings {
-  appBehavior: {
-    startupMode: "last" | "fixed";
-    fixedPath: string;
-    lastOpenedFolder: string | null;
-  };
-  renameSettings: {
-    pattern: string;
-    extensionRules: ExtensionRule[];
-  };
-  powerUser: {
-    rawExtensions: string[];
-    sorting: {
-      recencyBonus: number;
-      recencyDays: number;
-    };
-  };
-}
-
-export interface Keyword {
+/**
+ * Represents the data structure for a single, selectable chip in an autocomplete field.
+ */
+export interface ChipData {
   name: string;
   status: "common" | "partial";
 }
 
+// ====================================================================================
+// Raw Backend Data & API Payloads
+// These types define the "flat" data structures received from the backend
+// and the contracts for communication with the API.
+// ====================================================================================
+
+/**
+ * The complete metadata object for a single image file as returned by the backend.
+ */
+export interface ImageFile {
+  filename: string;
+  metadata: RawImageMetadata;
+}
+
+/**
+ * The shape of the `metadata` property within an `ImageFile`. This represents the
+ * "flat" structure of all possible metadata fields read from a file.
+ */
 export interface RawImageMetadata {
   [key: string]: any;
   Title?: MetadataValue<string>;
@@ -113,35 +112,123 @@ export interface RawImageMetadata {
   Copyright?: MetadataValue<string>;
 }
 
-export interface FormState {
-  Title: AggregatedValue<string>;
-  Keywords: AggregatedValue<Keyword[]>;
-  LatitudeCreated?: AggregatedValue<string>;
-  LongitudeCreated?: AggregatedValue<string>;
-  LocationCreated?: AggregatedValue<string>;
-  CityCreated?: AggregatedValue<string>;
-  StateCreated?: AggregatedValue<string>;
-  CountryCreated?: AggregatedValue<string>;
-  CountryCodeCreated?: AggregatedValue<string>;
-  LatitudeShown?: AggregatedValue<string>;
-  LongitudeShown?: AggregatedValue<string>;
-  LocationShown?: AggregatedValue<string>;
-  CityShown?: AggregatedValue<string>;
-  StateShown?: AggregatedValue<string>;
-  CountryShown?: AggregatedValue<string>;
-  CountryCodeShown?: AggregatedValue<string>;
-  DateTimeOriginal?: AggregatedValue<string>;
-  OffsetTimeOriginal?: AggregatedValue<string>;
-  Creator: AggregatedValue<string>;
-  Copyright: AggregatedValue<string>;
+/**
+ * The raw, unprocessed metadata value for a single tag from ExifTool.
+ * This is the building block for RawImageMetadata.
+ */
+export interface MetadataValue<T> {
+  value: T;
+  isConsolidated: boolean;
 }
 
-export interface ImageFile {
-  filename: string;
-  metadata: RawImageMetadata;
+/**
+ * The root payload for the "save metadata" API endpoint.
+ */
+export interface SaveMetadataPayload {
+  files_to_update: FileUpdatePayload[];
+  keywords_to_learn: string[];
 }
 
-export interface SectionProps {
-  formState: Partial<FormState>;
-  handleFormChange: (fieldName: keyof FormState, newValue: any) => void;
+/**
+ * The payload sent to the backend to update a single file's metadata.
+ */
+export interface FileUpdatePayload {
+  path: string;
+  original_metadata: { [key: string]: any };
+  new_metadata: { [key: string]: string | string[] | number | undefined };
+}
+
+/**
+ * The data structure for a single file's result after a rename operation.
+ */
+export interface RenameFileResult {
+  original: string;
+  new: string;
+  status: string;
+}
+
+/**
+ * A generic structure for API error responses.
+ */
+export interface ApiError {
+  message: string;
+  details?: any;
+}
+
+// ====================================================================================
+// UI-Specific Data Structures
+// These types are used by specific UI components, like dialogs.
+// ====================================================================================
+
+/**
+ * The data structure for a single item in the file rename preview dialog.
+ */
+export interface RenamePreviewItem {
+  original: string;
+  new: string;
+}
+
+// ====================================================================================
+// User Presets
+// These types define the shape of user-configurable presets, such as for locations.
+// ====================================================================================
+
+/**
+ * The data structure for a single saved location preset.
+ */
+export interface LocationPreset {
+  id: string;
+  name: string;
+  useCount: number;
+  lastUsed: string | null;
+  createdAt: string;
+  data: LocationPresetData;
+}
+
+/**
+ * The generic data contained within a location preset.
+ */
+export interface LocationPresetData {
+  Latitude?: string;
+  Longitude?: string;
+  Location?: string;
+  City?: string;
+  State?: string;
+  Country?: string;
+  CountryCode?: string;
+}
+
+// ====================================================================================
+// Application Settings
+// These types define the shape of the main, user-configurable application settings.
+// ====================================================================================
+
+/**
+ * The complete, user-configurable application settings object.
+ */
+export interface AppSettings {
+  appBehavior: {
+    startupMode: "last" | "fixed";
+    fixedPath: string;
+    lastOpenedFolder: string | null;
+  };
+  renameSettings: {
+    pattern: string;
+    extensionRules: ExtensionRule[];
+  };
+  powerUser: {
+    rawExtensions: string[];
+    sorting: {
+      recencyBonus: number;
+      recencyDays: number;
+    };
+  };
+}
+
+/**
+ * A rule for how to handle file extensions during renaming.
+ */
+export interface ExtensionRule {
+  extension: string;
+  casing: "lowercase" | "uppercase";
 }

@@ -92,15 +92,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           <Stack spacing={3} sx={{ height: "100%" }}>
             <LocationSection
               title="Location Created"
-              fieldNames={{
-                latitude: "LatitudeCreated",
-                longitude: "LongitudeCreated",
-                location: "LocationCreated",
-                city: "CityCreated",
-                state: "StateCreated",
-                country: "CountryCreated",
-                countryCode: "CountryCodeCreated",
-              }}
+              dataBlockName="LocationCreated"
             />
           </Stack>
         </Grid>
@@ -109,15 +101,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
           <Stack spacing={3} sx={{ height: "100%" }}>
             <LocationSection
               title="Location Shown"
-              fieldNames={{
-                latitude: "LatitudeShown",
-                longitude: "LongitudeShown",
-                location: "LocationShown",
-                city: "CityShown",
-                state: "StateShown",
-                country: "CountryShown",
-                countryCode: "CountryCodeShown",
-              }}
+              dataBlockName="LocationShown"
             />
           </Stack>
         </Grid>

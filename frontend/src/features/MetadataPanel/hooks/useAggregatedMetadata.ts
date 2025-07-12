@@ -2,32 +2,82 @@ import { useState, useEffect, useMemo } from "react";
 import {
   FormState,
   ImageFile,
-  Keyword,
+  ChipData,
   MetadataValue,
   RawImageMetadata,
-  UniqueValue,
+  AggregatedValue,
+  ContentData,
+  CreatorData,
+  DateTimeData,
+  LocationData,
 } from "types";
 
-const defaultEmptyValues: { [K in keyof FormState]?: UniqueValue<any> } = {
-  Title: { status: "unique", value: "", isConsolidated: true },
-  Creator: { status: "unique", value: "", isConsolidated: true },
-  Copyright: { status: "unique", value: "", isConsolidated: true },
-  Keywords: { status: "unique", value: [], isConsolidated: true },
-  LatitudeCreated: { status: "unique", value: "", isConsolidated: true },
-  LongitudeCreated: { status: "unique", value: "", isConsolidated: true },
-  LocationCreated: { status: "unique", value: "", isConsolidated: true },
-  CityCreated: { status: "unique", value: "", isConsolidated: true },
-  StateCreated: { status: "unique", value: "", isConsolidated: true },
-  CountryCreated: { status: "unique", value: "", isConsolidated: true },
-  CountryCodeCreated: { status: "unique", value: "", isConsolidated: true },
-  LatitudeShown: { status: "unique", value: "", isConsolidated: true },
-  LongitudeShown: { status: "unique", value: "", isConsolidated: true },
-  LocationShown: { status: "unique", value: "", isConsolidated: true },
-  CityShown: { status: "unique", value: "", isConsolidated: true },
-  StateShown: { status: "unique", value: "", isConsolidated: true },
-  CountryShown: { status: "unique", value: "", isConsolidated: true },
-  CountryCodeShown: { status: "unique", value: "", isConsolidated: true },
-};
+function aggregateSimpleField<T>(
+  imageFiles: ImageFile[],
+  key: keyof RawImageMetadata,
+  defaultValue: T
+): AggregatedValue<T> {
+  const allValues = imageFiles.map(
+    (file) => file.metadata[key] as MetadataValue<T> | undefined
+  );
+  const existingFields = allValues.filter(
+    (field): field is MetadataValue<T> => field !== undefined
+  );
+
+  if (existingFields.length > 0 && existingFields.length < imageFiles.length) {
+    return { status: "mixed" };
+  }
+  if (existingFields.length === 0) {
+    return { status: "unique", value: defaultValue, isConsolidated: true };
+  }
+
+  const firstValueStr = JSON.stringify(existingFields[0].value);
+  const allSameValue = existingFields.every(
+    (field) => JSON.stringify(field.value) === firstValueStr
+  );
+
+  if (allSameValue) {
+    const allConsolidated = existingFields.every(
+      (field) => field.isConsolidated ?? true
+    );
+    return {
+      status: "unique",
+      value: existingFields[0].value ?? defaultValue,
+      isConsolidated: allConsolidated,
+    };
+  } else {
+    return { status: "mixed" };
+  }
+}
+
+function aggregateKeywords(
+  imageFiles: ImageFile[]
+): AggregatedValue<ChipData[]> {
+  const allKeywords = new Map<string, { count: number }>();
+  imageFiles.forEach((file) => {
+    const keywords = file.metadata.Keywords?.value || [];
+    new Set(keywords).forEach((kw) => {
+      allKeywords.set(kw, { count: (allKeywords.get(kw)?.count || 0) + 1 });
+    });
+  });
+
+  const keywordValue: ChipData[] = Array.from(allKeywords.entries()).map(
+    ([name, { count }]) => ({
+      name,
+      status: count === imageFiles.length ? "common" : "partial",
+    })
+  );
+
+  const allFilesHaveConsolidatedKeywords = imageFiles.every(
+    (file) => file.metadata.Keywords?.isConsolidated ?? true
+  );
+
+  return {
+    status: "unique",
+    value: keywordValue,
+    isConsolidated: allFilesHaveConsolidatedKeywords,
+  };
+}
 
 export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
   const [formState, setFormState] = useState<Partial<FormState>>({});
@@ -42,123 +92,56 @@ export const useAggregatedMetadata = (imageFiles: ImageFile[]) => {
       return;
     }
 
-    let newAggregatedState: Partial<FormState> = {};
+    const contentData: ContentData = {
+      Title: aggregateSimpleField(imageFiles, "Title", ""),
+      Keywords: aggregateKeywords(imageFiles),
+    };
 
-    if (imageFiles.length === 1) {
-      const file = imageFiles[0];
-      const { Keywords, original, ...restOfMetadata } = file.metadata;
+    const dateTimeData: DateTimeData = {
+      DateTimeOriginal: aggregateSimpleField(
+        imageFiles,
+        "DateTimeOriginal",
+        ""
+      ),
+      OffsetTimeOriginal: aggregateSimpleField(
+        imageFiles,
+        "OffsetTimeOriginal",
+        ""
+      ),
+    };
 
-      for (const key in restOfMetadata) {
-        const field = restOfMetadata[
-          key as keyof typeof restOfMetadata
-        ] as MetadataValue<any>;
-        if (field) {
-          (newAggregatedState as any)[key] = {
-            status: "unique",
-            value: field.value ?? "",
-            isConsolidated: field.isConsolidated ?? true,
-          };
-        }
-      }
+    const creatorData: CreatorData = {
+      Creator: aggregateSimpleField(imageFiles, "Creator", ""),
+      Copyright: aggregateSimpleField(imageFiles, "Copyright", ""),
+    };
 
-      if (Keywords && Keywords.value) {
-        newAggregatedState.Keywords = {
-          status: "unique",
-          value: Keywords.value.map((kw) => ({ name: kw, status: "common" })),
-          isConsolidated: Keywords.isConsolidated,
-        };
-      } else {
-        newAggregatedState.Keywords = {
-          status: "unique",
-          value: [],
-          isConsolidated: true,
-        };
-      }
+    const locationCreatedData: LocationData = {
+      Latitude: aggregateSimpleField(imageFiles, "LatitudeCreated", ""),
+      Longitude: aggregateSimpleField(imageFiles, "LongitudeCreated", ""),
+      Location: aggregateSimpleField(imageFiles, "LocationCreated", ""),
+      City: aggregateSimpleField(imageFiles, "CityCreated", ""),
+      State: aggregateSimpleField(imageFiles, "StateCreated", ""),
+      Country: aggregateSimpleField(imageFiles, "CountryCreated", ""),
+      CountryCode: aggregateSimpleField(imageFiles, "CountryCodeCreated", ""),
+    };
 
-      for (const key in defaultEmptyValues) {
-        if (!newAggregatedState[key as keyof FormState]) {
-          newAggregatedState[key as keyof FormState] =
-            defaultEmptyValues[key as keyof FormState];
-        }
-      }
-    } else {
-      const allPossibleKeys = new Set<keyof Omit<FormState, "Keywords">>();
-      imageFiles.forEach((file) => {
-        Object.keys(file.metadata).forEach((key) => {
-          if (key !== "Keywords" && key !== "original") {
-            allPossibleKeys.add(key as keyof Omit<FormState, "Keywords">);
-          }
-        });
-      });
-      Object.keys(defaultEmptyValues).forEach((key) => {
-        if (key !== "Keywords") {
-          allPossibleKeys.add(key as keyof Omit<FormState, "Keywords">);
-        }
-      });
+    const locationShownData: LocationData = {
+      Latitude: aggregateSimpleField(imageFiles, "LatitudeShown", ""),
+      Longitude: aggregateSimpleField(imageFiles, "LongitudeShown", ""),
+      Location: aggregateSimpleField(imageFiles, "LocationShown", ""),
+      City: aggregateSimpleField(imageFiles, "CityShown", ""),
+      State: aggregateSimpleField(imageFiles, "StateShown", ""),
+      Country: aggregateSimpleField(imageFiles, "CountryShown", ""),
+      CountryCode: aggregateSimpleField(imageFiles, "CountryCodeShown", ""),
+    };
 
-      allPossibleKeys.forEach((key) => {
-        const existingFields = imageFiles
-          .map((file) => file.metadata[key as keyof RawImageMetadata])
-          .filter((field): field is MetadataValue<any> => field !== undefined);
-
-        if (
-          existingFields.length > 0 &&
-          existingFields.length < imageFiles.length
-        ) {
-          newAggregatedState[key] = { status: "mixed" };
-          return;
-        }
-
-        if (existingFields.length === 0) {
-          if (defaultEmptyValues[key]) {
-            newAggregatedState[key] = defaultEmptyValues[key];
-          }
-          return;
-        }
-
-        const firstValueStr = JSON.stringify(existingFields[0].value);
-        const allSameValue = existingFields.every(
-          (field) => JSON.stringify(field.value) === firstValueStr
-        );
-
-        if (allSameValue) {
-          const allConsolidated = existingFields.every(
-            (field) => field.isConsolidated ?? true
-          );
-          newAggregatedState[key] = {
-            status: "unique",
-            value: existingFields[0].value ?? "",
-            isConsolidated: allConsolidated,
-          };
-        } else {
-          newAggregatedState[key] = { status: "mixed" };
-        }
-      });
-
-      const allKeywords = new Map<string, { count: number }>();
-      imageFiles.forEach((file) => {
-        const keywords = file.metadata.Keywords?.value || [];
-        new Set(keywords).forEach((kw) => {
-          allKeywords.set(kw, { count: (allKeywords.get(kw)?.count || 0) + 1 });
-        });
-      });
-
-      const keywordValue: Keyword[] = Array.from(allKeywords.entries()).map(
-        ([name, { count }]) => ({
-          name,
-          status: count === imageFiles.length ? "common" : "partial",
-        })
-      );
-      const allFilesHaveConsolidatedKeywords = imageFiles.every(
-        (file) => file.metadata.Keywords?.isConsolidated ?? true
-      );
-
-      newAggregatedState.Keywords = {
-        status: "unique",
-        value: keywordValue,
-        isConsolidated: allFilesHaveConsolidatedKeywords,
-      };
-    }
+    const newAggregatedState: FormState = {
+      Content: contentData,
+      DateTime: dateTimeData,
+      Creator: creatorData,
+      LocationCreated: locationCreatedData,
+      LocationShown: locationShownData,
+    };
 
     setFormState(newAggregatedState);
     setOriginalFormState(newAggregatedState);
