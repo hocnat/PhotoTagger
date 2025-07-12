@@ -108,22 +108,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({
   const handleSavePreset = () => {
     const dataToSave: LocationPresetData = {};
 
-    const addToPreset = (
-      genericKey: keyof LocationPresetData,
-      field: (typeof locationData)[keyof typeof locationData]
-    ) => {
+    for (const [key, field] of Object.entries(locationData)) {
       if (field.status === "unique" && field.value) {
-        (dataToSave as any)[genericKey] = field.value;
+        (dataToSave as any)[key] = field.value;
       }
-    };
-
-    addToPreset("Latitude", Latitude);
-    addToPreset("Longitude", Longitude);
-    addToPreset("Location", Location);
-    addToPreset("City", City);
-    addToPreset("State", State);
-    addToPreset("Country", Country);
-    addToPreset("CountryCode", CountryCode);
+    }
 
     if (Object.keys(dataToSave).length > 0) {
       addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
