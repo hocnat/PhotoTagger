@@ -31,7 +31,6 @@ export const useMetadataEditor = ({
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const { showNotification } = useNotification();
   const { setIsDirty } = useUnsavedChangesContext();
 
@@ -42,18 +41,16 @@ export const useMetadataEditor = ({
     refetch,
     error: selectionError,
   } = useSelectionDataLoader();
-
-  // This effect propagates critical data-loading errors from the child hook
-  // (`useSelectionDataLoader`) to the main error state of this parent hook.
-  // This allows the UI to display a single, centralized error message if the
-  // initial metadata for the selection cannot be loaded.
-  useEffect(() => {
-    setError(selectionError);
-  }, [selectionError]);
-
   // Step 2: Aggregate the raw data into a hierarchical form state for the UI.
   const { formState, setFormState, hasChanges, originalFormState } =
     useAggregatedMetadata(imageFiles);
+
+  // This effect reports critical data-loading errors using the global notification system.
+  useEffect(() => {
+    if (selectionError) {
+      showNotification(`Failed to load metadata: ${selectionError}`, "error");
+    }
+  }, [selectionError, showNotification]);
 
   // This effect synchronizes the local `hasChanges` state with the global
   // `isDirty` state from the UnsavedChangesContext.
@@ -380,7 +377,6 @@ export const useMetadataEditor = ({
   };
 
   return {
-    error,
     isMetadataLoading,
     isSaving,
     formState,

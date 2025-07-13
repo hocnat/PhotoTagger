@@ -7,7 +7,6 @@ import {
   IconButton,
   Stack,
   Grid,
-  Alert,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -53,7 +52,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     onSaveSuccess,
   });
 
-  const { error, isMetadataLoading, isSaving, isSaveable, handleSave } =
+  const { isMetadataLoading, isSaving, isSaveable, handleSave } =
     metadataEditor;
 
   useEffect(() => {
@@ -72,14 +71,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   }, [isSaveable, isSaving, handleSave]);
 
   const renderContent = () => {
-    if (error) {
-      return (
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">Failed to load metadata: {error}</Alert>
-        </Box>
-      );
-    }
-
     if (isMetadataLoading) {
       return (
         <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
