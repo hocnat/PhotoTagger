@@ -20,10 +20,12 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import LabelOutlinedIcon from "@mui/icons-material/LabelOutlined";
 import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
+import { LocationImporterDialog } from "./features/LocationImporter";
 import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
 import {
   UnsavedChangesProvider,
@@ -61,6 +63,7 @@ const getGridColumnCount = (): number => {
 
 const AppContent: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLocationImporterOpen, setIsLocationImporterOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
@@ -259,6 +262,15 @@ const AppContent: React.FC = () => {
             </span>
           </Tooltip>
 
+          <Tooltip title="Import Location Presets">
+            <IconButton
+              color="inherit"
+              onClick={() => setIsLocationImporterOpen(true)}
+            >
+              <CloudUploadOutlinedIcon />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="Settings">
             <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
               <SettingsIcon />
@@ -402,6 +414,10 @@ const AppContent: React.FC = () => {
       <SettingsDialog
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+      <LocationImporterDialog
+        isOpen={isLocationImporterOpen}
+        onClose={() => setIsLocationImporterOpen(false)}
       />
     </Box>
   );

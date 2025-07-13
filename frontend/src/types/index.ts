@@ -169,9 +169,26 @@ export interface RenamePreviewItem {
 }
 
 // ====================================================================================
-// User Presets
-// These types define the shape of user-configurable presets, such as for locations.
+// Location Importer & User Presets
 // ====================================================================================
+
+/**
+ * Basic location data extracted from a KML file.
+ */
+export interface Placemark {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * The data returned from the enrichment API endpoint.
+ */
+export interface ImportedLocationData extends Placemark {
+  city: string;
+  state: string;
+  country: string;
+}
 
 /**
  * The data structure for a single saved location preset.
@@ -186,7 +203,8 @@ export interface LocationPreset {
 }
 
 /**
- * The generic data contained within a location preset.
+ * The generic data contained within a location preset. This is the single source
+ * of truth for the structure of location data fields in the application.
  */
 export interface LocationPresetData {
   Latitude?: string;

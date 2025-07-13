@@ -11,3 +11,7 @@ EXIFTOOL_PATH = "exiftool"
 KEYWORDS_PATH = os.path.join(BASE_DIR, "keywords.json")
 LOCATIONS_PATH = os.path.join(BASE_DIR, "locations.json")
 SETTINGS_PATH = os.path.join(BASE_DIR, "settings.json")
+
+# User agent for making requests to external services like Nominatim (geopy).
+# This is required by their fair use policy.
+GEOPY_USER_AGENT = "PhotoTagger/1.0"

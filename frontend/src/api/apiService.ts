@@ -2,11 +2,13 @@ import {
   ApiError,
   AppSettings,
   ImageFile,
-  RenameFileResult,
-  SaveMetadataPayload,
-  RenamePreviewItem,
+  ImportedLocationData,
   LocationPreset,
   LocationPresetData,
+  Placemark,
+  RenameFileResult,
+  RenamePreviewItem,
+  SaveMetadataPayload,
 } from "types";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -19,7 +21,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const errorData: ApiError = await response
       .json()
       .catch(() => ({ message: "An unknown error occurred." }));
-    throw errorData;
+    const error: any = new Error(errorData.message);
+    error.data = errorData;
+    error.status = response.status;
+    throw error;
   }
 }
 
@@ -88,6 +93,26 @@ export const trackLocationPresetUsage = (
   fetch(`${API_BASE_URL}/locations/${presetId}/track_usage`, {
     method: "PUT",
   }).then((response) => handleResponse<LocationPreset>(response));
+
+// --- Location Importer ---
+
+export const fetchLocationsFromUrl = (url: string): Promise<Placemark[]> =>
+  fetch(`${API_BASE_URL}/location-importer/fetch-from-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  }).then((response) => handleResponse<Placemark[]>(response));
+
+export const enrichLocations = (
+  locations: Placemark[]
+): Promise<ImportedLocationData[]> =>
+  fetch(`${API_BASE_URL}/location-importer/enrich-locations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ locations }),
+  }).then((response) => handleResponse<ImportedLocationData[]>(response));
+
+// --- Settings ---
 
 export const getSettings = (): Promise<AppSettings> =>
   fetch(`${API_BASE_URL}/settings`).then((response) =>
