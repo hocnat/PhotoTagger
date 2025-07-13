@@ -23,21 +23,3 @@ def fetch_from_url():
     except Exception as e:
         # Catch broader exceptions from requests or parsing for a generic server error
         return jsonify({"error": f"Failed to process map data: {e}"}), 500
-
-
-@location_importer_bp.route("/location-importer/enrich-locations", methods=["POST"])
-def enrich_locations():
-    """
-    API endpoint to enrich a list of locations with geocoded data.
-    Expects a JSON payload with a "locations" key containing a list of objects.
-    """
-    data = request.get_json()
-    if not data or "locations" not in data:
-        return jsonify({"error": "A list of locations is required"}), 400
-
-    locations = data["locations"]
-    try:
-        enriched_data = location_importer_service.enrich_location_data(locations)
-        return jsonify(enriched_data)
-    except Exception as e:
-        return jsonify({"error": f"Failed to enrich location data: {e}"}), 500

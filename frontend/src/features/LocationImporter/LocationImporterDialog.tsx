@@ -24,7 +24,7 @@ import {
   Placemark,
   LocationPresetData,
   ApiError,
-  ImportedLocationData,
+  EnrichedCoordinate,
 } from "types";
 import { useNotification } from "hooks/useNotification";
 
@@ -130,20 +130,33 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
     setStep("enriching");
     const selectedPlacemarks = placemarks.filter((p) => selection[p.name]);
     try {
-      const data: ImportedLocationData[] =
-        await apiService.enrichImporterLocations(selectedPlacemarks);
-      const dataForReview: ReviewItem[] = data.map((location) => ({
-        name: location.name,
-        data: {
-          Latitude: String(location.latitude),
-          Longitude: String(location.longitude),
-          Location: location.name,
-          City: location.city,
-          State: location.state,
-          Country: location.country,
-          CountryCode: getCountryCode(location.country),
-        },
-      }));
+      const enrichedCoords: EnrichedCoordinate[] =
+        await apiService.enrichCoordinates(selectedPlacemarks);
+
+      // Create a map for easy lookup
+      const placemarkNameMap = new Map(
+        selectedPlacemarks.map((p) => [`${p.latitude},${p.longitude}`, p.name])
+      );
+
+      // Merge the results
+      const dataForReview: ReviewItem[] = enrichedCoords.map((location) => {
+        const name =
+          placemarkNameMap.get(`${location.latitude},${location.longitude}`) ||
+          "Unknown";
+        return {
+          name: name,
+          data: {
+            Latitude: String(location.latitude),
+            Longitude: String(location.longitude),
+            Location: name, // Pre-fill with original placemark name
+            City: location.city,
+            State: location.state,
+            Country: location.country,
+            CountryCode: getCountryCode(location.country),
+          },
+        };
+      });
+
       setReviewData(dataForReview);
       setStep("review");
     } catch (err: any) {

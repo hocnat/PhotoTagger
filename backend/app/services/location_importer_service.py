@@ -5,8 +5,6 @@ import zipfile
 import io
 from lxml import etree
 
-from . import geocoding_service
-
 
 def _extract_map_id(url: str) -> str | None:
     """Extracts the Google MyMaps Map ID from various URL formats."""
@@ -99,27 +97,3 @@ def fetch_placemarks_from_url(url: str) -> List[Dict[str, Any]]:
         raise IOError(f"Failed to parse KML data: {e}")
 
     return placemarks_data
-
-
-def enrich_location_data(locations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Enriches location data by calling the centralized geocoding service.
-    """
-    coordinates_to_enrich = [
-        {"latitude": loc["latitude"], "longitude": loc["longitude"]}
-        for loc in locations
-    ]
-
-    enriched_coords = geocoding_service.enrich_coordinates(coordinates_to_enrich)
-
-    # Merge the names from the original placemarks back with the enriched data
-    enriched_data_map = {(e["latitude"], e["longitude"]): e for e in enriched_coords}
-
-    final_data = []
-    for loc in locations:
-        key = (loc["latitude"], loc["longitude"])
-        enriched_info = enriched_data_map.get(key)
-        if enriched_info:
-            final_data.append({**loc, **enriched_info})
-
-    return final_data

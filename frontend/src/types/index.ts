@@ -199,15 +199,6 @@ export interface Placemark {
 }
 
 /**
- * The data returned from the location importer's enrichment step.
- */
-export interface ImportedLocationData extends Placemark {
-  city: string;
-  state: string;
-  country: string;
-}
-
-/**
  * The data structure for a single saved location preset.
  */
 export interface LocationPreset {

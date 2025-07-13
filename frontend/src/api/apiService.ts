@@ -4,7 +4,6 @@ import {
   EnrichedCoordinate,
   GpsCoordinate,
   ImageFile,
-  ImportedLocationData,
   LocationPreset,
   LocationPresetData,
   Placemark,
@@ -106,15 +105,6 @@ export const fetchLocationsFromUrl = (url: string): Promise<Placemark[]> =>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   }).then((response) => handleResponse<Placemark[]>(response));
-
-export const enrichImporterLocations = (
-  locations: Placemark[]
-): Promise<ImportedLocationData[]> =>
-  fetch(`${API_BASE_URL}/location-importer/enrich-locations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ locations }),
-  }).then((response) => handleResponse<ImportedLocationData[]>(response));
 
 // --- Geocoding ---
 
