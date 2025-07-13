@@ -1,6 +1,8 @@
 import {
   ApiError,
   AppSettings,
+  EnrichedCoordinate,
+  GpsCoordinate,
   ImageFile,
   ImportedLocationData,
   LocationPreset,
@@ -72,6 +74,8 @@ export const getRenamePreview = (
     body: JSON.stringify({ files: filePaths }),
   }).then((response) => handleResponse<RenamePreviewItem[]>(response));
 
+// --- Location Presets ---
+
 export const getLocationPresets = (): Promise<LocationPreset[]> =>
   fetch(`${API_BASE_URL}/locations`).then((response) =>
     handleResponse<LocationPreset[]>(response)
@@ -103,7 +107,7 @@ export const fetchLocationsFromUrl = (url: string): Promise<Placemark[]> =>
     body: JSON.stringify({ url }),
   }).then((response) => handleResponse<Placemark[]>(response));
 
-export const enrichLocations = (
+export const enrichImporterLocations = (
   locations: Placemark[]
 ): Promise<ImportedLocationData[]> =>
   fetch(`${API_BASE_URL}/location-importer/enrich-locations`, {
@@ -111,6 +115,17 @@ export const enrichLocations = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ locations }),
   }).then((response) => handleResponse<ImportedLocationData[]>(response));
+
+// --- Geocoding ---
+
+export const enrichCoordinates = (
+  coordinates: GpsCoordinate[]
+): Promise<EnrichedCoordinate[]> =>
+  fetch(`${API_BASE_URL}/geocoding/enrich-coordinates`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ coordinates }),
+  }).then((response) => handleResponse<EnrichedCoordinate[]>(response));
 
 // --- Settings ---
 

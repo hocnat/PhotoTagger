@@ -130,9 +130,8 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
     setStep("enriching");
     const selectedPlacemarks = placemarks.filter((p) => selection[p.name]);
     try {
-      const data: ImportedLocationData[] = await apiService.enrichLocations(
-        selectedPlacemarks
-      );
+      const data: ImportedLocationData[] =
+        await apiService.enrichImporterLocations(selectedPlacemarks);
       const dataForReview: ReviewItem[] = data.map((location) => ({
         name: location.name,
         data: {

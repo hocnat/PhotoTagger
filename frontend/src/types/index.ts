@@ -169,8 +169,25 @@ export interface RenamePreviewItem {
 }
 
 // ====================================================================================
-// Location Importer & User Presets
+// Geocoding, Location Importer & User Presets
 // ====================================================================================
+
+/**
+ * A generic representation of a GPS coordinate pair.
+ */
+export interface GpsCoordinate {
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * The response from the geocoding enrichment API.
+ */
+export interface EnrichedCoordinate extends GpsCoordinate {
+  city: string;
+  state: string;
+  country: string;
+}
 
 /**
  * Basic location data extracted from a KML file.
@@ -182,7 +199,7 @@ export interface Placemark {
 }
 
 /**
- * The data returned from the enrichment API endpoint.
+ * The data returned from the location importer's enrichment step.
  */
 export interface ImportedLocationData extends Placemark {
   city: string;

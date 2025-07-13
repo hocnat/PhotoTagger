@@ -1,16 +1,11 @@
 import re
-import time
-import uuid
-from datetime import datetime, timezone
-import requests
 from typing import List, Dict, Any
-from geopy.geocoders import Nominatim
+import requests
 import zipfile
 import io
 from lxml import etree
 
-from config import GEOPY_USER_AGENT
-from . import location_service
+from . import geocoding_service
 
 
 def _extract_map_id(url: str) -> str | None:
@@ -107,87 +102,24 @@ def fetch_placemarks_from_url(url: str) -> List[Dict[str, Any]]:
 
 
 def enrich_location_data(locations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Enriches a list of locations with address details using reverse geocoding."""
-    geolocator = Nominatim(user_agent=GEOPY_USER_AGENT)
-    enriched_locations = []
-    for location in locations:
-        try:
-            coordinates = (location["latitude"], location["longitude"])
-            location_details = geolocator.reverse(
-                coordinates, exactly_one=True, language="en"
-            )
-            address = (
-                location_details.raw.get("address", {}) if location_details else {}
-            )
-            city = address.get("city") or address.get("town") or address.get("village")
-            state = (
-                address.get("state")
-                or address.get("province")
-                or address.get("state_district")
-            )
-            country = address.get("country")
-            enriched_locations.append(
-                {
-                    **location,
-                    "city": city or "",
-                    "state": state or "",
-                    "country": country or "",
-                }
-            )
-        except Exception:
-            enriched_locations.append(
-                {**location, "city": "", "state": "", "country": ""}
-            )
-        finally:
-            time.sleep(1)
-    return enriched_locations
-
-
-def save_imported_presets(
-    presets_to_import: List[Dict[str, Any]], resolutions: Dict[str, str] | None = None
-) -> Dict[str, Any]:
-    """Saves imported presets, handling conflicts with existing presets."""
-    if resolutions is None:
-        resolutions = {}
-    existing_presets = location_service.load_location_presets()
-    existing_presets_by_name = {p["name"]: p for p in existing_presets}
-    unresolved_conflicts = [
-        p["name"]
-        for p in presets_to_import
-        if p["name"] in existing_presets_by_name and p["name"] not in resolutions
+    """
+    Enriches location data by calling the centralized geocoding service.
+    """
+    coordinates_to_enrich = [
+        {"latitude": loc["latitude"], "longitude": loc["longitude"]}
+        for loc in locations
     ]
-    if unresolved_conflicts:
-        return {"success": False, "conflicts": unresolved_conflicts}
-    final_presets = list(existing_presets)
-    presets_to_import_by_name = {p["name"]: p for p in presets_to_import}
-    for preset in final_presets:
-        name = preset["name"]
-        if name in presets_to_import_by_name and resolutions.get(name) == "overwrite":
-            preset_data = presets_to_import_by_name[name]
-            preset["data"] = {
-                "latitude": preset_data.get("latitude"),
-                "longitude": preset_data.get("longitude"),
-                "city": preset_data.get("city"),
-                "state": preset_data.get("state"),
-                "country": preset_data.get("country"),
-            }
-    for name, preset_data in presets_to_import_by_name.items():
-        if name not in existing_presets_by_name:
-            now = datetime.now(timezone.utc).isoformat()
-            new_preset = {
-                "id": str(uuid.uuid4()),
-                "name": name,
-                "useCount": 0,
-                "lastUsed": None,
-                "createdAt": now,
-                "data": {
-                    "latitude": preset_data.get("latitude"),
-                    "longitude": preset_data.get("longitude"),
-                    "city": preset_data.get("city"),
-                    "state": preset_data.get("state"),
-                    "country": preset_data.get("country"),
-                },
-            }
-            final_presets.append(new_preset)
-    location_service.save_location_presets(final_presets)
-    return {"success": True, "conflicts": []}
+
+    enriched_coords = geocoding_service.enrich_coordinates(coordinates_to_enrich)
+
+    # Merge the names from the original placemarks back with the enriched data
+    enriched_data_map = {(e["latitude"], e["longitude"]): e for e in enriched_coords}
+
+    final_data = []
+    for loc in locations:
+        key = (loc["latitude"], loc["longitude"])
+        enriched_info = enriched_data_map.get(key)
+        if enriched_info:
+            final_data.append({**loc, **enriched_info})
+
+    return final_data

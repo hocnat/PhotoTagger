@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
+import { LatLng } from "leaflet";
 
 import { useLocationPresets } from "../hooks/useLocationPresets";
 import FormSection from "./FormSection";
@@ -91,6 +92,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     const value = e.target.value;
     const coords = parseGpsString(value);
     if (coords) {
+      // When GPS is set manually, we only update the coordinates
       handleFieldChange(dataBlockName, "Latitude", String(coords.lat));
       handleFieldChange(dataBlockName, "Longitude", String(coords.lng));
     } else {
@@ -169,6 +171,15 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         </IconButton>
       </Box>
 
+      <Button
+        variant="outlined"
+        startIcon={<MapIcon />}
+        onClick={() => setIsMapOpen(true)}
+        fullWidth
+      >
+        Select on Map
+      </Button>
+
       <TextField
         fullWidth
         label="GPS Position"
@@ -198,15 +209,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           },
         }}
       />
-      <Button
-        variant="outlined"
-        startIcon={<MapIcon />}
-        onClick={() => setIsMapOpen(true)}
-        fullWidth
-        sx={{ mt: 1 }}
-      >
-        Select on Map
-      </Button>
+
       {textFields.map(({ key, label }) => {
         const field = locationData[key];
         return (
@@ -283,7 +286,9 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <MapModal
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
-        onLocationSet={(latlng) => handleLocationSet(dataBlockName, latlng)}
+        onLocationSet={(latlng: LatLng) =>
+          handleLocationSet(dataBlockName, latlng)
+        }
         initialCoords={parseGpsString(
           gpsDisplayValue !== "(Mixed Values)" ? gpsDisplayValue : undefined
         )}

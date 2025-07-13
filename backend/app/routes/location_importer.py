@@ -41,30 +41,3 @@ def enrich_locations():
         return jsonify(enriched_data)
     except Exception as e:
         return jsonify({"error": f"Failed to enrich location data: {e}"}), 500
-
-
-@location_importer_bp.route("/location-importer/save-presets", methods=["POST"])
-def save_presets():
-    """
-    API endpoint to save imported presets, handling conflicts.
-    Expects a payload with "presets" and optional "resolutions".
-    """
-    data = request.get_json()
-    if not data or "presets" not in data:
-        return jsonify({"error": "A list of presets is required"}), 400
-
-    presets_to_import = data.get("presets")
-    resolutions = data.get("resolutions")  # Can be None
-
-    try:
-        result = location_importer_service.save_imported_presets(
-            presets_to_import, resolutions
-        )
-
-        if not result["success"]:
-            return jsonify({"conflicts": result["conflicts"]}), 409
-
-        return jsonify({"message": "Presets saved successfully"}), 200
-
-    except Exception as e:
-        return jsonify({"error": f"Failed to save presets: {e}"}), 500

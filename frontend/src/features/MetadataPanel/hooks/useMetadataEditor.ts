@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { LatLng } from "leaflet";
 import {
   FormState,
   SaveMetadataPayload,
@@ -13,6 +14,19 @@ import { useNotification } from "hooks/useNotification";
 import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
 import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
+
+const countryData = require("country-list/data.json");
+interface Country {
+  code: string;
+  name: string;
+}
+const getCountryCode = (countryName: string): string => {
+  if (!countryName) return "";
+  const matchedCountry = countryData.find(
+    (c: Country) => c.name.toLowerCase() === countryName.toLowerCase()
+  );
+  return matchedCountry ? matchedCountry.code : "";
+};
 
 interface UseMetadataEditorProps {
   folderPath: string;
@@ -154,21 +168,66 @@ export const useMetadataEditor = ({
   );
 
   /**
-   * Updates the latitude and longitude fields for a specific location block,
-   * typically after a selection from the map modal.
+   * Updates the latitude and longitude, then fetches address details and
+   * performs a full overwrite of the location data block.
    */
-  const handleLocationSet = (
+  const handleLocationSet = async (
     blockName: "LocationCreated" | "LocationShown",
-    latlng: { lat: number; lng: number }
+    latlng: LatLng
   ) => {
-    handleFieldChange(blockName, "Latitude", String(latlng.lat));
-    handleFieldChange(blockName, "Longitude", String(latlng.lng));
+    // 1. Define the new location data object, clearing all fields except lat/lon.
+    // This ensures old values are wiped.
+    const newLocationData: LocationPresetData = {
+      Latitude: String(latlng.lat),
+      Longitude: String(latlng.lng),
+      Location: "",
+      City: "",
+      State: "",
+      Country: "",
+      CountryCode: "",
+    };
+
+    try {
+      // 2. Call the geocoding service to get new address details.
+      const enrichedData = await apiService.enrichCoordinates([
+        { latitude: latlng.lat, longitude: latlng.lng },
+      ]);
+      const locationInfo = enrichedData[0];
+
+      // 3. If successful, populate the new data object.
+      if (locationInfo) {
+        newLocationData.City = locationInfo.city;
+        newLocationData.State = locationInfo.state;
+        newLocationData.Country = locationInfo.country;
+        newLocationData.CountryCode = getCountryCode(locationInfo.country);
+      }
+    } catch (error) {
+      showNotification(
+        "Could not fetch location details. Please fill them manually.",
+        "warning"
+      );
+      console.error("Reverse geocoding failed:", error);
+    }
+
+    // 4. Apply the complete new data block using the same logic as applyLocationPreset.
+    let newBlockState = { ...formState[blockName] } as LocationData;
+    for (const [key, value] of Object.entries(newLocationData)) {
+      const formKey = key as keyof LocationData;
+      if (formKey in newBlockState) {
+        // Check if the key is valid for LocationData
+        (newBlockState[formKey] as any) = {
+          status: "unique",
+          value,
+          isConsolidated: true, // New data from a single source is always consolidated
+        };
+      }
+    }
+    setFormState((prevState) => ({
+      ...prevState,
+      [blockName]: newBlockState,
+    }));
   };
 
-  /**
-   * The main save handler. It flattens the hierarchical form state, calculates
-   * keyword diffs, constructs the API payload, and sends it to the backend.
-   */
   const handleSave = () => {
     if (!isSaveable || !formState || !originalFormState) {
       showNotification("No changes to save.", "info");
@@ -298,14 +357,12 @@ export const useMetadataEditor = ({
         );
         const keywordsHaveChanged =
           addedKeywords.length > 0 || removedKeywords.size > 0;
-
         if (keywordsHaveChanged) {
           const finalKeywords = new Set(originalFileKeywords);
           addedKeywords.forEach((kw) => finalKeywords.add(kw));
           removedKeywords.forEach((kw) => finalKeywords.delete(kw));
           new_metadata["Keywords"] = Array.from(finalKeywords);
         }
-
         if (Object.keys(new_metadata).length > 0) {
           return {
             path: `${folderPath}\\${file.filename}`,
@@ -322,12 +379,10 @@ export const useMetadataEditor = ({
       showNotification("No changes to save.", "info");
       return;
     }
-
     const payload: SaveMetadataPayload = {
       files_to_update,
       keywords_to_learn: addedKeywords,
     };
-
     apiService
       .saveMetadata(payload)
       .then(() => {
