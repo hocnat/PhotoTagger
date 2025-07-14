@@ -4,4 +4,3 @@ Pillow
 geopy
 requests
 lxml
-pycountry

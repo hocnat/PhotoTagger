@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AppSettings, ExtensionRule } from "types";
+import { AppSettings, ExtensionRule, CountryMapping } from "types";
 import { useNotification } from "hooks/useNotification";
 import {
   Dialog,
@@ -16,15 +16,31 @@ import {
   Typography,
   Divider,
   CircularProgress,
+  Tabs,
+  Tab,
 } from "@mui/material";
 
 import { useSettings } from "./hooks/useSettings";
 import { ExtensionRuleEditor } from "./components/ExtensionRuleEditor";
+import { CountryMappingEditor } from "./components/CountryMappingEditor";
 
 interface SettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const TabPanel = (props: {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}) => {
+  const { children, value, index, ...other } = props;
+  return (
+    <div role="tabpanel" hidden={value !== index} {...other}>
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+};
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   isOpen,
@@ -38,9 +54,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const { showNotification } = useNotification();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentTab, setCurrentTab] = useState(0);
 
   useEffect(() => {
-    if (settings) {
+    if (settings && isOpen) {
       setLocalSettings(JSON.parse(JSON.stringify(settings)));
     }
   }, [settings, isOpen]);
@@ -49,7 +66,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     if (!localSettings) return;
     setIsSaving(true);
     try {
-      await saveSettings(localSettings);
+      // Filter out any empty/invalid rules before saving
+      const finalSettings = {
+        ...localSettings,
+        renameSettings: {
+          ...localSettings.renameSettings,
+          extensionRules: localSettings.renameSettings.extensionRules.filter(
+            (rule) => rule.extension.trim()
+          ),
+        },
+        countryMappings: localSettings.countryMappings.filter(
+          (mapping) => mapping.code.trim().length === 2 && mapping.name.trim()
+        ),
+      };
+
+      await saveSettings(finalSettings);
       showNotification("Settings saved successfully.", "success");
       onClose();
     } catch (error) {
@@ -80,6 +111,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     });
   };
 
+  const handleCountryMappingsChange = (mappings: CountryMapping[]) => {
+    if (!localSettings) return;
+    setLocalSettings({ ...localSettings, countryMappings: mappings });
+  };
+
   if (isSettingsLoading || !localSettings) {
     return (
       <Dialog open={isOpen} onClose={onClose}>
@@ -92,62 +128,75 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Application Settings</DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <Box>
-            <Typography variant="h6">Startup</Typography>
-            <Divider sx={{ my: 1 }} />
-            <FormControl fullWidth margin="normal" size="small">
-              <InputLabel>On startup, open...</InputLabel>
-              <Select
-                value={localSettings.appBehavior.startupMode}
-                label="On startup, open..."
-                onChange={(e) =>
-                  handleFieldChange(
-                    "appBehavior",
-                    "startupMode",
-                    e.target.value
-                  )
-                }
-              >
-                <MenuItem value="last">The last used folder</MenuItem>
-                <MenuItem value="fixed">A specific folder</MenuItem>
-              </Select>
-            </FormControl>
-            {localSettings.appBehavior.startupMode === "fixed" && (
-              <TextField
-                fullWidth
-                label="Specific Folder Path"
-                size="small"
-                value={localSettings.appBehavior.fixedPath}
-                onChange={(e) =>
-                  handleFieldChange("appBehavior", "fixedPath", e.target.value)
-                }
-                helperText="If empty, the application will start with no folder loaded."
-              />
-            )}
-          </Box>
-          <Box>
-            <Typography variant="h6">File Renaming</Typography>
-            <Divider sx={{ my: 1 }} />
+      <DialogTitle>Settings</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs
+            value={currentTab}
+            onChange={(e, newValue) => setCurrentTab(newValue)}
+          >
+            <Tab label="General" />
+            <Tab label="Locations" />
+            <Tab label="Renaming" />
+          </Tabs>
+        </Box>
+        <TabPanel value={currentTab} index={0}>
+          <Typography variant="subtitle2" gutterBottom>
+            Startup
+          </Typography>
+          <FormControl fullWidth margin="normal" size="small">
+            <InputLabel>On startup, open...</InputLabel>
+            <Select
+              value={localSettings.appBehavior.startupMode}
+              label="On startup, open..."
+              onChange={(e) =>
+                handleFieldChange("appBehavior", "startupMode", e.target.value)
+              }
+            >
+              <MenuItem value="last">The last used folder</MenuItem>
+              <MenuItem value="fixed">A specific folder</MenuItem>
+            </Select>
+          </FormControl>
+          {localSettings.appBehavior.startupMode === "fixed" && (
             <TextField
               fullWidth
-              label="Rename Pattern"
-              margin="normal"
+              label="Specific Folder Path"
               size="small"
-              value={localSettings.renameSettings.pattern}
+              value={localSettings.appBehavior.fixedPath}
               onChange={(e) =>
-                handleFieldChange("renameSettings", "pattern", e.target.value)
+                handleFieldChange("appBehavior", "fixedPath", e.target.value)
               }
-              helperText={`Example: \${DateTimeOriginal:%Y%m%d_%H%M%S}_\${Title}. Valid tags: DateTimeOriginal, Title, etc.`}
+              helperText="If empty, the application will start with no folder loaded."
             />
-            <ExtensionRuleEditor
-              rules={localSettings.renameSettings.extensionRules}
-              onChange={handleExtensionRulesChange}
-            />
-          </Box>
-        </Box>
+          )}
+        </TabPanel>
+        <TabPanel value={currentTab} index={1}>
+          <CountryMappingEditor
+            mappings={localSettings.countryMappings || []}
+            onChange={handleCountryMappingsChange}
+          />
+        </TabPanel>
+        <TabPanel value={currentTab} index={2}>
+          <Typography variant="subtitle2" gutterBottom>
+            Rename Pattern
+          </Typography>
+          <TextField
+            fullWidth
+            label="Pattern"
+            size="small"
+            value={localSettings.renameSettings.pattern}
+            onChange={(e) =>
+              handleFieldChange("renameSettings", "pattern", e.target.value)
+            }
+            helperText={`Example: \${DateTimeOriginal:%Y%m%d_%H%M%S}_\${Title}. Valid tags: DateTimeOriginal, Title, etc.`}
+            sx={{ mb: 2 }}
+          />
+          <Divider sx={{ my: 2 }} />
+          <ExtensionRuleEditor
+            rules={localSettings.renameSettings.extensionRules}
+            onChange={handleExtensionRulesChange}
+          />
+        </TabPanel>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

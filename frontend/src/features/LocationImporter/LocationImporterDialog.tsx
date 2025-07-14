@@ -27,20 +27,7 @@ import {
   EnrichedCoordinate,
 } from "types";
 import { useNotification } from "hooks/useNotification";
-
-const countryData = require("country-list/data.json");
-interface Country {
-  code: string;
-  name: string;
-}
-
-const getCountryCode = (countryName: string): string => {
-  if (!countryName) return "";
-  const matchedCountry = countryData.find(
-    (c: Country) => c.name.toLowerCase() === countryName.toLowerCase()
-  );
-  return matchedCountry ? matchedCountry.code : "";
-};
+import { useSettings } from "features/SettingsDialog/hooks/useSettings";
 
 type ImportStep =
   | "url"
@@ -83,6 +70,15 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
 
   const { showNotification } = useNotification();
+  const { settings } = useSettings();
+
+  const getCountryCode = (countryName: string): string => {
+    if (!countryName || !settings?.countryMappings) return "";
+    const matchedCountry = settings.countryMappings.find(
+      (c) => c.name.toLowerCase() === countryName.toLowerCase()
+    );
+    return matchedCountry ? matchedCountry.code : "";
+  };
 
   const resetState = () => {
     setStep("url");
@@ -154,7 +150,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
             City: location.city,
             State: location.state,
             Country: location.country,
-            CountryCode: getCountryCode(location.country),
+            CountryCode: location.countryCode,
           },
         };
       });
@@ -227,6 +223,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         if (i === index) {
           const updatedData = { ...item.data, [field]: value };
           if (field === "Country") {
+            // Re-calculate code from the user's settings when country name is manually changed
             updatedData.CountryCode = getCountryCode(value);
           }
           return { ...item, data: updatedData };

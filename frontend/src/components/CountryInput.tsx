@@ -1,11 +1,6 @@
 import { TextField, Autocomplete } from "@mui/material";
-
-const countryData = require("country-list/data.json");
-
-interface Country {
-  code: string;
-  name: string;
-}
+import { useSettings } from "features/SettingsDialog/hooks/useSettings";
+import { CountryMapping } from "types";
 
 interface CountryInputProps {
   label: string;
@@ -20,9 +15,12 @@ const CountryInput: React.FC<CountryInputProps> = ({
   onChange,
   sx,
 }) => {
+  const { settings } = useSettings();
+  const countryMappings = settings?.countryMappings || [];
+
   const handleAutocompleteChange = (
     event: any,
-    newValue: Country | string | null
+    newValue: CountryMapping | string | null
   ) => {
     if (!newValue) {
       onChange("", ""); // On clear, send back empty strings
@@ -30,8 +28,8 @@ const CountryInput: React.FC<CountryInputProps> = ({
     }
 
     if (typeof newValue === "string") {
-      const matchedCountry = countryData.find(
-        (c: Country) => c.name.toLowerCase() === newValue.toLowerCase()
+      const matchedCountry = countryMappings.find(
+        (c) => c.name.toLowerCase() === newValue.toLowerCase()
       );
       if (matchedCountry) {
         onChange(matchedCountry.name, matchedCountry.code);
@@ -46,7 +44,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
   };
 
   const autocompleteValue =
-    countryData.find((c: Country) => c.name === value) || value || null;
+    countryMappings.find((c) => c.name === value) || value || null;
 
   return (
     <Autocomplete
@@ -62,7 +60,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
         }
         return "";
       }}
-      options={countryData}
+      options={countryMappings}
       sx={{ width: "100%", ...sx }}
       renderInput={(params) => (
         <TextField {...params} label={label} variant="outlined" size="small" />

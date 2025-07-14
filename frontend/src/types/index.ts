@@ -250,6 +250,7 @@ export interface AppSettings {
       recencyDays: number;
     };
   };
+  countryMappings: CountryMapping[];
 }
 
 /**
@@ -258,4 +259,12 @@ export interface AppSettings {
 export interface ExtensionRule {
   extension: string;
   casing: "lowercase" | "uppercase";
+}
+
+/**
+ * A single entry for the user-configurable country mappings.
+ */
+export interface CountryMapping {
+  code: string;
+  name: string;
 }

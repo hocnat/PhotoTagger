@@ -1,22 +1,21 @@
 import time
 from typing import List, Dict, Any
 from geopy.geocoders import Nominatim
-import pycountry
 
 from config import GEOPY_USER_AGENT
+from app.services.settings_service import load_settings
 
 
 def enrich_coordinates(coordinates: List[Dict[str, float]]) -> List[Dict[str, Any]]:
     """
     Enriches a list of GPS coordinates with address details using reverse geocoding.
-    It normalizes country data to standardized, official names and codes.
-
-    Args:
-        coordinates: A list of dicts, each with 'latitude' and 'longitude'.
-
-    Returns:
-        A list of enriched location dicts, with 'city', 'state', 'country', and 'countryCode'.
+    It uses the user-configured country mappings for standardization.
     """
+    settings = load_settings()
+    country_mappings = settings.get("countryMappings", [])
+    # Create a lookup map from uppercase code to the user's defined name
+    code_to_name_map = {m["code"].upper(): m["name"] for m in country_mappings}
+
     geolocator = Nominatim(user_agent=GEOPY_USER_AGENT)
     enriched_locations = []
 
@@ -31,7 +30,6 @@ def enrich_coordinates(coordinates: List[Dict[str, float]]) -> List[Dict[str, An
                 location_details.raw.get("address", {}) if location_details else {}
             )
 
-            # Extract basic info
             city = address.get("city") or address.get("town") or address.get("village")
             state = (
                 address.get("state")
@@ -39,26 +37,16 @@ def enrich_coordinates(coordinates: List[Dict[str, float]]) -> List[Dict[str, An
                 or address.get("state_district")
             )
 
-            # --- Country Normalization Logic ---
             country_name = ""
             country_code = ""
-            # Nominatim provides the ISO 3166-1 alpha-2 code.
-            nominatim_code = address.get("country_code")
-            if nominatim_code:
-                try:
-                    # Look up the country by its code using pycountry.
-                    country_info = pycountry.countries.get(
-                        alpha_2=nominatim_code.upper()
-                    )
-                    if country_info:
-                        # Use the official name for consistency.
-                        country_name = getattr(
-                            country_info, "official_name", country_info.name
-                        )
-                        country_code = country_info.alpha_2
-                except (KeyError, AttributeError):
-                    # Fallback to the name from Nominatim if lookup fails.
-                    country_name = address.get("country", "")
+            nominatim_code = address.get("country_code", "").upper()
+
+            if nominatim_code in code_to_name_map:
+                country_code = nominatim_code
+                country_name = code_to_name_map[country_code]
+            else:
+                # Fallback if the code from Nominatim isn't in our settings
+                country_name = address.get("country", "")
 
             enriched_locations.append(
                 {
