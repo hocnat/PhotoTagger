@@ -17,7 +17,7 @@ import MapIcon from "@mui/icons-material/Map";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
 import { LatLng } from "leaflet";
 
-import { useLocationPresets } from "../hooks/useLocationPresets";
+import { useLocationPresets } from "../../../hooks/useLocationPresets";
 import FormSection from "./FormSection";
 import CountryInput from "components/CountryInput";
 import MapModal from "components/MapModal";

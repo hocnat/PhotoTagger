@@ -13,9 +13,9 @@ import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 
 import { LocationPreset, LocationPresetData } from "types";
 import { LocationImporterDialog } from "../LocationImporter";
-import PresetList from "./PresetList";
-import PresetForm from "./PresetForm";
-import { useLocationPresets } from "features/MetadataPanel/hooks/useLocationPresets";
+import PresetList from "./components/PresetList";
+import PresetForm from "./components/PresetForm";
+import { useLocationPresets } from "hooks/useLocationPresets";
 
 interface LocationPresetManagerProps {
   onClose: () => void;
