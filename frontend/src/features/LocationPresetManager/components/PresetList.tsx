@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Box,
   IconButton,
   Table,
   TableBody,
@@ -15,9 +16,12 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SearchIcon from "@mui/icons-material/Search";
 import { format, parseISO } from "date-fns";
 
 import { LocationPreset } from "types";
@@ -34,6 +38,7 @@ const PresetList: React.FC<PresetListProps> = ({
   onDelete,
 }) => {
   const [toDelete, setToDelete] = useState<LocationPreset | null>(null);
+  const [filterText, setFilterText] = useState("");
 
   const handleDeleteClick = (preset: LocationPreset) => {
     setToDelete(preset);
@@ -51,8 +56,43 @@ const PresetList: React.FC<PresetListProps> = ({
     return format(parseISO(dateString), "yyyy-MM-dd HH:mm");
   };
 
+  // Filter the presets based on the user's search text.
+  const filteredPresets = presets.filter((preset) => {
+    const searchText = filterText.toLowerCase();
+    if (!searchText) return true;
+
+    // Check against multiple relevant fields for a comprehensive search.
+    return (
+      preset.name.toLowerCase().includes(searchText) ||
+      preset.data.Location?.toLowerCase().includes(searchText) ||
+      preset.data.City?.toLowerCase().includes(searchText) ||
+      preset.data.State?.toLowerCase().includes(searchText) ||
+      preset.data.Country?.toLowerCase().includes(searchText)
+    );
+  });
+
   return (
     <>
+      <Box sx={{ mb: 2, maxWidth: "500px" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          size="small"
+          placeholder="Search by name, city, country..."
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+      </Box>
+
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="location presets table">
           <TableHead>
@@ -65,9 +105,10 @@ const PresetList: React.FC<PresetListProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {presets.map((preset) => (
+            {filteredPresets.map((preset) => (
               <TableRow
                 key={preset.id}
+                hover
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
               >
                 <TableCell component="th" scope="row">
