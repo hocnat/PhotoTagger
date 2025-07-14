@@ -65,11 +65,13 @@ interface Conflict {
 interface LocationImporterDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onImportSuccess: () => void;
 }
 
 export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
   isOpen,
   onClose,
+  onImportSuccess,
 }) => {
   const [step, setStep] = useState<ImportStep>("url");
   const [url, setUrl] = useState("");
@@ -156,7 +158,6 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
           },
         };
       });
-
       setReviewData(dataForReview);
       setStep("review");
     } catch (err: any) {
@@ -207,7 +208,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         `${itemsToSave.length} location preset(s) saved successfully!`,
         "success"
       );
-      handleClose();
+      onImportSuccess();
     } catch (err: any) {
       setError(
         (err as ApiError)?.message || "An error occurred while saving presets."

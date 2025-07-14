@@ -5,7 +5,7 @@ import { useNotification } from "hooks/useNotification";
 
 /**
  * A hook to manage the state and interactions for location presets.
- * It encapsulates all logic for fetching, creating, and tracking usage of presets,
+ * It encapsulates all logic for fetching, creating, updating, and deleting presets,
  * serving as the single source of truth for this data in the application.
  */
 export const useLocationPresets = () => {
@@ -71,5 +71,57 @@ export const useLocationPresets = () => {
     }
   };
 
-  return { presets, isLoading, addPreset, trackUsage };
+  /**
+   * Updates an existing location preset.
+   * On success, it triggers a re-fetch to update the UI.
+   * @param id The ID of the preset to update.
+   * @param name The new name for the preset.
+   * @param data The new data for the preset.
+   */
+  const updatePreset = async (
+    id: string,
+    name: string,
+    data: LocationPresetData
+  ) => {
+    try {
+      await apiService.updateLocationPreset(id, name, data);
+      showNotification(`Location preset "${name}" updated.`, "success");
+      fetchPresets();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      showNotification(`Failed to update preset: ${apiErr.message}`, "error");
+      throw err;
+    }
+  };
+
+  /**
+   * Deletes a location preset from the backend.
+   * On success, it optimistically updates the local state for a faster UI response,
+   * but also re-fetches to ensure consistency.
+   * @param id The ID of the preset to delete.
+   */
+  const deletePreset = async (id: string) => {
+    try {
+      await apiService.deleteLocationPreset(id);
+      showNotification(`Location preset deleted.`, "success");
+      // Optimistically update the UI for a faster perceived response.
+      setPresets((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      const apiErr = err as ApiError;
+      showNotification(`Failed to delete preset: ${apiErr.message}`, "error");
+      // If the delete fails, re-fetch to get the correct state from the server.
+      fetchPresets();
+      throw err;
+    }
+  };
+
+  return {
+    presets,
+    isLoading,
+    fetchPresets,
+    addPreset,
+    updatePreset,
+    deletePreset,
+    trackUsage,
+  };
 };

@@ -1,59 +1,52 @@
 from flask import Blueprint, request, jsonify
-from app.services.location_service import (
-    load_location_presets,
-    add_location_preset,
-    update_location_preset_usage,
-)
-from app.services.sorting_service import smart_sort
+from ..services import location_service
 
 locations_bp = Blueprint("locations_bp", __name__)
 
 
 @locations_bp.route("/locations", methods=["GET"])
 def get_locations():
-    """Returns the list of all saved location presets, intelligently sorted."""
-    query = request.args.get("q", "").lower()
-    presets = load_location_presets()
-
-    # Convert the list of presets into the dictionary format our sorter expects.
-    # The 'name' becomes the key.
-    presets_map = {preset["name"]: preset for preset in presets}
-
-    sorted_preset_names = smart_sort(presets_map, query)
-
-    # Reconstruct the sorted list of full preset objects.
-    sorted_presets = [presets_map[name] for name in sorted_preset_names]
-
-    return jsonify(sorted_presets)
+    presets = location_service.load_location_presets()
+    return jsonify(presets)
 
 
 @locations_bp.route("/locations", methods=["POST"])
-def save_location():
-    """Saves a new location preset."""
+def add_location():
     data = request.get_json()
     if not data or "name" not in data or "data" not in data:
-        return jsonify({"error": "Preset name and data are required"}), 400
-
+        return jsonify({"error": "Name and data are required"}), 400
     try:
-        new_preset = add_location_preset(data["name"], data["data"])
+        new_preset = location_service.add_location_preset(data["name"], data["data"])
         return jsonify(new_preset), 201
-    except Exception as e:
-        return (
-            jsonify({"error": "Failed to save location preset", "details": str(e)}),
-            500,
-        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 409  # Conflict
 
 
 @locations_bp.route("/locations/<string:preset_id>/track_usage", methods=["PUT"])
-def track_location_usage(preset_id):
-    """Updates the useCount and lastUsed timestamp for a given preset."""
+def track_usage(preset_id):
+    updated_preset = location_service.update_location_preset_usage(preset_id)
+    if updated_preset:
+        return jsonify(updated_preset)
+    return jsonify({"error": "Preset not found"}), 404
+
+
+@locations_bp.route("/locations/<string:preset_id>", methods=["PUT"])
+def update_location(preset_id):
+    data = request.get_json()
+    if not data or "name" not in data or "data" not in data:
+        return jsonify({"error": "Name and data are required"}), 400
+
     try:
-        updated_preset = update_location_preset_usage(preset_id)
-        if updated_preset:
-            return jsonify(updated_preset)
+        updated = location_service.update_preset(preset_id, data["name"], data["data"])
+        if updated:
+            return jsonify(updated)
         return jsonify({"error": "Preset not found"}), 404
-    except Exception as e:
-        return (
-            jsonify({"error": "Failed to track preset usage", "details": str(e)}),
-            500,
-        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 409  # Conflict
+
+
+@locations_bp.route("/locations/<string:preset_id>", methods=["DELETE"])
+def delete_location(preset_id):
+    if location_service.delete_preset(preset_id):
+        return "", 204  # No Content
+    return jsonify({"error": "Preset not found"}), 404

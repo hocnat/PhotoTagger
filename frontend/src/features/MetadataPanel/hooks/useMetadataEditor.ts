@@ -15,19 +15,6 @@ import { useSelectionDataLoader } from "./useSelectionDataLoader";
 import { useAggregatedMetadata } from "./useAggregatedMetadata";
 import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
 
-const countryData = require("country-list/data.json");
-interface Country {
-  code: string;
-  name: string;
-}
-const getCountryCode = (countryName: string): string => {
-  if (!countryName) return "";
-  const matchedCountry = countryData.find(
-    (c: Country) => c.name.toLowerCase() === countryName.toLowerCase()
-  );
-  return matchedCountry ? matchedCountry.code : "";
-};
-
 interface UseMetadataEditorProps {
   folderPath: string;
   onSaveSuccess: () => void;
@@ -199,7 +186,7 @@ export const useMetadataEditor = ({
         newLocationData.City = locationInfo.city;
         newLocationData.State = locationInfo.state;
         newLocationData.Country = locationInfo.country;
-        newLocationData.CountryCode = getCountryCode(locationInfo.country);
+        newLocationData.CountryCode = locationInfo.countryCode;
       }
     } catch (error) {
       showNotification(
@@ -217,8 +204,8 @@ export const useMetadataEditor = ({
         // Check if the key is valid for LocationData
         (newBlockState[formKey] as any) = {
           status: "unique",
-          value,
-          isConsolidated: true, // New data from a single source is always consolidated
+          value: value || "",
+          isConsolidated: true,
         };
       }
     }

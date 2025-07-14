@@ -187,6 +187,7 @@ export interface EnrichedCoordinate extends GpsCoordinate {
   city: string;
   state: string;
   country: string;
+  countryCode: string;
 }
 
 /**

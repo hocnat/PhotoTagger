@@ -20,12 +20,12 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import LabelOutlinedIcon from "@mui/icons-material/LabelOutlined";
 import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
-import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import PublicIcon from "@mui/icons-material/Public";
 
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
-import { LocationImporterDialog } from "./features/LocationImporter";
+import { LocationPresetManager } from "./features/LocationPresetManager";
 import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
 import {
   UnsavedChangesProvider,
@@ -44,7 +44,7 @@ import { useRenameDialog } from "./features/RenameDialog";
 
 import "./App.css";
 
-const drawerWidth = 960;
+const metadataDrawerWidth = 960;
 
 const getGridColumnCount = (): number => {
   const gridElement = document.querySelector(".image-grid");
@@ -63,8 +63,8 @@ const getGridColumnCount = (): number => {
 
 const AppContent: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isLocationImporterOpen, setIsLocationImporterOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const {
@@ -113,6 +113,7 @@ const AppContent: React.FC = () => {
 
   const handlePanelOpen = useCallback(() => {
     if (selectedImages.length > 0) {
+      setIsPresetManagerOpen(false);
       setIsPanelOpen(true);
     }
   }, [selectedImages.length]);
@@ -121,12 +122,20 @@ const AppContent: React.FC = () => {
     promptAction(() => setIsPanelOpen(false));
   };
 
+  const handlePresetManagerOpen = () => {
+    promptAction(() => {
+      setIsPanelOpen(false);
+      setIsPresetManagerOpen(true);
+    });
+  };
+
   const handleSaveSuccess = () => {
     setIsPanelOpen(false);
   };
 
   const handleImageDoubleClick = (imageName: string) => {
     promptAction(() => {
+      setIsPresetManagerOpen(false);
       selectSingleImage(imageName);
       setIsDirty(false);
       setIsPanelOpen(true);
@@ -216,7 +225,7 @@ const AppContent: React.FC = () => {
       <CssBaseline />
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
       >
         <Toolbar>
           <PhotoLibraryIcon sx={{ mr: 2 }} />
@@ -262,12 +271,9 @@ const AppContent: React.FC = () => {
             </span>
           </Tooltip>
 
-          <Tooltip title="Import Location Presets">
-            <IconButton
-              color="inherit"
-              onClick={() => setIsLocationImporterOpen(true)}
-            >
-              <CloudUploadOutlinedIcon />
+          <Tooltip title="Manage Location Presets">
+            <IconButton color="inherit" onClick={handlePresetManagerOpen}>
+              <PublicIcon />
             </IconButton>
           </Tooltip>
 
@@ -382,19 +388,36 @@ const AppContent: React.FC = () => {
 
       <Drawer
         variant="temporary"
-        anchor="right"
-        open={isPanelOpen}
-        onClose={handlePanelClose}
+        anchor="left"
+        open={isPresetManagerOpen}
+        onClose={() => setIsPresetManagerOpen(false)}
         sx={{
-          width: drawerWidth,
+          width: "100%",
           flexShrink: 0,
           "& .MuiDrawer-paper": {
-            width: drawerWidth,
+            width: "100%",
             boxSizing: "border-box",
           },
         }}
       >
-        {selectedImages.length > 0 && (
+        <LocationPresetManager onClose={() => setIsPresetManagerOpen(false)} />
+      </Drawer>
+
+      <Drawer
+        variant="temporary"
+        anchor="right"
+        open={isPanelOpen}
+        onClose={handlePanelClose}
+        sx={{
+          width: metadataDrawerWidth,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: metadataDrawerWidth,
+            boxSizing: "border-box",
+          },
+        }}
+      >
+        {isPanelOpen && selectedImages.length > 0 && (
           <MetadataPanel
             key={selectedImages.join("-")}
             folderPath={imageData.folder}
@@ -414,10 +437,6 @@ const AppContent: React.FC = () => {
       <SettingsDialog
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-      />
-      <LocationImporterDialog
-        isOpen={isLocationImporterOpen}
-        onClose={() => setIsLocationImporterOpen(false)}
       />
     </Box>
   );

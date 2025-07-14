@@ -11,6 +11,7 @@ import {
   DialogContentText,
   DialogActions,
   IconButton,
+  Stack,
 } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
@@ -18,9 +19,10 @@ import { LatLng } from "leaflet";
 
 import { useLocationPresets } from "../hooks/useLocationPresets";
 import FormSection from "./FormSection";
-import CountryInput from "./CountryInput";
-import MapModal from "./MapModal";
+import CountryInput from "components/CountryInput";
+import MapModal from "components/MapModal";
 import ConsolidationAdornment from "./ConsolidationAdornment";
+import WarningIndicator from "./WarningIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
@@ -67,9 +69,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
 
   const gpsDisplayValue = useMemo(() => {
     if (!locationData) return "";
-
     const { Latitude, Longitude } = locationData;
-
     if (Latitude.status === "mixed" || Longitude.status === "mixed") {
       return getPlaceholder(Latitude);
     }
@@ -109,13 +109,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({
 
   const handleSavePreset = () => {
     const dataToSave: LocationPresetData = {};
-
     for (const [key, field] of Object.entries(locationData)) {
       if (field.status === "unique" && field.value) {
         (dataToSave as any)[key] = field.value;
       }
     }
-
     if (Object.keys(dataToSave).length > 0) {
       addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
     } else {
@@ -238,23 +236,30 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         );
       })}
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-        <CountryInput
-          label="Country"
-          countryValue={getDisplayValue(Country)}
-          isConsolidated={
-            Country.status === "unique" ? Country.isConsolidated : true
-          }
-          onCountryChange={(val) =>
-            handleFieldChange(dataBlockName, "Country", val)
-          }
-          onCodeChange={(val) =>
-            handleFieldChange(dataBlockName, "CountryCode", val)
-          }
-          isDirty={
-            isFieldDirty(dataBlockName, "Country") ||
-            isFieldDirty(dataBlockName, "CountryCode")
-          }
-        />
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{
+            flexGrow: 1,
+            ...getDirtyFieldSx(
+              isFieldDirty(dataBlockName, "Country") ||
+                isFieldDirty(dataBlockName, "CountryCode")
+            ),
+          }}
+        >
+          <CountryInput
+            label="Country"
+            value={getDisplayValue(Country)}
+            onChange={(country, code) => {
+              handleFieldChange(dataBlockName, "Country", country);
+              handleFieldChange(dataBlockName, "CountryCode", code);
+            }}
+          />
+          {Country.status === "unique" && !Country.isConsolidated && (
+            <WarningIndicator />
+          )}
+        </Stack>
         <TextField
           label="Country Code"
           variant="outlined"
