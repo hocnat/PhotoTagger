@@ -101,6 +101,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
   };
 
   const handleFetch = async () => {
+    if (!url.trim()) return;
     setError(null);
     setStep("fetching");
     try {
@@ -131,12 +132,10 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
       const enrichedCoords: EnrichedCoordinate[] =
         await apiService.enrichCoordinates(selectedPlacemarks);
 
-      // Create a map for easy lookup
       const placemarkNameMap = new Map(
         selectedPlacemarks.map((p) => [`${p.latitude},${p.longitude}`, p.name])
       );
 
-      // Merge the results
       const dataForReview: ReviewItem[] = enrichedCoords.map((location) => {
         const name =
           placemarkNameMap.get(`${location.latitude},${location.longitude}`) ||
@@ -146,7 +145,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
           data: {
             Latitude: String(location.latitude),
             Longitude: String(location.longitude),
-            Location: name, // Pre-fill with original placemark name
+            Location: name,
             City: location.city,
             State: location.state,
             Country: location.country,
@@ -223,7 +222,6 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         if (i === index) {
           const updatedData = { ...item.data, [field]: value };
           if (field === "Country") {
-            // Re-calculate code from the user's settings when country name is manually changed
             updatedData.CountryCode = getCountryCode(value);
           }
           return { ...item, data: updatedData };
@@ -258,6 +256,12 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         disabled={step === "fetching"}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && url.trim()) {
+            e.stopPropagation();
+            handleFetch();
+          }
+        }}
       />
     </>
   );
@@ -493,7 +497,11 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         return (
           <>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button onClick={handleFetch} variant="contained" disabled={!url}>
+            <Button
+              onClick={handleFetch}
+              variant="contained"
+              disabled={!url.trim()}
+            >
               Fetch Places
             </Button>
           </>
@@ -545,7 +553,13 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={isOpen}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      disableRestoreFocus
+    >
       <DialogTitle>Import Location Presets from Google MyMaps</DialogTitle>
       <DialogContent sx={{ minHeight: "200px" }}>
         {error && (
