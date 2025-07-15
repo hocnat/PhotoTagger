@@ -2,11 +2,11 @@ import os
 from flask import Blueprint, request, jsonify
 
 from app.services.exif_service import (
+    TAG_MAP,
     read_metadata_for_files,
     build_exiftool_args,
     run_exiftool_command,
 )
-
 from app.services.keyword_service import keyword_service
 
 metadata_bp = Blueprint("metadata_bp", __name__)
@@ -76,3 +76,9 @@ def save_metadata():
             jsonify({"message": error_message, "details": str(e)}),
             500,
         )
+
+
+@metadata_bp.route("/metadata-fields", methods=["GET"])
+def get_metadata_fields():
+    """Returns a list of all application-level metadata field names."""
+    return jsonify(list(TAG_MAP.keys()))

@@ -15,7 +15,7 @@ def create_app():
     from .routes.keywords import keywords_bp
     from .routes.locations import locations_bp
     from .routes.metadata import metadata_bp
-    from .routes.tools import tools_bp
+    from .routes.rename import rename_bp
     from .routes.settings import settings_bp
     from .routes.location_importer import location_importer_bp
     from .routes.geocoding import geocoding_bp
@@ -25,7 +25,7 @@ def create_app():
     app.register_blueprint(keywords_bp, url_prefix="/api")
     app.register_blueprint(locations_bp, url_prefix="/api")
     app.register_blueprint(metadata_bp, url_prefix="/api")
-    app.register_blueprint(tools_bp, url_prefix="/api")
+    app.register_blueprint(rename_bp, url_prefix="/api")
     app.register_blueprint(settings_bp, url_prefix="/api")
     app.register_blueprint(location_importer_bp, url_prefix="/api")
     app.register_blueprint(geocoding_bp, url_prefix="/api")

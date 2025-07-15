@@ -1,11 +1,9 @@
 import os
 from flask import Blueprint, request, jsonify
 from app.services.settings_service import get_setting
-from app.services.rename_service import (
-    generate_filename_from_pattern,
-)
+from app.services.rename_service import generate_filename_from_pattern
 
-tools_bp = Blueprint("tools_bp", __name__)
+rename_bp = Blueprint("rename_bp", __name__)
 
 
 def _get_new_filename_with_collision_check(old_path: str):
@@ -40,7 +38,7 @@ def _get_new_filename_with_collision_check(old_path: str):
     return new_path, new_filename, "Success"
 
 
-@tools_bp.route("/preview_rename", methods=["POST"])
+@rename_bp.route("/preview_rename", methods=["POST"])
 def preview_rename():
     data = request.get_json()
     if not data or "files" not in data:
@@ -57,7 +55,7 @@ def preview_rename():
     return jsonify(preview_results)
 
 
-@tools_bp.route("/rename_files", methods=["POST"])
+@rename_bp.route("/rename_files", methods=["POST"])
 def rename_files():
     data = request.get_json()
     if not data or "files" not in data:
@@ -79,10 +77,3 @@ def rename_files():
                 {"original": old_filename, "new": new_filename, "status": status}
             )
     return jsonify(rename_results)
-
-
-@tools_bp.route("/metadata-fields", methods=["GET"])
-def get_metadata_fields():
-    from app.services.exif_service import TAG_MAP
-
-    return jsonify(list(TAG_MAP.keys()))
