@@ -1,8 +1,8 @@
 import os
 from flask import Blueprint, request, jsonify
 
+from app.metadata_schema import TAG_MAP
 from app.services.exif_service import (
-    TAG_MAP,
     read_metadata_for_files,
     build_exiftool_args,
     run_exiftool_command,
