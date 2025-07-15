@@ -46,8 +46,6 @@ import { useRenameDialog } from "./features/RenameDialog";
 
 import "./App.css";
 
-const metadataDrawerWidth = 960;
-
 const getGridColumnCount = (): number => {
   const gridElement = document.querySelector(".image-grid");
   if (!gridElement) return 4;
@@ -453,12 +451,11 @@ const AppContent: React.FC = () => {
         variant="temporary"
         anchor="right"
         open={isPanelOpen}
-        onClose={handlePanelClose}
         sx={{
-          width: metadataDrawerWidth,
+          width: "100%",
           flexShrink: 0,
           "& .MuiDrawer-paper": {
-            width: metadataDrawerWidth,
+            width: "100%",
             boxSizing: "border-box",
           },
         }}

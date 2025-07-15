@@ -9,8 +9,7 @@ import {
   Grid,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import SaveIcon from "@mui/icons-material/Save";
+import CloseIcon from "@mui/icons-material/Close";
 
 import { useMetadataEditor } from "./hooks/useMetadataEditor";
 import { MetadataEditorProvider } from "./context/MetadataEditorContext";
@@ -37,6 +36,8 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
   flexShrink: 0,
 }));
+
+const carouselWidth = 240;
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({
   folderPath,
@@ -80,25 +81,22 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
     }
     return (
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Stack spacing={3} sx={{ height: "100%" }}>
-            <ContentSection />
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Stack spacing={3}>
             <DateTimeSection />
             <CreatorSection />
           </Stack>
         </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Stack spacing={3} sx={{ height: "100%" }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Stack spacing={3}>
             <LocationSection
               title="Location Created"
               dataBlockName="LocationCreated"
             />
           </Stack>
         </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Stack spacing={3} sx={{ height: "100%" }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Stack spacing={3}>
             <LocationSection
               title="Location Shown"
               dataBlockName="LocationShown"
@@ -122,16 +120,71 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             </Typography>
           </Box>
           <IconButton onClick={onClose} aria-label="close metadata panel">
-            <ChevronRightIcon />
+            <CloseIcon />
           </IconButton>
         </DrawerHeader>
 
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-          <ImageCarousel
-            imageNames={selectedImages}
-            getImageUrl={getImageUrl}
-            onImageClick={(imageName) => setModalImageName(imageName)}
-          />
+        <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
+          <Box
+            sx={{
+              width: carouselWidth,
+              flexShrink: 0,
+              borderRight: 1,
+              borderColor: "divider",
+              overflowY: "auto",
+            }}
+          >
+            <ImageCarousel
+              imageNames={selectedImages}
+              getImageUrl={getImageUrl}
+              onImageClick={(imageName) => setModalImageName(imageName)}
+            />
+          </Box>
+
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
+              {isMetadataLoading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <Stack spacing={3}>
+                  <ContentSection />
+                  {renderContent()}
+                </Stack>
+              )}
+            </Box>
+
+            <Box
+              sx={{
+                p: 2,
+                borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                flexShrink: 0,
+                bgcolor: "background.paper",
+              }}
+            >
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button onClick={onClose} variant="text">
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSave}
+                  disabled={isSaving || !isSaveable}
+                >
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
         </Box>
 
         {modalImageName && (
@@ -142,36 +195,6 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             imageName={modalImageName}
           />
         )}
-
-        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
-          {renderContent()}
-        </Box>
-
-        <Box
-          sx={{
-            p: 2,
-            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-            flexShrink: 0,
-          }}
-        >
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSave}
-              disabled={isSaving || !isSaveable}
-              startIcon={
-                isSaving ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <SaveIcon />
-                )
-              }
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          </Stack>
-        </Box>
       </Box>
     </MetadataEditorProvider>
   );

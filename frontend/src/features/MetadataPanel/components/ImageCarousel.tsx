@@ -1,51 +1,61 @@
-import { Box, IconButton } from "@mui/material";
+import { Box, IconButton, SxProps } from "@mui/material";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import Slider from "react-slick";
+import { Theme } from "@mui/material/styles";
 
-function NextArrow(props: any) {
-  const { onClick } = props;
+// --- Vertical Arrow Components with conditional rendering ---
+function VerticalNextArrow(props: any) {
+  const { onClick, currentSlide, slideCount, slidesToShow } = props;
+  const isLastSlide = currentSlide >= slideCount - slidesToShow;
+
+  if (isLastSlide) {
+    return null;
+  }
+
   return (
     <IconButton
       onClick={onClick}
       sx={{
         position: "absolute",
-        top: "50%",
-        right: -10,
-        transform: "translateY(-50%)",
+        bottom: 5,
+        left: "50%",
+        transform: "translateX(-50%)",
         zIndex: 2,
         backgroundColor: "rgba(255, 255, 255, 0.7)",
-        "&:hover": {
-          backgroundColor: "white",
-        },
+        "&:hover": { backgroundColor: "white" },
       }}
       size="small"
     >
-      <ChevronRightIcon />
+      <KeyboardArrowDownIcon />
     </IconButton>
   );
 }
 
-function PrevArrow(props: any) {
-  const { onClick } = props;
+function VerticalPrevArrow(props: any) {
+  const { onClick, currentSlide } = props;
+  const isFirstSlide = currentSlide === 0;
+
+  if (isFirstSlide) {
+    return null;
+  }
+
   return (
     <IconButton
       onClick={onClick}
       sx={{
         position: "absolute",
-        top: "50%",
-        left: -10,
-        transform: "translateY(-50%)",
+        top: 5,
+        left: "50%",
+        transform: "translateX(-50%)",
         zIndex: 2,
         backgroundColor: "rgba(255, 255, 255, 0.7)",
-        "&:hover": {
-          backgroundColor: "white",
-        },
+        "&:hover": { backgroundColor: "white" },
       }}
       size="small"
     >
-      <ChevronLeftIcon />
+      <KeyboardArrowUpIcon />
     </IconButton>
   );
 }
@@ -61,50 +71,47 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   getImageUrl,
   onImageClick,
 }) => {
+  const slidesToShowVertical = 5;
+
   const settings = {
-    dots: imageNames.length > 3,
-    infinite: imageNames.length > 3,
+    dots: false,
+    infinite: false,
     speed: 500,
-    slidesToShow: Math.min(imageNames.length, 3),
+    slidesToShow: slidesToShowVertical,
     slidesToScroll: 1,
-    arrows: imageNames.length > 3,
-    adaptiveHeight: false,
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
+    arrows: imageNames.length > slidesToShowVertical,
+    vertical: true,
+    verticalSwiping: true,
+    nextArrow: <VerticalNextArrow slidesToShow={slidesToShowVertical} />,
+    prevArrow: <VerticalPrevArrow />,
+  };
+
+  const containerSx: SxProps<Theme> = {
+    position: "relative",
+    height: "100%",
+    p: 1,
+    ".slick-slider, .slick-list, .slick-track": { height: "100%" },
+    ".slick-slide": {
+      py: "8px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+  };
+
+  const slideBoxSx: SxProps<Theme> = {
+    position: "relative",
+    cursor: "pointer",
+    height: "120px",
+    width: "100%",
+    "&:hover .overlay": { opacity: 1 },
   };
 
   return (
-    <Box
-      className="image-carousel-container"
-      sx={{
-        position: "relative",
-        ".slick-slide": {
-          px: "4px",
-        },
-        ".slick-list": {},
-        ".slick-dots li button:before": {
-          color: "primary.main",
-          opacity: 0.5,
-        },
-        ".slick-dots li.slick-active button:before": {
-          opacity: 1,
-        },
-      }}
-    >
+    <Box className="image-carousel-container" sx={containerSx}>
       <Slider {...settings}>
         {imageNames.map((name) => (
-          <Box
-            key={name}
-            onClick={() => onImageClick(name)}
-            sx={{
-              position: "relative",
-              cursor: "pointer",
-              height: "180px",
-              "&:hover .overlay": {
-                opacity: 1,
-              },
-            }}
-          >
+          <Box key={name} onClick={() => onImageClick(name)} sx={slideBoxSx}>
             <img
               src={getImageUrl(name)}
               alt={name}

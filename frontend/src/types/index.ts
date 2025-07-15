@@ -254,6 +254,17 @@ export interface KeywordData {
  */
 export type KeywordPayload = Pick<Keyword, "name" | "data">;
 
+/**
+ * The rich suggestion object returned by the API for keyword autocomplete.
+ */
+export interface KeywordSuggestion {
+  primaryName: string;
+  matchedTerm: string;
+  parentName: string | null;
+  synonyms: string[]; // <-- This is the new field
+  allTermsToAdd: string[];
+}
+
 // ====================================================================================
 // Application Settings
 // These types define the shape of the main, user-configurable application settings.

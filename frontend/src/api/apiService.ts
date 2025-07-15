@@ -6,6 +6,7 @@ import {
   ImageFile,
   Keyword,
   KeywordData,
+  KeywordSuggestion,
   LocationPreset,
   LocationPresetData,
   Placemark,
@@ -72,10 +73,12 @@ export const getRenamePreview = (
 
 // --- Keywords ---
 
-export const getKeywordSuggestions = (query: string): Promise<string[]> =>
+export const getKeywordSuggestions = (
+  query: string
+): Promise<KeywordSuggestion[]> =>
   fetch(
     `${API_BASE_URL}/keywords/suggestions?q=${encodeURIComponent(query)}`
-  ).then((response) => handleResponse<string[]>(response));
+  ).then((response) => handleResponse<KeywordSuggestion[]>(response));
 
 export const getKeywords = (): Promise<Keyword[]> =>
   fetch(`${API_BASE_URL}/keywords`).then((response) =>

@@ -1,34 +1,16 @@
 from flask import Blueprint, request, jsonify
 from app.services.keyword_service import keyword_service
-from app.services.sorting_service import smart_sort
 
 keywords_bp = Blueprint("keywords_bp", __name__)
 
 
 @keywords_bp.route("/keywords/suggestions")
 def get_keyword_suggestions():
-    """Provides keyword suggestions based on usage frequency and recency."""
+    """Provides rich keyword suggestions including parent/synonym info."""
     query = request.args.get("q", "").lower()
-    all_keywords = keyword_service.get_all()
+    suggestions = keyword_service.get_suggestions(query)
 
-    # The smart_sort function expects a dictionary of {name: {usageCount, lastUsed}}.
-    # We build this on the fly from our new keyword structure.
-    # This allows a single keyword object to be found by its name or any synonym.
-    keywords_map = {}
-    for kw_obj in all_keywords:
-        usage_data = {
-            "usageCount": kw_obj.get("useCount", 0),
-            "lastUsed": kw_obj.get("lastUsed"),
-        }
-        # Add the primary name
-        keywords_map[kw_obj["name"]] = usage_data
-        # Add all synonyms
-        for synonym in kw_obj.get("data", {}).get("synonyms", []):
-            keywords_map[synonym] = usage_data
-
-    sorted_suggestions = smart_sort(keywords_map, query)
-
-    return jsonify(sorted_suggestions[:10])
+    return jsonify(suggestions)
 
 
 @keywords_bp.route("/keywords", methods=["GET"])

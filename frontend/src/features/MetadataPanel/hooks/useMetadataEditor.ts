@@ -8,6 +8,7 @@ import {
   FileUpdatePayload,
   ChipData,
   LocationData,
+  KeywordSuggestion,
 } from "types";
 import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
@@ -31,7 +32,9 @@ export const useMetadataEditor = ({
   onSaveSuccess,
 }: UseMetadataEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
-  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [keywordSuggestions, setKeywordSuggestions] = useState<
+    KeywordSuggestion[]
+  >([]);
   const { showNotification } = useNotification();
   const { setIsDirty } = useUnsavedChangesContext();
 
