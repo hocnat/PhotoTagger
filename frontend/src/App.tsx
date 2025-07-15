@@ -31,6 +31,7 @@ import { SettingsDialog } from "./features/SettingsDialog";
 import { LocationPresetManager } from "./features/LocationPresetManager";
 import { KeywordManager } from "./features/KeywordManager";
 import { HealthCheckDrawer } from "./features/HealthCheck/HealthCheckDrawer";
+import { InfoPanel } from "./features/InfoPanel/InfoPanel";
 import { HealthIndicatorIcons } from "./features/HealthCheck/components/HealthIndicatorIcons";
 import { ShiftTimeInputDialog } from "./features/TimeShift/components/ShiftTimeInputDialog";
 import { ShiftTimePreviewDialog } from "./features/TimeShift/components/ShiftTimePreviewDialog";
@@ -71,6 +72,7 @@ const AppContent: React.FC = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
   const [isKeywordManagerOpen, setIsKeywordManagerOpen] = useState(false);
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const {
@@ -178,6 +180,7 @@ const AppContent: React.FC = () => {
     if (selectedImages.length > 0) {
       setIsPresetManagerOpen(false);
       setIsKeywordManagerOpen(false);
+      setIsInfoPanelOpen(false);
       setIsPanelOpen(true);
     }
   }, [selectedImages.length]);
@@ -190,6 +193,7 @@ const AppContent: React.FC = () => {
     promptAction(() => {
       setIsPanelOpen(false);
       setIsKeywordManagerOpen(false);
+      setIsInfoPanelOpen(false);
       setIsPresetManagerOpen(true);
     });
   };
@@ -198,6 +202,7 @@ const AppContent: React.FC = () => {
     promptAction(() => {
       setIsPanelOpen(false);
       setIsPresetManagerOpen(false);
+      setIsInfoPanelOpen(false);
       setIsKeywordManagerOpen(true);
     });
   };
@@ -206,6 +211,7 @@ const AppContent: React.FC = () => {
     promptAction(() => {
       setIsPresetManagerOpen(false);
       setIsKeywordManagerOpen(false);
+      setIsInfoPanelOpen(false);
       selectSingleImage(imageName);
       setIsDirty(false);
       setIsPanelOpen(true);
@@ -304,79 +310,69 @@ const AppContent: React.FC = () => {
       <CssBaseline />
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
       >
         <Toolbar>
           <PhotoLibraryIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             PhotoTagger
           </Typography>
-
-          <Tooltip title="Edit metadata for selected files">
-            <span>
-              <IconButton
-                color="inherit"
-                onClick={handlePanelOpen}
-                disabled={selectedImages.length === 0}
-              >
-                <EditIcon />
-              </IconButton>
-            </span>
+          <Tooltip title="Edit metadata">
+            <IconButton
+              color="inherit"
+              onClick={handlePanelOpen}
+              disabled={selectedImages.length === 0}
+            >
+              <EditIcon />
+            </IconButton>
           </Tooltip>
-          <Tooltip title="Shift date/time for selected files">
-            <span>
-              <IconButton
-                color="inherit"
-                onClick={() =>
-                  openTimeShiftDialog(
-                    selectedImages.map((f) => `${imageData.folder}\\${f}`)
-                  )
-                }
-                disabled={selectedImages.length === 0}
-              >
-                <MoreTimeIcon />
-              </IconButton>
-            </span>
+          <Tooltip title="Shift date/time">
+            <IconButton
+              color="inherit"
+              onClick={() =>
+                openTimeShiftDialog(
+                  selectedImages.map((f) => `${imageData.folder}\\${f}`)
+                )
+              }
+              disabled={selectedImages.length === 0}
+            >
+              <MoreTimeIcon />
+            </IconButton>
           </Tooltip>
-          <Tooltip title="Rename selected files">
-            <span>
-              <IconButton
-                color="inherit"
-                disabled={
-                  isLoading ||
-                  isRenamePreviewLoading ||
-                  selectedImages.length === 0
-                }
-                onClick={() => {
-                  const fullPaths = selectedImages.map(
-                    (name) => `${imageData.folder}\\${name}`
-                  );
-                  openRenameDialog(fullPaths);
-                }}
-              >
-                {isRenamePreviewLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  <LabelOutlinedIcon />
-                )}
-              </IconButton>
-            </span>
+          <Tooltip title="Rename files">
+            <IconButton
+              color="inherit"
+              disabled={
+                isLoading ||
+                isRenamePreviewLoading ||
+                selectedImages.length === 0
+              }
+              onClick={() => {
+                const fullPaths = selectedImages.map(
+                  (name) => `${imageData.folder}\\${name}`
+                );
+                openRenameDialog(fullPaths);
+              }}
+            >
+              {isRenamePreviewLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                <LabelOutlinedIcon />
+              )}
+            </IconButton>
           </Tooltip>
-
-          <Tooltip title="Analyze selected files">
-            <span>
-              <IconButton
-                color="inherit"
-                onClick={handleRunHealthCheck}
-                disabled={selectedImages.length === 0 || isHealthChecking}
-              >
-                {isHealthChecking ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  <HealthAndSafetyIcon />
-                )}
-              </IconButton>
-            </span>
+          <Tooltip title="Analyze files">
+            <IconButton
+              color="inherit"
+              onClick={handleRunHealthCheck}
+              disabled={selectedImages.length === 0 || isHealthChecking}
+            >
+              {isHealthChecking ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                <HealthAndSafetyIcon />
+              )}
+            </IconButton>
           </Tooltip>
 
           <Tooltip title="Manage Keywords">
@@ -407,6 +403,7 @@ const AppContent: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           height: "100vh",
+          marginRight: "32px",
         }}
       >
         <Toolbar />
@@ -516,6 +513,13 @@ const AppContent: React.FC = () => {
           })}
         </Box>
       </Box>
+
+      <InfoPanel
+        folderPath={imageData.folder}
+        selectedImage={selectedImages.length === 1 ? selectedImages[0] : null}
+        isOpen={isInfoPanelOpen}
+        onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
+      />
 
       <Drawer
         variant="temporary"
