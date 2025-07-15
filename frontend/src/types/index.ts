@@ -226,6 +226,35 @@ export interface LocationPresetData {
 }
 
 // ====================================================================================
+// Keyword Management
+// ====================================================================================
+
+/**
+ * The data structure for a single managed keyword.
+ */
+export interface Keyword {
+  id: string;
+  name: string;
+  useCount: number;
+  lastUsed: string | null;
+  createdAt: string;
+  data: KeywordData;
+}
+
+/**
+ * The hierarchical and relational data for a managed keyword.
+ */
+export interface KeywordData {
+  parent: string | null;
+  synonyms: string[];
+}
+
+/**
+ * The payload used when creating or updating a keyword via the API.
+ */
+export type KeywordPayload = Pick<Keyword, "name" | "data">;
+
+// ====================================================================================
 // Application Settings
 // These types define the shape of the main, user-configurable application settings.
 // ====================================================================================

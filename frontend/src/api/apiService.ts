@@ -4,6 +4,8 @@ import {
   EnrichedCoordinate,
   GpsCoordinate,
   ImageFile,
+  Keyword,
+  KeywordData,
   LocationPreset,
   LocationPresetData,
   Placemark,
@@ -43,11 +45,6 @@ export const getMetadataForSelection = (
     body: JSON.stringify({ files: filePaths }),
   }).then((response) => handleResponse<ImageFile[]>(response));
 
-export const getKeywordSuggestions = (query: string): Promise<string[]> =>
-  fetch(
-    `${API_BASE_URL}/keyword_suggestions?q=${encodeURIComponent(query)}`
-  ).then((response) => handleResponse<string[]>(response));
-
 export const saveMetadata = (
   payload: SaveMetadataPayload
 ): Promise<{ message: string }> =>
@@ -72,6 +69,40 @@ export const getRenamePreview = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ files: filePaths }),
   }).then((response) => handleResponse<RenamePreviewItem[]>(response));
+
+// --- Keywords ---
+
+export const getKeywordSuggestions = (query: string): Promise<string[]> =>
+  fetch(
+    `${API_BASE_URL}/keywords/suggestions?q=${encodeURIComponent(query)}`
+  ).then((response) => handleResponse<string[]>(response));
+
+export const getKeywords = (): Promise<Keyword[]> =>
+  fetch(`${API_BASE_URL}/keywords`).then((response) =>
+    handleResponse<Keyword[]>(response)
+  );
+
+export const addKeyword = (name: string, data: KeywordData): Promise<Keyword> =>
+  fetch(`${API_BASE_URL}/keywords`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, data }),
+  }).then((response) => handleResponse<Keyword>(response));
+
+export const updateKeyword = (
+  id: string,
+  updates: { name?: string; data?: KeywordData }
+): Promise<Keyword> =>
+  fetch(`${API_BASE_URL}/keywords/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  }).then((response) => handleResponse<Keyword>(response));
+
+export const deleteKeyword = (id: string): Promise<void> =>
+  fetch(`${API_BASE_URL}/keywords/${id}`, {
+    method: "DELETE",
+  }).then((response) => handleResponse<void>(response));
 
 // --- Location Presets ---
 

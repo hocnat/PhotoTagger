@@ -21,12 +21,14 @@ import LabelOutlinedIcon from "@mui/icons-material/LabelOutlined";
 import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PublicIcon from "@mui/icons-material/Public";
+import StyleIcon from "@mui/icons-material/Style";
 
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
 import { LocationPresetManager } from "./features/LocationPresetManager";
-import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
+import { KeywordManager } from "./features/KeywordManager";
+import { ConfirmationDialog } from "./components/ConfirmationDialog";
 import {
   UnsavedChangesProvider,
   useUnsavedChangesContext,
@@ -65,6 +67,7 @@ const AppContent: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
+  const [isKeywordManagerOpen, setIsKeywordManagerOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const {
@@ -114,6 +117,7 @@ const AppContent: React.FC = () => {
   const handlePanelOpen = useCallback(() => {
     if (selectedImages.length > 0) {
       setIsPresetManagerOpen(false);
+      setIsKeywordManagerOpen(false);
       setIsPanelOpen(true);
     }
   }, [selectedImages.length]);
@@ -125,7 +129,16 @@ const AppContent: React.FC = () => {
   const handlePresetManagerOpen = () => {
     promptAction(() => {
       setIsPanelOpen(false);
+      setIsKeywordManagerOpen(false);
       setIsPresetManagerOpen(true);
+    });
+  };
+
+  const handleKeywordManagerOpen = () => {
+    promptAction(() => {
+      setIsPanelOpen(false);
+      setIsPresetManagerOpen(false);
+      setIsKeywordManagerOpen(true);
     });
   };
 
@@ -136,6 +149,7 @@ const AppContent: React.FC = () => {
   const handleImageDoubleClick = (imageName: string) => {
     promptAction(() => {
       setIsPresetManagerOpen(false);
+      setIsKeywordManagerOpen(false);
       selectSingleImage(imageName);
       setIsDirty(false);
       setIsPanelOpen(true);
@@ -148,24 +162,34 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Allow global select-all shortcut
       if ((e.ctrlKey || e.metaKey) && e.key === "a") {
         e.preventDefault();
         promptAction(() => setSelectedImages([...imageData.files]));
         return;
       }
+
+      // If focus is on any element other than the main body (e.g., an input,
+      // button, or element in a dialog), do not process global shortcuts.
+      // This allows components like Autocomplete to handle 'Enter' themselves.
+      if (document.activeElement !== document.body) {
+        return;
+      }
+
+      // From here, we can assume the user is interacting with the main grid area.
       if (
         e.key === "Enter" &&
         selectedImages.length > 0 &&
-        !isPanelOpen &&
         !isConfirmationOpen
       ) {
         e.preventDefault();
         handlePanelOpen();
         return;
       }
-      if (document.activeElement !== document.body || isPanelOpen) return;
+
       const numImages = imageData.files.length;
       if (numImages === 0) return;
+
       if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         e.preventDefault();
         if (selectedImages.length > 1) return;
@@ -201,7 +225,6 @@ const AppContent: React.FC = () => {
     imageData.files,
     promptAction,
     setSelectedImages,
-    isPanelOpen,
     isConfirmationOpen,
     handlePanelOpen,
   ]);
@@ -269,6 +292,12 @@ const AppContent: React.FC = () => {
                 )}
               </IconButton>
             </span>
+          </Tooltip>
+
+          <Tooltip title="Manage Keywords">
+            <IconButton color="inherit" onClick={handleKeywordManagerOpen}>
+              <StyleIcon />
+            </IconButton>
           </Tooltip>
 
           <Tooltip title="Manage Location Presets">
@@ -389,6 +418,23 @@ const AppContent: React.FC = () => {
       <Drawer
         variant="temporary"
         anchor="left"
+        open={isKeywordManagerOpen}
+        onClose={() => setIsKeywordManagerOpen(false)}
+        sx={{
+          width: "100%",
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: "100%",
+            boxSizing: "border-box",
+          },
+        }}
+      >
+        <KeywordManager onClose={() => setIsKeywordManagerOpen(false)} />
+      </Drawer>
+
+      <Drawer
+        variant="temporary"
+        anchor="left"
         open={isPresetManagerOpen}
         onClose={() => setIsPresetManagerOpen(false)}
         sx={{
@@ -428,10 +474,13 @@ const AppContent: React.FC = () => {
         )}
       </Drawer>
 
-      <UnsavedChangesDialog
+      <ConfirmationDialog
         isOpen={isConfirmationOpen}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to proceed without saving?"
         onConfirm={handleUnsavedChangesConfirm}
         onClose={handleUnsavedChangesClose}
+        confirmButtonText="Proceed"
       />
       <RenameDialog {...renameDialogProps} />
       <SettingsDialog

@@ -6,7 +6,8 @@ from app.services.exif_service import (
     build_exiftool_args,
     run_exiftool_command,
 )
-from app.services.keyword_service import learn_keywords
+
+from app.services.keyword_service import keyword_service
 
 metadata_bp = Blueprint("metadata_bp", __name__)
 
@@ -58,7 +59,7 @@ def save_metadata():
     keywords_to_learn = data.get("keywords_to_learn", [])
 
     if keywords_to_learn:
-        learn_keywords(keywords_to_learn)
+        keyword_service.track_usage(keywords_to_learn)
 
     try:
         for file_update in files_to_update:
