@@ -20,6 +20,7 @@ def create_app():
     from .routes.location_importer import location_importer_bp
     from .routes.geocoding import geocoding_bp
     from .routes.health_check import health_check_bp
+    from .routes.time import time_bp
 
     app.register_blueprint(files_bp, url_prefix="/api")
     app.register_blueprint(keywords_bp, url_prefix="/api")
@@ -30,5 +31,6 @@ def create_app():
     app.register_blueprint(location_importer_bp, url_prefix="/api")
     app.register_blueprint(geocoding_bp, url_prefix="/api")
     app.register_blueprint(health_check_bp, url_prefix="/api")
+    app.register_blueprint(time_bp, url_prefix="/api")
 
     return app

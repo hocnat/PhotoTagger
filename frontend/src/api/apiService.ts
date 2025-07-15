@@ -14,6 +14,8 @@ import {
   RenameFileResult,
   RenamePreviewItem,
   SaveMetadataPayload,
+  TimeShiftData,
+  TimeShiftPreviewItem,
 } from "types";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -209,3 +211,25 @@ export const getMetadataFields = (): Promise<string[]> =>
   fetch(`${API_BASE_URL}/metadata-fields`).then((response) =>
     handleResponse<string[]>(response)
   );
+
+// --- Time Shift ---
+
+export const getShiftTimePreview = (
+  files: string[],
+  shift: TimeShiftData
+): Promise<TimeShiftPreviewItem[]> =>
+  fetch(`${API_BASE_URL}/time/preview-shift`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files, shift }),
+  }).then((response) => handleResponse<TimeShiftPreviewItem[]>(response));
+
+export const applyTimeShift = (
+  files: string[],
+  shift: TimeShiftData
+): Promise<{ message: string }> =>
+  fetch(`${API_BASE_URL}/time/apply-shift`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files, shift }),
+  }).then((response) => handleResponse<{ message: string }>(response));

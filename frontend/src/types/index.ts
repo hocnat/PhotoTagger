@@ -289,6 +289,26 @@ export interface HealthReport {
   };
 }
 
+/**
+ * The data structure for a time shift operation payload.
+ */
+export interface TimeShiftData {
+  direction: "add" | "subtract";
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+/**
+ * The data structure for a single item in the time shift preview dialog.
+ */
+export interface TimeShiftPreviewItem {
+  filename: string;
+  original: string;
+  new: string;
+}
+
 // ====================================================================================
 // Application Settings
 // These types define the shape of the main, user-configurable application settings.

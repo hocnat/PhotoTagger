@@ -22,6 +22,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import PublicIcon from "@mui/icons-material/Public";
 import StyleIcon from "@mui/icons-material/Style";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
+import MoreTimeIcon from "@mui/icons-material/MoreTime";
 
 import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
@@ -31,21 +32,25 @@ import { LocationPresetManager } from "./features/LocationPresetManager";
 import { KeywordManager } from "./features/KeywordManager";
 import { HealthCheckDrawer } from "./features/HealthCheck/HealthCheckDrawer";
 import { HealthIndicatorIcons } from "./features/HealthCheck/components/HealthIndicatorIcons";
+import { ShiftTimeInputDialog } from "./features/TimeShift/components/ShiftTimeInputDialog";
+import { ShiftTimePreviewDialog } from "./features/TimeShift/components/ShiftTimePreviewDialog";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
+
 import {
-  UnsavedChangesProvider,
   useUnsavedChangesContext,
+  UnsavedChangesProvider,
 } from "./context/UnsavedChangesContext";
 import {
-  ImageSelectionProvider,
   useImageSelectionContext,
+  ImageSelectionProvider,
 } from "./context/ImageSelectionContext";
 import {
-  ImageLoaderProvider,
   useImageLoaderContext,
+  ImageLoaderProvider,
 } from "./context/ImageLoaderContext";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
+import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
 
 import "./App.css";
 
@@ -91,16 +96,10 @@ const AppContent: React.FC = () => {
     handleClose: handleUnsavedChangesClose,
   } = useUnsavedChangesContext();
 
-  const handleRenameSuccess = (results: RenameFileResult[]) => {
+  const handleGenericSuccess = (updatedFilePaths: string[]) => {
     handleFetchImages();
-    if (imageData.folder) {
-      const renamedPaths = results
-        .filter((r) => r.status === "Renamed")
-        .map((r) => `${imageData.folder}\\${r.new}`);
-
-      if (renamedPaths.length > 0) {
-        runHealthCheck(renamedPaths);
-      }
+    if (updatedFilePaths.length > 0) {
+      runHealthCheck(updatedFilePaths);
     }
   };
 
@@ -108,7 +107,14 @@ const AppContent: React.FC = () => {
     openRenameDialog,
     isRenamePreviewLoading,
     dialogProps: renameDialogProps,
-  } = useRenameDialog({ onRenameSuccess: handleRenameSuccess });
+  } = useRenameDialog({
+    onRenameSuccess: (results) => {
+      const renamedPaths = results
+        .filter((r) => r.status === "Renamed")
+        .map((r) => `${imageData.folder}\\${r.new}`);
+      handleGenericSuccess(renamedPaths);
+    },
+  });
 
   const {
     runCheck: runHealthCheck,
@@ -117,6 +123,12 @@ const AppContent: React.FC = () => {
     isDrawerOpen: isHealthDrawerOpen,
     closeDrawer: closeHealthDrawer,
   } = useHealthCheck();
+
+  const {
+    openTimeShiftDialog,
+    inputDialogProps: timeShiftInputDialogProps,
+    previewDialogProps: timeShiftPreviewDialogProps,
+  } = useTimeShift({ onSuccess: handleGenericSuccess });
 
   const [healthReportsMap, setHealthReportsMap] = useState<
     Record<string, HealthReport["checks"]>
@@ -159,9 +171,7 @@ const AppContent: React.FC = () => {
 
   const handleSaveSuccess = (updatedFilePaths: string[]) => {
     setIsPanelOpen(false);
-    if (updatedFilePaths.length > 0) {
-      runHealthCheck(updatedFilePaths);
-    }
+    handleGenericSuccess(updatedFilePaths);
   };
 
   const handlePanelOpen = useCallback(() => {
@@ -313,7 +323,21 @@ const AppContent: React.FC = () => {
               </IconButton>
             </span>
           </Tooltip>
-
+          <Tooltip title="Shift date/time for selected files">
+            <span>
+              <IconButton
+                color="inherit"
+                onClick={() =>
+                  openTimeShiftDialog(
+                    selectedImages.map((f) => `${imageData.folder}\\${f}`)
+                  )
+                }
+                disabled={selectedImages.length === 0}
+              >
+                <MoreTimeIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
           <Tooltip title="Rename selected files">
             <span>
               <IconButton
@@ -557,7 +581,8 @@ const AppContent: React.FC = () => {
         reports={healthCheckReports}
         isLoading={isHealthChecking}
       />
-
+      <ShiftTimeInputDialog {...timeShiftInputDialogProps} />
+      <ShiftTimePreviewDialog {...timeShiftPreviewDialogProps} />
       <ConfirmationDialog
         isOpen={isConfirmationOpen}
         title="Unsaved Changes"
