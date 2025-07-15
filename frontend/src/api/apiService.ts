@@ -3,6 +3,7 @@ import {
   AppSettings,
   EnrichedCoordinate,
   GpsCoordinate,
+  HealthReport,
   ImageFile,
   Keyword,
   KeywordData,
@@ -189,3 +190,22 @@ export const updateLastOpenedFolder = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path }),
   }).then((response) => handleResponse<{ message: string }>(response));
+
+// --- Health Check ---
+
+export const runHealthCheck = (
+  files: string[],
+  rules: { required_fields: string[]; rename_pattern: string }
+): Promise<HealthReport[]> =>
+  fetch(`${API_BASE_URL}/health-check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files, rules }),
+  }).then((response) => handleResponse<HealthReport[]>(response));
+
+// --- Tools ---
+
+export const getMetadataFields = (): Promise<string[]> =>
+  fetch(`${API_BASE_URL}/metadata-fields`).then((response) =>
+    handleResponse<string[]>(response)
+  );

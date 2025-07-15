@@ -1,8 +1,11 @@
-import { useState, useRef } from "react";
-import { ApiError, RenamePreviewItem, RenameFileResult } from "types";
-import * as apiService from "api/apiService";
+import { useState, useCallback } from "react";
 import { useNotification } from "hooks/useNotification";
-import { useImageLoaderContext } from "context/ImageLoaderContext";
+import * as apiService from "api/apiService";
+import { RenamePreviewItem, RenameFileResult } from "types";
+
+interface UseRenameDialogProps {
+  onRenameSuccess?: (results: RenameFileResult[]) => void;
+}
 
 /**
  * A hook to manage the entire workflow for the file renaming dialog.
@@ -11,88 +14,70 @@ import { useImageLoaderContext } from "context/ImageLoaderContext";
  * open/closed state, loading states, and the logic for fetching a preview
  * and confirming the final rename operation.
  */
-export const useRenameDialog = () => {
+export const useRenameDialog = ({
+  onRenameSuccess,
+}: UseRenameDialogProps = {}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [previewData, setPreviewData] = useState<RenamePreviewItem[]>([]);
-  // We use a ref to store the list of files to rename. This is because
-  // this data is needed by the `handleConfirm` function, but we don't want
-  // the component to re-render if the list changes. It's set once when the
-  // dialog is opened.
-  const filesToRenameRef = useRef<string[]>([]);
+  const [filesToRename, setFilesToRename] = useState<string[]>([]);
+  const [preview, setPreview] = useState<RenamePreviewItem[]>([]);
+  const [isRenamePreviewLoading, setIsRenamePreviewLoading] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const { showNotification } = useNotification();
-  const { imageData, loadImages } = useImageLoaderContext();
 
-  /**
-   * Opens the rename dialog. This function first fetches a preview of the
-   * proposed name changes from the backend before showing the dialog to the user.
-   * @param filePaths - An array of full, absolute paths to the image files to be renamed.
-   */
-  const openRenameDialog = (filePaths: string[]) => {
-    if (filePaths.length === 0) return;
-    filesToRenameRef.current = filePaths;
-    setIsLoading(true);
-    apiService
-      .getRenamePreview(filePaths)
-      .then((data) => {
-        setPreviewData(data);
-        setIsOpen(true);
-      })
-      .catch((err: ApiError) => {
-        showNotification(
-          `Error fetching rename preview: ${err.message}`,
-          "error"
-        );
-      })
-      .finally(() => setIsLoading(false));
+  const openRenameDialog = useCallback(
+    async (filePaths: string[]) => {
+      if (filePaths.length === 0) return;
+      setFilesToRename(filePaths);
+      setIsOpen(true);
+      setIsRenamePreviewLoading(true);
+      try {
+        const previewData = await apiService.getRenamePreview(filePaths);
+        setPreview(previewData);
+      } catch (error) {
+        showNotification("Failed to generate rename preview.", "error");
+      } finally {
+        setIsRenamePreviewLoading(false);
+      }
+    },
+    [showNotification]
+  );
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setFilesToRename([]);
+    setPreview([]);
   };
 
-  /**
-   * Handles the confirmation of the rename operation. It sends the list of
-   * files to the backend to be renamed and then triggers a refresh of the
-   * image grid by calling `loadImages` from the context.
-   */
-  const handleConfirm = () => {
-    setIsLoading(true);
-    apiService
-      .renameFiles(filesToRenameRef.current)
-      .then((results: RenameFileResult[]) => {
-        const successCount = results.filter(
-          (r) => r.status === "Renamed"
-        ).length;
-        if (successCount > 0) {
-          showNotification(
-            `${successCount} file(s) successfully renamed.`,
-            "success"
-          );
-        }
-        loadImages(imageData.folder);
-      })
-      .catch((err: ApiError) => {
-        showNotification(
-          `An error occurred during renaming: ${err.message}`,
-          "error"
-        );
-      })
-      .finally(() => {
-        setIsOpen(false);
-        setIsLoading(false);
-      });
-  };
+  const handleConfirm = async () => {
+    setIsRenaming(true);
+    try {
+      const results = await apiService.renameFiles(filesToRename);
+      const successCount = results.filter((r) => r.status === "Renamed").length;
+      showNotification(
+        `Successfully renamed ${successCount} file(s).`,
+        "success"
+      );
 
-  const handleClose = () => setIsOpen(false);
+      if (onRenameSuccess) {
+        onRenameSuccess(results);
+      }
+    } catch (error) {
+      showNotification("An error occurred during renaming.", "error");
+    } finally {
+      setIsRenaming(false);
+      handleClose();
+    }
+  };
 
   return {
     openRenameDialog,
-    isRenamePreviewLoading: isLoading,
-    // The `dialogProps` object is a convenient way to bundle all the props
-    // that the `RenameDialog` component will need, allowing for a clean spread
-    // in the JSX: `<RenameDialog {...dialogProps} />`
+    isRenamePreviewLoading,
     dialogProps: {
       isOpen,
-      onConfirm: handleConfirm,
+      previewData: preview,
+      isRenaming,
       onClose: handleClose,
-      previewData,
+      onConfirm: handleConfirm,
     },
   };
 };

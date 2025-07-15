@@ -18,7 +18,7 @@ import { useUnsavedChangesContext } from "context/UnsavedChangesContext";
 
 interface UseMetadataEditorProps {
   folderPath: string;
-  onSaveSuccess: () => void;
+  onSaveSuccess: (updatedFilePaths: string[]) => void;
 }
 
 /**
@@ -379,7 +379,8 @@ export const useMetadataEditor = ({
         showNotification("Metadata saved successfully.", "success");
         setIsDirty(false);
         refetch();
-        onSaveSuccess();
+        const updatedPaths = files_to_update.map((f) => f.path);
+        onSaveSuccess(updatedPaths);
       })
       .catch((err: ApiError) => {
         showNotification(

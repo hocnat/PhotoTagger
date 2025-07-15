@@ -6,9 +6,19 @@ DEFAULT_SETTINGS = {
         "startupMode": "last",  # Options: 'last', 'fixed'
         "fixedPath": "",  # Used if startupMode is 'fixed'
         "lastOpenedFolder": None,
+        "requiredFields": [
+            "Title",
+            "Keywords",
+            "DateTimeOriginal",
+            "Creator",
+            "Copyright",
+            "LatitudeCreated",
+            "LongitudeCreated",
+            "LocationCreated",
+        ],
     },
     "renameSettings": {
-        "pattern": "${DateTimeOriginal:%Y%m%d_%H%M%S}_${Description}",
+        "pattern": "${DateTimeOriginal:%Y%m%d_%H%M%S}_${Title}",
         "extensionRules": [
             {"extension": ".jpg", "casing": "lowercase"},
             {"extension": ".jpeg", "casing": "lowercase"},
@@ -289,6 +299,7 @@ def load_settings() -> dict:
             settings = json.load(f)
             # Recursively ensure all default keys exist
             _ensure_default_keys(settings, DEFAULT_SETTINGS)
+            save_settings(settings)
             return settings
     except (FileNotFoundError, json.JSONDecodeError):
         save_settings(DEFAULT_SETTINGS)
@@ -319,5 +330,7 @@ def _ensure_default_keys(settings, defaults):
     for key, value in defaults.items():
         if key not in settings:
             settings[key] = value
-        elif isinstance(value, dict):
+        elif isinstance(value, dict) and isinstance(settings.get(key), dict):
             _ensure_default_keys(settings[key], value)
+        elif isinstance(value, dict):
+            settings[key] = value

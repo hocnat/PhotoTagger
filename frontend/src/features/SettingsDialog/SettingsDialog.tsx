@@ -23,6 +23,7 @@ import {
 import { useSettings } from "./hooks/useSettings";
 import { ExtensionRuleEditor } from "./components/ExtensionRuleEditor";
 import { CountryMappingEditor } from "./components/CountryMappingEditor";
+import { RequiredFieldsEditor } from "./components/RequiredFieldsEditor";
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -116,6 +117,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     setLocalSettings({ ...localSettings, countryMappings: mappings });
   };
 
+  const handleRequiredFieldsChange = (fields: string[]) => {
+    if (!localSettings) return;
+    setLocalSettings({
+      ...localSettings,
+      appBehavior: {
+        ...localSettings.appBehavior,
+        requiredFields: fields,
+      },
+    });
+  };
+
   if (isSettingsLoading || !localSettings) {
     return (
       <Dialog open={isOpen} onClose={onClose}>
@@ -138,6 +150,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Tab label="General" />
             <Tab label="Locations" />
             <Tab label="Renaming" />
+            <Tab label="Analysis" />
           </Tabs>
         </Box>
         <TabPanel value={currentTab} index={0}>
@@ -195,6 +208,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           <ExtensionRuleEditor
             rules={localSettings.renameSettings.extensionRules}
             onChange={handleExtensionRulesChange}
+          />
+        </TabPanel>
+        <TabPanel value={currentTab} index={3}>
+          <RequiredFieldsEditor
+            requiredFields={localSettings.appBehavior.requiredFields || []}
+            onChange={handleRequiredFieldsChange}
           />
         </TabPanel>
       </DialogContent>

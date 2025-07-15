@@ -261,8 +261,32 @@ export interface KeywordSuggestion {
   primaryName: string;
   matchedTerm: string;
   parentName: string | null;
-  synonyms: string[]; // <-- This is the new field
+  synonyms: string[];
   allTermsToAdd: string[];
+}
+
+// ====================================================================================
+// Health Check
+// ====================================================================================
+
+/**
+ * The status of a single health check (e.g., for consolidation).
+ */
+export interface HealthStatus {
+  status: "ok" | "error";
+  message: string;
+}
+
+/**
+ * The complete health check report for a single image file.
+ */
+export interface HealthReport {
+  filename: string;
+  checks: {
+    consolidation: HealthStatus;
+    requiredFields: HealthStatus;
+    filename: HealthStatus;
+  };
 }
 
 // ====================================================================================
@@ -278,6 +302,7 @@ export interface AppSettings {
     startupMode: "last" | "fixed";
     fixedPath: string;
     lastOpenedFolder: string | null;
+    requiredFields: string[];
   };
   renameSettings: {
     pattern: string;

@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from "react";
-
 import {
   Box,
   AppBar,
@@ -22,12 +21,16 @@ import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PublicIcon from "@mui/icons-material/Public";
 import StyleIcon from "@mui/icons-material/Style";
+import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 
+import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
 import { LocationPresetManager } from "./features/LocationPresetManager";
 import { KeywordManager } from "./features/KeywordManager";
+import { HealthCheckDrawer } from "./features/HealthCheck/HealthCheckDrawer";
+import { HealthIndicatorIcons } from "./features/HealthCheck/components/HealthIndicatorIcons";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
 import {
   UnsavedChangesProvider,
@@ -41,23 +44,20 @@ import {
   ImageLoaderProvider,
   useImageLoaderContext,
 } from "./context/ImageLoaderContext";
-
 import { useRenameDialog } from "./features/RenameDialog";
+import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 
 import "./App.css";
 
 const getGridColumnCount = (): number => {
   const gridElement = document.querySelector(".image-grid");
   if (!gridElement) return 4;
-
   const cards = gridElement.querySelectorAll(".image-card");
   if (cards.length <= 1) return 1;
-
   const firstCardTop = cards[0].getBoundingClientRect().top;
   for (let i = 1; i < cards.length; i++) {
     if (cards[i].getBoundingClientRect().top !== firstCardTop) return i;
   }
-
   return cards.length;
 };
 
@@ -91,16 +91,52 @@ const AppContent: React.FC = () => {
     handleClose: handleUnsavedChangesClose,
   } = useUnsavedChangesContext();
 
+  const handleRenameSuccess = (results: RenameFileResult[]) => {
+    handleFetchImages();
+    if (imageData.folder) {
+      const renamedPaths = results
+        .filter((r) => r.status === "Renamed")
+        .map((r) => `${imageData.folder}\\${r.new}`);
+
+      if (renamedPaths.length > 0) {
+        runHealthCheck(renamedPaths);
+      }
+    }
+  };
+
   const {
     openRenameDialog,
     isRenamePreviewLoading,
     dialogProps: renameDialogProps,
-  } = useRenameDialog();
+  } = useRenameDialog({ onRenameSuccess: handleRenameSuccess });
+
+  const {
+    runCheck: runHealthCheck,
+    reports: healthCheckReports,
+    isChecking: isHealthChecking,
+    isDrawerOpen: isHealthDrawerOpen,
+    closeDrawer: closeHealthDrawer,
+  } = useHealthCheck();
+
+  const [healthReportsMap, setHealthReportsMap] = useState<
+    Record<string, HealthReport["checks"]>
+  >({});
+
+  useEffect(() => {
+    setHealthReportsMap((prevMap) => {
+      const newMap = { ...prevMap };
+      healthCheckReports.forEach((report) => {
+        newMap[report.filename] = report.checks;
+      });
+      return newMap;
+    });
+  }, [healthCheckReports]);
 
   const handleFetchImages = useCallback(() => {
     promptAction(() => {
       setIsPanelOpen(false);
       setSelectedImages([]);
+      setHealthReportsMap({});
       loadImages(folderInput, () => setIsDirty(false));
     });
   }, [promptAction, loadImages, folderInput, setSelectedImages, setIsDirty]);
@@ -111,6 +147,22 @@ const AppContent: React.FC = () => {
       setInitialLoadDone(true);
     }
   }, [folderInput, isLoading, initialLoadDone, handleFetchImages]);
+
+  const handleRunHealthCheck = () => {
+    if (selectedImages.length > 0 && imageData.folder) {
+      const fullPaths = selectedImages.map(
+        (name) => `${imageData.folder}\\${name}`
+      );
+      runHealthCheck(fullPaths, { isManualTrigger: true });
+    }
+  };
+
+  const handleSaveSuccess = (updatedFilePaths: string[]) => {
+    setIsPanelOpen(false);
+    if (updatedFilePaths.length > 0) {
+      runHealthCheck(updatedFilePaths);
+    }
+  };
 
   const handlePanelOpen = useCallback(() => {
     if (selectedImages.length > 0) {
@@ -138,10 +190,6 @@ const AppContent: React.FC = () => {
       setIsPresetManagerOpen(false);
       setIsKeywordManagerOpen(true);
     });
-  };
-
-  const handleSaveSuccess = () => {
-    setIsPanelOpen(false);
   };
 
   const handleImageDoubleClick = (imageName: string) => {
@@ -258,7 +306,6 @@ const AppContent: React.FC = () => {
             <span>
               <IconButton
                 color="inherit"
-                aria-label="edit metadata"
                 onClick={handlePanelOpen}
                 disabled={selectedImages.length === 0}
               >
@@ -287,6 +334,22 @@ const AppContent: React.FC = () => {
                   <CircularProgress size={24} color="inherit" />
                 ) : (
                   <LabelOutlinedIcon />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Analyze selected files">
+            <span>
+              <IconButton
+                color="inherit"
+                onClick={handleRunHealthCheck}
+                disabled={selectedImages.length === 0 || isHealthChecking}
+              >
+                {isHealthChecking ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  <HealthAndSafetyIcon />
                 )}
               </IconButton>
             </span>
@@ -380,6 +443,7 @@ const AppContent: React.FC = () => {
         >
           {imageData.files.map((imageName, index) => {
             const isSelected = selectedImages.includes(imageName);
+            const reportChecks = healthReportsMap[imageName];
             return (
               <Paper
                 elevation={isSelected ? 8 : 2}
@@ -390,12 +454,28 @@ const AppContent: React.FC = () => {
                   promptAction(() => handleSelectImage(e, imageName, index))
                 }
                 onDoubleClick={() => handleImageDoubleClick(imageName)}
+                sx={{ position: "relative" }}
               >
                 <img
                   src={getImageUrl(imageName)}
                   alt={imageName}
                   className="thumbnail"
                 />
+                {reportChecks && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      bgcolor: "rgba(255, 255, 255, 0.8)",
+                      p: 0.5,
+                      borderRadius: 1,
+                      display: "flex",
+                    }}
+                  >
+                    <HealthIndicatorIcons checks={reportChecks} />
+                  </Box>
+                )}
                 <Typography
                   variant="caption"
                   sx={{
@@ -470,6 +550,13 @@ const AppContent: React.FC = () => {
           />
         )}
       </Drawer>
+
+      <HealthCheckDrawer
+        isOpen={isHealthDrawerOpen}
+        onClose={closeHealthDrawer}
+        reports={healthCheckReports}
+        isLoading={isHealthChecking}
+      />
 
       <ConfirmationDialog
         isOpen={isConfirmationOpen}

@@ -25,7 +25,7 @@ interface MetadataPanelProps {
   folderPath: string;
   getImageUrl: (imageName: string) => string;
   onClose: () => void;
-  onSaveSuccess: () => void;
+  onSaveSuccess: (updatedFilePaths: string[]) => void;
 }
 
 const DrawerHeader = styled("div")(({ theme }) => ({
