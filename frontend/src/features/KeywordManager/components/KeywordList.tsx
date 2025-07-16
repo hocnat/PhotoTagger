@@ -8,13 +8,11 @@ import {
   Typography,
   Chip,
   Tooltip,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
 import { Keyword } from "types";
+import SearchInput from "components/SearchInput";
 
 interface KeywordListProps {
   keywords: Keyword[];
@@ -188,19 +186,11 @@ const KeywordList: React.FC<KeywordListProps> = ({
 
   return (
     <>
-      <TextField
+      <SearchInput
         fullWidth
-        variant="outlined"
         placeholder="Search keywords..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
         sx={{ mb: 2 }}
       />
       {hierarchicalKeywords.length > 0 ? (

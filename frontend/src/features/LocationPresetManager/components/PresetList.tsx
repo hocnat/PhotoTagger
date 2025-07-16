@@ -16,15 +16,12 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
 import { format, parseISO } from "date-fns";
-
 import { LocationPreset } from "types";
+import SearchInput from "components/SearchInput";
 
 interface PresetListProps {
   presets: LocationPreset[];
@@ -74,22 +71,11 @@ const PresetList: React.FC<PresetListProps> = ({
   return (
     <>
       <Box sx={{ mb: 2, maxWidth: "500px" }}>
-        <TextField
+        <SearchInput
           fullWidth
-          variant="outlined"
-          size="small"
           placeholder="Search by name, city, country..."
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
-          }}
         />
       </Box>
 

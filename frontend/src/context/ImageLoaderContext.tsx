@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from "react";
-import { useImageLoader } from "features/ImageGrid/hooks/useImageLoader";
+import { useImageLoader } from "features/ImageGallery/hooks/useImageLoader";
 
 type ImageLoaderContextType = ReturnType<typeof useImageLoader>;
 

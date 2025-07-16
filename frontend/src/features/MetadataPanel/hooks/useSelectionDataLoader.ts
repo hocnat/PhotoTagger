@@ -36,7 +36,7 @@ export const useSelectionDataLoader = () => {
     const filesToFetch = selectedImages.map((name) => `${folderPath}\\${name}`);
 
     apiService
-      .getMetadataForSelection(filesToFetch)
+      .getMetadataForFiles(filesToFetch)
       .then(setImageFiles)
       .catch((err: ApiError) => {
         const errorMessage = err.message || "An unknown error occurred";

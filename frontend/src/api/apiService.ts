@@ -40,7 +40,7 @@ export const getImages = (folderPath: string): Promise<string[]> =>
     (response) => handleResponse<string[]>(response)
   );
 
-export const getMetadataForSelection = (
+export const getMetadataForFiles = (
   filePaths: string[]
 ): Promise<ImageFile[]> =>
   fetch(`${API_BASE_URL}/metadata`, {

@@ -42,7 +42,6 @@ export const useMetadataEditor = ({
   const {
     imageFiles,
     isLoading: isMetadataLoading,
-    refetch,
     error: selectionError,
   } = useSelectionDataLoader();
   // Step 2: Aggregate the raw data into a hierarchical form state for the UI.
@@ -218,7 +217,7 @@ export const useMetadataEditor = ({
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isSaveable || !formState || !originalFormState) {
       showNotification("No changes to save.", "info");
       return;
@@ -356,7 +355,7 @@ export const useMetadataEditor = ({
         if (Object.keys(new_metadata).length > 0) {
           return {
             path: `${folderPath}\\${file.filename}`,
-            original_metadata: file.metadata.original,
+            original_metadata: file.metadata,
             new_metadata,
           };
         }
@@ -369,26 +368,29 @@ export const useMetadataEditor = ({
       showNotification("No changes to save.", "info");
       return;
     }
+
     const payload: SaveMetadataPayload = {
       files_to_update,
       keywords_to_learn: addedKeywords,
     };
-    apiService
-      .saveMetadata(payload)
-      .then(() => {
-        showNotification("Metadata saved successfully.", "success");
-        setIsDirty(false);
-        refetch();
-        const updatedPaths = files_to_update.map((f) => f.path);
-        onSaveSuccess(updatedPaths);
-      })
-      .catch((err: ApiError) => {
-        showNotification(
-          `Error saving metadata: ${err.message || "Unknown error"}`,
-          "error"
-        );
-      })
-      .finally(() => setIsSaving(false));
+
+    try {
+      await apiService.saveMetadata(payload);
+      showNotification("Metadata saved successfully.", "success");
+
+      setIsDirty(false);
+
+      const updatedPaths = files_to_update.map((f) => f.path);
+      onSaveSuccess(updatedPaths);
+    } catch (err) {
+      const apiErr = err as ApiError;
+      showNotification(
+        `Error saving metadata: ${apiErr.message || "Unknown error"}`,
+        "error"
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /**

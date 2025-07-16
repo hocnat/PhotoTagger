@@ -32,7 +32,7 @@ export const useSingleImageReader = (
       setError(null);
 
       apiService
-        .getMetadataForSelection([fullPath])
+        .getMetadataForFiles([fullPath])
         .then((response) => {
           if (response && response.length > 0) {
             setMetadata(response[0].metadata);

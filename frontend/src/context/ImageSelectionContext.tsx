@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from "react";
-import { useImageSelection } from "features/ImageGrid/hooks/useImageSelection";
+import { useImageSelection } from "features/ImageGallery/hooks/useImageSelection";
 import { useImageLoaderContext } from "./ImageLoaderContext";
 
 type ImageSelectionContextType = ReturnType<typeof useImageSelection>;

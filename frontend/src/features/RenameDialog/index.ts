@@ -1,2 +1,2 @@
 export * from "./RenameDialog";
-export * from "./hooks";
+export * from "./hooks/useRenameDialog";

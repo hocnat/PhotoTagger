@@ -7,8 +7,6 @@ import {
   TextField,
   Button,
   CircularProgress,
-  Alert,
-  Paper,
   IconButton,
   Drawer,
   CssBaseline,
@@ -32,7 +30,7 @@ import { LocationPresetManager } from "./features/LocationPresetManager";
 import { KeywordManager } from "./features/KeywordManager";
 import { HealthCheckDrawer } from "./features/HealthCheck/HealthCheckDrawer";
 import { InfoPanel } from "./features/InfoPanel/InfoPanel";
-import { HealthIndicatorIcons } from "./features/HealthCheck/components/HealthIndicatorIcons";
+import { ImageGallery } from "./features/ImageGallery";
 import { ShiftTimeInputDialog } from "./features/TimeShift/components/ShiftTimeInputDialog";
 import { ShiftTimePreviewDialog } from "./features/TimeShift/components/ShiftTimePreviewDialog";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
@@ -55,18 +53,6 @@ import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
 
 import "./App.css";
 
-const getGridColumnCount = (): number => {
-  const gridElement = document.querySelector(".image-grid");
-  if (!gridElement) return 4;
-  const cards = gridElement.querySelectorAll(".image-card");
-  if (cards.length <= 1) return 1;
-  const firstCardTop = cards[0].getBoundingClientRect().top;
-  for (let i = 1; i < cards.length; i++) {
-    if (cards[i].getBoundingClientRect().top !== firstCardTop) return i;
-  }
-  return cards.length;
-};
-
 const AppContent: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -75,21 +61,10 @@ const AppContent: React.FC = () => {
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  const {
-    imageData,
-    folderInput,
-    setFolderInput,
-    isLoading,
-    error,
-    loadImages,
-  } = useImageLoaderContext();
-  const {
-    selectedImages,
-    setSelectedImages,
-    handleSelectImage,
-    selectSingleImage,
-    clearSelection,
-  } = useImageSelectionContext();
+  const { imageData, folderInput, setFolderInput, isLoading, loadImages } =
+    useImageLoaderContext();
+  const { selectedImages, setSelectedImages, selectSingleImage } =
+    useImageSelectionContext();
   const {
     setIsDirty,
     promptAction,
@@ -97,26 +72,6 @@ const AppContent: React.FC = () => {
     handleConfirm: handleUnsavedChangesConfirm,
     handleClose: handleUnsavedChangesClose,
   } = useUnsavedChangesContext();
-
-  const handleGenericSuccess = (updatedFilePaths: string[]) => {
-    handleFetchImages();
-    if (updatedFilePaths.length > 0) {
-      runHealthCheck(updatedFilePaths);
-    }
-  };
-
-  const {
-    openRenameDialog,
-    isRenamePreviewLoading,
-    dialogProps: renameDialogProps,
-  } = useRenameDialog({
-    onRenameSuccess: (results) => {
-      const renamedPaths = results
-        .filter((r) => r.status === "Renamed")
-        .map((r) => `${imageData.folder}\\${r.new}`);
-      handleGenericSuccess(renamedPaths);
-    },
-  });
 
   const {
     runCheck: runHealthCheck,
@@ -126,41 +81,69 @@ const AppContent: React.FC = () => {
     closeDrawer: closeHealthDrawer,
   } = useHealthCheck();
 
-  const {
-    openTimeShiftDialog,
-    inputDialogProps: timeShiftInputDialogProps,
-    previewDialogProps: timeShiftPreviewDialogProps,
-  } = useTimeShift({ onSuccess: handleGenericSuccess });
-
   const [healthReportsMap, setHealthReportsMap] = useState<
     Record<string, HealthReport["checks"]>
   >({});
 
   useEffect(() => {
-    setHealthReportsMap((prevMap) => {
-      const newMap = { ...prevMap };
-      healthCheckReports.forEach((report) => {
-        newMap[report.filename] = report.checks;
-      });
-      return newMap;
+    const newMap: Record<string, HealthReport["checks"]> = {};
+    healthCheckReports.forEach((report) => {
+      newMap[report.filename] = report.checks;
     });
+    setHealthReportsMap(newMap);
   }, [healthCheckReports]);
 
-  const handleFetchImages = useCallback(() => {
-    promptAction(() => {
-      setIsPanelOpen(false);
-      setSelectedImages([]);
-      setHealthReportsMap({});
-      loadImages(folderInput, () => setIsDirty(false));
-    });
-  }, [promptAction, loadImages, folderInput, setSelectedImages, setIsDirty]);
+  const _fetchAndReload = useCallback(async () => {
+    setIsPanelOpen(false);
+    setSelectedImages([]);
+    setHealthReportsMap({});
+
+    const loadedFiles = await loadImages(folderInput, () => setIsDirty(false));
+
+    if (loadedFiles && loadedFiles.length > 0) {
+      const fullPaths = loadedFiles.map(
+        (file) => `${folderInput}\\${file.filename}`
+      );
+      runHealthCheck(fullPaths, { isManualTrigger: false });
+    }
+  }, [loadImages, folderInput, runHealthCheck, setIsDirty, setSelectedImages]);
+
+  const handleLoadFolder = useCallback(() => {
+    promptAction(_fetchAndReload);
+  }, [promptAction, _fetchAndReload]);
 
   useEffect(() => {
     if (folderInput && !isLoading && !initialLoadDone) {
-      handleFetchImages();
+      _fetchAndReload();
       setInitialLoadDone(true);
     }
-  }, [folderInput, isLoading, initialLoadDone, handleFetchImages]);
+  }, [folderInput, isLoading, initialLoadDone, _fetchAndReload]);
+
+  const handleGenericSuccess = (updatedFilePaths: string[]) => {
+    _fetchAndReload();
+    if (updatedFilePaths.length > 0) {
+      runHealthCheck(updatedFilePaths, { isManualTrigger: false });
+    }
+  };
+
+  const {
+    openRenameDialog,
+    isRenamePreviewLoading,
+    dialogProps: renameDialogProps,
+  } = useRenameDialog({
+    onRenameSuccess: (results: RenameFileResult[]) => {
+      const renamedPaths = results
+        .filter((r) => r.status === "Renamed")
+        .map((r) => `${imageData.folder}\\${r.new}`);
+      handleGenericSuccess(renamedPaths);
+    },
+  });
+
+  const {
+    openTimeShiftDialog,
+    inputDialogProps: timeShiftInputDialogProps,
+    previewDialogProps: timeShiftPreviewDialogProps,
+  } = useTimeShift({ onSuccess: handleGenericSuccess });
 
   const handleRunHealthCheck = () => {
     if (selectedImages.length > 0 && imageData.folder) {
@@ -217,79 +200,6 @@ const AppContent: React.FC = () => {
       setIsPanelOpen(true);
     });
   };
-
-  const handleBackgroundClickWithPrompt = () => {
-    promptAction(clearSelection);
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Allow global select-all shortcut
-      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-        e.preventDefault();
-        promptAction(() => setSelectedImages([...imageData.files]));
-        return;
-      }
-
-      // If focus is on any element other than the main body (e.g., an input,
-      // button, or element in a dialog), do not process global shortcuts.
-      // This allows components like Autocomplete to handle 'Enter' themselves.
-      if (document.activeElement !== document.body) {
-        return;
-      }
-
-      // From here, we can assume the user is interacting with the main grid area.
-      if (
-        e.key === "Enter" &&
-        selectedImages.length > 0 &&
-        !isConfirmationOpen
-      ) {
-        e.preventDefault();
-        handlePanelOpen();
-        return;
-      }
-
-      const numImages = imageData.files.length;
-      if (numImages === 0) return;
-
-      if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        e.preventDefault();
-        if (selectedImages.length > 1) return;
-        const columns = getGridColumnCount();
-        const currentIndex =
-          selectedImages.length === 1
-            ? imageData.files.indexOf(selectedImages[0])
-            : -1;
-        let newIndex = currentIndex;
-        switch (e.key) {
-          case "ArrowDown":
-            newIndex = Math.min(currentIndex + columns, numImages - 1);
-            break;
-          case "ArrowUp":
-            newIndex = Math.max(currentIndex - columns, 0);
-            break;
-          case "ArrowLeft":
-            newIndex = Math.max(currentIndex - 1, 0);
-            break;
-          case "ArrowRight":
-            newIndex = Math.min(currentIndex + 1, numImages - 1);
-            break;
-        }
-        if (newIndex >= 0 && newIndex !== currentIndex) {
-          promptAction(() => setSelectedImages([imageData.files[newIndex]]));
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    selectedImages,
-    imageData.files,
-    promptAction,
-    setSelectedImages,
-    isConfirmationOpen,
-    handlePanelOpen,
-  ]);
 
   useEffect(() => {
     if (selectedImages.length === 0 && isPanelOpen) {
@@ -374,19 +284,16 @@ const AppContent: React.FC = () => {
               )}
             </IconButton>
           </Tooltip>
-
           <Tooltip title="Manage Keywords">
             <IconButton color="inherit" onClick={handleKeywordManagerOpen}>
               <StyleIcon />
             </IconButton>
           </Tooltip>
-
           <Tooltip title="Manage Location Presets">
             <IconButton color="inherit" onClick={handlePresetManagerOpen}>
               <PublicIcon />
             </IconButton>
           </Tooltip>
-
           <Tooltip title="Settings">
             <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
               <SettingsIcon />
@@ -394,7 +301,6 @@ const AppContent: React.FC = () => {
           </Tooltip>
         </Toolbar>
       </AppBar>
-
       <Box
         component="main"
         sx={{
@@ -428,13 +334,13 @@ const AppContent: React.FC = () => {
             value={folderInput}
             onChange={(e) => setFolderInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleFetchImages();
+              if (e.key === "Enter") handleLoadFolder();
             }}
             sx={{ flex: "1 1 300px" }}
           />
           <Button
             variant="contained"
-            onClick={handleFetchImages}
+            onClick={handleLoadFolder}
             disabled={isLoading || !folderInput}
             startIcon={
               isLoading ? (
@@ -447,71 +353,12 @@ const AppContent: React.FC = () => {
             {isLoading ? "Loading..." : "Load"}
           </Button>
         </Box>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        <Box
-          className="image-grid"
-          onClick={handleBackgroundClickWithPrompt}
-          sx={{
-            flexGrow: 1,
-            overflowY: "auto",
-            alignContent: "flex-start",
-            p: 1,
-          }}
-        >
-          {imageData.files.map((imageName, index) => {
-            const isSelected = selectedImages.includes(imageName);
-            const reportChecks = healthReportsMap[imageName];
-            return (
-              <Paper
-                elevation={isSelected ? 8 : 2}
-                key={imageName}
-                className={`image-card ${isSelected ? "selected" : ""}`.trim()}
-                id={`image-card-${index}`}
-                onClick={(e) =>
-                  promptAction(() => handleSelectImage(e, imageName, index))
-                }
-                onDoubleClick={() => handleImageDoubleClick(imageName)}
-                sx={{ position: "relative" }}
-              >
-                <img
-                  src={getImageUrl(imageName)}
-                  alt={imageName}
-                  className="thumbnail"
-                />
-                {reportChecks && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      bgcolor: "rgba(255, 255, 255, 0.8)",
-                      p: 0.5,
-                      borderRadius: 1,
-                      display: "flex",
-                    }}
-                  >
-                    <HealthIndicatorIcons checks={reportChecks} />
-                  </Box>
-                )}
-                <Typography
-                  variant="caption"
-                  sx={{
-                    mt: 1,
-                    p: 0.5,
-                    display: "block",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  {imageName}
-                </Typography>
-              </Paper>
-            );
-          })}
-        </Box>
+
+        <ImageGallery
+          healthReportsMap={healthReportsMap}
+          onPanelOpen={handlePanelOpen}
+          onImageDoubleClick={handleImageDoubleClick}
+        />
       </Box>
 
       <InfoPanel
@@ -520,7 +367,6 @@ const AppContent: React.FC = () => {
         isOpen={isInfoPanelOpen}
         onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
       />
-
       <Drawer
         variant="temporary"
         anchor="left"
@@ -537,7 +383,6 @@ const AppContent: React.FC = () => {
       >
         <KeywordManager onClose={() => setIsKeywordManagerOpen(false)} />
       </Drawer>
-
       <Drawer
         variant="temporary"
         anchor="left"
@@ -554,7 +399,6 @@ const AppContent: React.FC = () => {
       >
         <LocationPresetManager onClose={() => setIsPresetManagerOpen(false)} />
       </Drawer>
-
       <Drawer
         variant="temporary"
         anchor="right"
@@ -578,7 +422,6 @@ const AppContent: React.FC = () => {
           />
         )}
       </Drawer>
-
       <HealthCheckDrawer
         isOpen={isHealthDrawerOpen}
         onClose={closeHealthDrawer}
