@@ -18,11 +18,12 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import SyncIcon from "@mui/icons-material/Sync";
 import ChecklistIcon from "@mui/icons-material/Checklist";
-import AbcIcon from "@mui/icons-material/Abc";
+import SpellcheckIcon from "@mui/icons-material/Spellcheck";
+import CheckIcon from "@mui/icons-material/Check";
 import { HealthReport } from "types";
 
 const metadataDrawerWidth = 960;
@@ -47,18 +48,27 @@ const checkOrder: (keyof HealthReport["checks"])[] = [
   "filename",
 ];
 
+const checkDetailsMap = {
+  consolidation: {
+    icon: <SyncIcon />,
+    label: "Metadata Consolidation",
+  },
+  requiredFields: {
+    icon: <ChecklistIcon />,
+    label: "Required Fields Check",
+  },
+  filename: {
+    icon: <SpellcheckIcon />,
+    label: "Filename Convention",
+  },
+};
+
 export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
   isOpen,
   onClose,
   reports,
   isLoading,
 }) => {
-  const checkIcons = {
-    consolidation: <SyncIcon />,
-    requiredFields: <ChecklistIcon />,
-    filename: <AbcIcon />,
-  };
-
   return (
     <Drawer
       variant="temporary"
@@ -99,9 +109,9 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 {getOverallStatus(report) === "ok" ? (
-                  <CheckCircleIcon color="success" sx={{ mr: 1 }} />
+                  <CheckCircleOutlineIcon color="action" sx={{ mr: 1 }} />
                 ) : (
-                  <ErrorIcon color="error" sx={{ mr: 1 }} />
+                  <WarningAmberIcon color="warning" sx={{ mr: 1 }} />
                 )}
                 <Typography sx={{ wordBreak: "break-all" }}>
                   {report.filename}
@@ -111,19 +121,24 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
                 <List dense>
                   {checkOrder.map((key) => {
                     const check = report.checks[key];
+                    const details = checkDetailsMap[key];
                     return (
                       <ListItem key={key}>
-                        <ListItemIcon>
-                          {React.cloneElement(checkIcons[key], {
-                            color: check.status === "ok" ? "success" : "error",
-                          })}
+                        <ListItemIcon sx={{ minWidth: 32, mr: 1 }}>
+                          {check.status === "ok" ? (
+                            <CheckIcon color="success" />
+                          ) : (
+                            <CloseIcon color="error" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemIcon
+                          sx={{ minWidth: 40, color: "text.secondary" }}
+                        >
+                          {details.icon}
                         </ListItemIcon>
                         <ListItemText
-                          primary={
-                            <Typography variant="body2">
-                              {check.message}
-                            </Typography>
-                          }
+                          primary={details.label}
+                          secondary={check.message}
                         />
                       </ListItem>
                     );

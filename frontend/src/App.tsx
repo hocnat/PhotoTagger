@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import LabelOutlinedIcon from "@mui/icons-material/LabelOutlined";
+import SpellcheckIcon from "@mui/icons-material/Spellcheck"; // IMPORT the new icon
 import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PublicIcon from "@mui/icons-material/Public";
@@ -22,7 +22,7 @@ import StyleIcon from "@mui/icons-material/Style";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import MoreTimeIcon from "@mui/icons-material/MoreTime";
 
-import { HealthReport, RenameFileResult } from "types";
+import { HealthReport, ImageFile, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
@@ -267,7 +267,7 @@ const AppContent: React.FC = () => {
               {isRenamePreviewLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                <LabelOutlinedIcon />
+                <SpellcheckIcon />
               )}
             </IconButton>
           </Tooltip>

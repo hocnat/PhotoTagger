@@ -3,7 +3,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
-import WarningIndicator from "./WarningIndicator";
+import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
@@ -61,7 +61,7 @@ const DateTimeSection: React.FC = () => {
             }}
           />
           {dateField.status === "unique" && !dateField.isConsolidated && (
-            <WarningIndicator />
+            <ConsolidationIndicator />
           )}
         </Stack>
         <TextField

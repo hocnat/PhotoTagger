@@ -1,14 +1,14 @@
 import { Tooltip, IconButton } from "@mui/material";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import SyncIcon from "@mui/icons-material/Sync";
 
-const WarningIndicator: React.FC = () => {
+const ConsolidationIndicator: React.FC = () => {
   return (
     <Tooltip title="This value is not fully consolidated. Saving will fix this.">
       <IconButton size="small" edge="end" tabIndex={-1}>
-        <InfoOutlinedIcon color="warning" fontSize="small" />
+        <SyncIcon fontSize="small" sx={{ color: "action.active" }} />
       </IconButton>
     </Tooltip>
   );
 };
 
-export default WarningIndicator;
+export default ConsolidationIndicator;

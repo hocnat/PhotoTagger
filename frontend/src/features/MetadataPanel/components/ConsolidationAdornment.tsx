@@ -1,5 +1,5 @@
 import { InputAdornment } from "@mui/material";
-import WarningIndicator from "./WarningIndicator";
+import ConsolidationIndicator from "./ConsolidationIndicator";
 
 interface ConsolidationAdornmentProps {
   /**
@@ -18,7 +18,7 @@ const ConsolidationAdornment: React.FC<ConsolidationAdornmentProps> = ({
 
   return (
     <InputAdornment position="end">
-      <WarningIndicator />
+      <ConsolidationIndicator />
     </InputAdornment>
   );
 };

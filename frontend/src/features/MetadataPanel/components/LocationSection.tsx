@@ -22,7 +22,7 @@ import FormSection from "./FormSection";
 import CountryInput from "components/CountryInput";
 import MapModal from "components/MapModal";
 import ConsolidationAdornment from "./ConsolidationAdornment";
-import WarningIndicator from "./WarningIndicator";
+import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
@@ -257,7 +257,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             }}
           />
           {Country.status === "unique" && !Country.isConsolidated && (
-            <WarningIndicator />
+            <ConsolidationIndicator />
           )}
         </Stack>
         <TextField

@@ -11,7 +11,7 @@ import {
 
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
-import WarningIndicator from "./WarningIndicator";
+import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
@@ -146,7 +146,7 @@ const ContentSection: React.FC = () => {
           }}
         />
         {keywordsField.status === "unique" && !keywordsField.isConsolidated && (
-          <WarningIndicator />
+          <ConsolidationIndicator />
         )}
       </Stack>
       <Box
