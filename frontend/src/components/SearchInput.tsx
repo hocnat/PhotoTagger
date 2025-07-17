@@ -1,6 +1,6 @@
 import React from "react";
 import { TextField, InputAdornment, TextFieldProps } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { AppIcons } from "config/AppIcons";
 
 /**
  * A reusable search input component that standardizes the look and feel of
@@ -18,7 +18,7 @@ const SearchInput: React.FC<TextFieldProps> = (props) => {
         input: {
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon />
+              <AppIcons.SEARCH />
             </InputAdornment>
           ),
         },

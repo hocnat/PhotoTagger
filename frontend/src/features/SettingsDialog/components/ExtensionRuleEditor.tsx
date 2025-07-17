@@ -13,8 +13,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import { AppIcons } from "config/AppIcons";
 
 interface ExtensionRuleEditorProps {
   rules: ExtensionRule[];
@@ -110,17 +109,14 @@ export const ExtensionRuleEditor: React.FC<ExtensionRuleEditorProps> = ({
                   <MenuItem value="uppercase">uppercase</MenuItem>
                 </Select>
               </FormControl>
-              <IconButton
-                onClick={() => handleRemoveRule(originalIndex)}
-                color="error"
-              >
-                <RemoveCircleOutlineIcon />
+              <IconButton onClick={() => handleRemoveRule(originalIndex)}>
+                <AppIcons.DELETE />
               </IconButton>
             </ListItem>
           );
         })}
       </List>
-      <Button startIcon={<AddCircleOutlineIcon />} onClick={handleAddRule}>
+      <Button startIcon={<AppIcons.ADD />} onClick={handleAddRule}>
         Add Rule
       </Button>
     </Box>

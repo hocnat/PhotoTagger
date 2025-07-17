@@ -1,8 +1,6 @@
 import { Stack, Tooltip } from "@mui/material";
-import SyncIcon from "@mui/icons-material/Sync";
-import ChecklistIcon from "@mui/icons-material/Checklist";
-import SpellcheckIcon from "@mui/icons-material/Spellcheck"; // IMPORT the new icon
 import { HealthReport } from "types";
+import { AppIcons } from "config/AppIcons";
 
 /**
  * A component that displays icons ONLY for the health checks that have failed.
@@ -15,19 +13,25 @@ export const HealthIndicatorIcons: React.FC<{
     <Stack direction="row" spacing={0.5}>
       {checks.consolidation.status === "error" && (
         <Tooltip title={checks.consolidation.message} placement="top">
-          <SyncIcon fontSize="small" sx={{ color: "action.active" }} />
+          <AppIcons.CONSOLIDATION
+            fontSize="small"
+            sx={{ color: "action.active" }}
+          />
         </Tooltip>
       )}
 
       {checks.requiredFields.status === "error" && (
         <Tooltip title={checks.requiredFields.message} placement="top">
-          <ChecklistIcon fontSize="small" sx={{ color: "action.active" }} />
+          <AppIcons.REQUIRED_FIELDS
+            fontSize="small"
+            sx={{ color: "action.active" }}
+          />
         </Tooltip>
       )}
 
       {checks.filename.status === "error" && (
         <Tooltip title={checks.filename.message} placement="top">
-          <SpellcheckIcon fontSize="small" sx={{ color: "action.active" }} />
+          <AppIcons.FILENAME fontSize="small" sx={{ color: "action.active" }} />
         </Tooltip>
       )}
     </Stack>

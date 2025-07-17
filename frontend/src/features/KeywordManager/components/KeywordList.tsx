@@ -9,10 +9,9 @@ import {
   Chip,
   Tooltip,
 } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { Keyword } from "types";
 import SearchInput from "components/SearchInput";
+import { AppIcons } from "config/AppIcons";
 
 interface KeywordListProps {
   keywords: Keyword[];
@@ -52,14 +51,14 @@ const KeywordListItem: React.FC<{
               aria-label="edit"
               onClick={() => onEdit(item)}
             >
-              <EditIcon />
+              <AppIcons.EDIT />
             </IconButton>
             <IconButton
               edge="end"
               aria-label="delete"
               onClick={() => onDelete(item.id)}
             >
-              <DeleteIcon />
+              <AppIcons.DELETE />
             </IconButton>
           </Box>
         }

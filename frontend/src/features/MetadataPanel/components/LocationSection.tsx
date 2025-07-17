@@ -13,8 +13,6 @@ import {
   IconButton,
   Stack,
 } from "@mui/material";
-import MapIcon from "@mui/icons-material/Map";
-import BookmarkAddIcon from "@mui/icons-material/BookmarkAdd";
 import { LatLng } from "leaflet";
 
 import { useLocationPresets } from "../../../hooks/useLocationPresets";
@@ -26,6 +24,7 @@ import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
+import { AppIcons } from "config/AppIcons";
 
 interface LocationSectionProps {
   title: string;
@@ -165,13 +164,13 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           disabled={!locationFieldsPopulated}
           title="Save current location as a preset"
         >
-          <BookmarkAddIcon />
+          <AppIcons.BOOKMARK />
         </IconButton>
       </Box>
 
       <Button
         variant="outlined"
-        startIcon={<MapIcon />}
+        startIcon={<AppIcons.MAP />}
         onClick={() => setIsMapOpen(true)}
         fullWidth
       >

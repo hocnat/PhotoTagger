@@ -7,15 +7,12 @@ import {
   IconButton,
   Button,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import PublicIcon from "@mui/icons-material/Public";
-import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
-
 import { LocationPreset, LocationPresetData } from "types";
 import { LocationImporterDialog } from "../LocationImporter";
 import PresetList from "./components/PresetList";
 import PresetForm from "./components/PresetForm";
 import { useLocationPresets } from "hooks/useLocationPresets";
+import { AppIcons } from "config/AppIcons";
 
 interface LocationPresetManagerProps {
   onClose: () => void;
@@ -72,7 +69,7 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
         sx={{ flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
       >
         <Toolbar>
-          <PublicIcon sx={{ mr: 2 }} />
+          <AppIcons.LOCATION sx={{ mr: 2 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Location Preset Manager
           </Typography>
@@ -86,7 +83,7 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
           <Button
             variant="outlined"
             onClick={() => setIsImporterOpen(true)}
-            startIcon={<CloudUploadOutlinedIcon />}
+            startIcon={<AppIcons.IMPORT />}
             sx={{ mr: 2 }}
           >
             Import
@@ -97,7 +94,7 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
             onClick={onClose}
             aria-label="close"
           >
-            <CloseIcon />
+            <AppIcons.CLOSE />
           </IconButton>
         </Toolbar>
       </AppBar>

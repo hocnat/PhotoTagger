@@ -11,7 +11,7 @@ import {
   ListItem,
   Typography,
 } from "@mui/material";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { AppIcons } from "config/AppIcons";
 
 interface RenameDialogProps {
   isOpen: boolean;
@@ -57,7 +57,7 @@ export const RenameDialog: React.FC<RenameDialogProps> = ({
                   >
                     {item.original}
                   </Typography>
-                  <ArrowForwardIcon sx={{ flexShrink: 0 }} />
+                  <AppIcons.CHANGE_FROM_TO sx={{ flexShrink: 0 }} />
                   <Typography
                     sx={{
                       flex: 1,

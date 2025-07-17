@@ -12,9 +12,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import RemoveIcon from "@mui/icons-material/Remove";
 import { TimeShiftData } from "types";
+import { AppIcons } from "config/AppIcons";
 
 interface ShiftTimeInputDialogProps {
   isOpen: boolean;
@@ -76,11 +75,11 @@ export const ShiftTimeInputDialog: React.FC<ShiftTimeInputDialogProps> = ({
             color="primary"
           >
             <ToggleButton value="add" aria-label="add time">
-              <AddIcon />
+              <AppIcons.INCREMENT />
               Add
             </ToggleButton>
             <ToggleButton value="subtract" aria-label="subtract time">
-              <RemoveIcon />
+              <AppIcons.DECREMENT />
               Subtract
             </ToggleButton>
           </ToggleButtonGroup>

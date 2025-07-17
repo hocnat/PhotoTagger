@@ -8,14 +8,13 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import StyleIcon from "@mui/icons-material/Style";
 
 import { Keyword, KeywordPayload } from "types";
 import { ConfirmationDialog } from "components/ConfirmationDialog";
 import KeywordList from "./components/KeywordList";
 import KeywordForm from "./components/KeywordForm";
 import { useKeywords } from "hooks/useKeywords";
+import { AppIcons } from "config/AppIcons";
 
 interface KeywordManagerProps {
   onClose: () => void;
@@ -112,7 +111,7 @@ export const KeywordManager: React.FC<KeywordManagerProps> = ({ onClose }) => {
         sx={{ flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
       >
         <Toolbar>
-          <StyleIcon sx={{ mr: 2 }} />
+          <AppIcons.KEYWORDS sx={{ mr: 2 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Keyword Manager
           </Typography>
@@ -129,7 +128,7 @@ export const KeywordManager: React.FC<KeywordManagerProps> = ({ onClose }) => {
             onClick={onClose}
             aria-label="close"
           >
-            <CloseIcon />
+            <AppIcons.CLOSE />
           </IconButton>
         </Toolbar>
       </AppBar>

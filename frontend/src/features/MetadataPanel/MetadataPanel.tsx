@@ -9,7 +9,6 @@ import {
   Grid,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import CloseIcon from "@mui/icons-material/Close";
 
 import { useMetadataEditor } from "./hooks/useMetadataEditor";
 import { MetadataEditorProvider } from "./context/MetadataEditorContext";
@@ -20,6 +19,7 @@ import LocationSection from "./components/LocationSection";
 import DateTimeSection from "./components/DateTimeSection";
 import CreatorSection from "./components/CreatorSection";
 import ImageCarousel from "./components/ImageCarousel";
+import { AppIcons } from "config/AppIcons";
 
 interface MetadataPanelProps {
   folderPath: string;
@@ -120,7 +120,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
             </Typography>
           </Box>
           <IconButton onClick={onClose} aria-label="close metadata panel">
-            <CloseIcon />
+            <AppIcons.CLOSE />
           </IconButton>
         </DrawerHeader>
 

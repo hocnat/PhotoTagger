@@ -12,10 +12,7 @@ import {
   Button,
   ButtonGroup,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import ZoomOutIcon from "@mui/icons-material/ZoomOut";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { AppIcons } from "config/AppIcons";
 
 interface ImageModalProps {
   isOpen: boolean;
@@ -47,13 +44,13 @@ const Controls = () => {
       sx={{ position: "absolute", top: 16, right: 70, zIndex: 1 }}
     >
       <Button onClick={() => zoomIn()}>
-        <ZoomInIcon />
+        <AppIcons.ZOOM_IN />
       </Button>
       <Button onClick={() => zoomOut()}>
-        <ZoomOutIcon />
+        <AppIcons.ZOOM_OUT />
       </Button>
       <Button onClick={() => resetTransform()}>
-        <RestartAltIcon />
+        <AppIcons.RESET />
       </Button>
     </ButtonGroup>
   );
@@ -89,7 +86,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
             {imageName}
           </Typography>
           <IconButton onClick={onClose}>
-            <CloseIcon />
+            <AppIcons.CLOSE />
           </IconButton>
         </Box>
         <Box

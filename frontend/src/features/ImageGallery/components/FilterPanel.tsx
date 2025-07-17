@@ -11,12 +11,10 @@ import {
   Tooltip,
   ListSubheader,
 } from "@mui/material";
-import SyncIcon from "@mui/icons-material/Sync";
-import ChecklistIcon from "@mui/icons-material/Checklist";
-import AbcIcon from "@mui/icons-material/Abc";
 import { FilterState } from "../hooks/useImageFiltering";
 import * as apiService from "api/apiService";
 import SearchInput from "components/SearchInput";
+import { AppIcons } from "config/AppIcons";
 
 interface GroupedField {
   groupName: string;
@@ -135,7 +133,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         </ToggleButton>
         <Tooltip title="Filter by: Not Consolidated">
           <ToggleButton value="not-consolidated" aria-label="not consolidated">
-            <SyncIcon fontSize="small" />
+            <AppIcons.CONSOLIDATION fontSize="small" />
           </ToggleButton>
         </Tooltip>
         <Tooltip title="Filter by: Missing Required Fields">
@@ -143,7 +141,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             value="missing-required"
             aria-label="missing required fields"
           >
-            <ChecklistIcon fontSize="small" />
+            <AppIcons.REQUIRED_FIELDS fontSize="small" />
           </ToggleButton>
         </Tooltip>
         <Tooltip title="Filter by: Incorrect Filename">
@@ -151,7 +149,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             value="incorrect-filename"
             aria-label="incorrect filename"
           >
-            <AbcIcon fontSize="small" />
+            <AppIcons.FILENAME fontSize="small" />
           </ToggleButton>
         </Tooltip>
       </ToggleButtonGroup>

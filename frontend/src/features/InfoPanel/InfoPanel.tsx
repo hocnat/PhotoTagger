@@ -7,9 +7,8 @@ import {
   Fab,
   Divider,
 } from "@mui/material";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useSingleImageReader } from "./hooks/useSingleImageReader";
+import { AppIcons } from "config/AppIcons";
 
 const INFO_PANEL_WIDTH = 500;
 
@@ -195,7 +194,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
             }),
         }}
       >
-        {isOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        {isOpen ? <AppIcons.MOVE_RIGHT /> : <AppIcons.MOVE_LEFT />}
       </Fab>
       (
       {isOpen && (

@@ -17,11 +17,10 @@ import {
   DialogTitle,
   Button,
 } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { format, parseISO } from "date-fns";
 import { LocationPreset } from "types";
 import SearchInput from "components/SearchInput";
+import { AppIcons } from "config/AppIcons";
 
 interface PresetListProps {
   presets: LocationPreset[];
@@ -116,13 +115,13 @@ const PresetList: React.FC<PresetListProps> = ({
                 <TableCell>{formatLastUsed(preset.lastUsed)}</TableCell>
                 <TableCell align="right">
                   <IconButton onClick={() => onEdit(preset)} aria-label="edit">
-                    <EditIcon />
+                    <AppIcons.EDIT />
                   </IconButton>
                   <IconButton
                     onClick={() => handleDeleteClick(preset)}
                     aria-label="delete"
                   >
-                    <DeleteIcon />
+                    <AppIcons.DELETE />
                   </IconButton>
                 </TableCell>
               </TableRow>

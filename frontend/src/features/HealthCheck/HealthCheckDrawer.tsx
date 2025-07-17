@@ -15,16 +15,8 @@ import {
   ListItemText,
   Drawer,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import SyncIcon from "@mui/icons-material/Sync";
-import ChecklistIcon from "@mui/icons-material/Checklist";
-import SpellcheckIcon from "@mui/icons-material/Spellcheck";
-import CheckIcon from "@mui/icons-material/Check";
 import { HealthReport } from "types";
+import { AppIcons } from "config/AppIcons";
 
 const metadataDrawerWidth = 960;
 
@@ -50,15 +42,15 @@ const checkOrder: (keyof HealthReport["checks"])[] = [
 
 const checkDetailsMap = {
   consolidation: {
-    icon: <SyncIcon />,
+    icon: <AppIcons.CONSOLIDATION />,
     label: "Metadata Consolidation",
   },
   requiredFields: {
-    icon: <ChecklistIcon />,
+    icon: <AppIcons.REQUIRED_FIELDS />,
     label: "Required Fields Check",
   },
   filename: {
-    icon: <SpellcheckIcon />,
+    icon: <AppIcons.FILENAME />,
     label: "Filename Convention",
   },
 };
@@ -86,12 +78,12 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
     >
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar>
-          <HealthAndSafetyIcon sx={{ mr: 2 }} />
+          <AppIcons.HEALTH_CHECK sx={{ mr: 2 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Image Health Report
           </Typography>
           <IconButton edge="end" color="inherit" onClick={onClose}>
-            <CloseIcon />
+            <AppIcons.CLOSE />
           </IconButton>
         </Toolbar>
       </AppBar>
@@ -107,11 +99,11 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
               key={report.filename}
               defaultExpanded={getOverallStatus(report) === "error"}
             >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <AccordionSummary expandIcon={<AppIcons.MOVE_DOWN />}>
                 {getOverallStatus(report) === "ok" ? (
-                  <CheckCircleOutlineIcon color="action" sx={{ mr: 1 }} />
+                  <AppIcons.SUMMARY_SUCCESS color="action" sx={{ mr: 1 }} />
                 ) : (
-                  <WarningAmberIcon color="warning" sx={{ mr: 1 }} />
+                  <AppIcons.SUMMARY_WARNING color="warning" sx={{ mr: 1 }} />
                 )}
                 <Typography sx={{ wordBreak: "break-all" }}>
                   {report.filename}
@@ -126,9 +118,9 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
                       <ListItem key={key}>
                         <ListItemIcon sx={{ minWidth: 32, mr: 1 }}>
                           {check.status === "ok" ? (
-                            <CheckIcon color="success" />
+                            <AppIcons.STATUS_SUCCESS color="success" />
                           ) : (
-                            <CloseIcon color="error" />
+                            <AppIcons.STATUS_ERROR color="error" />
                           )}
                         </ListItemIcon>
                         <ListItemIcon

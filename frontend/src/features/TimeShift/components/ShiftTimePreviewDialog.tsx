@@ -10,8 +10,8 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { TimeShiftPreviewItem } from "types";
+import { AppIcons } from "config/AppIcons";
 
 interface ShiftTimePreviewDialogProps {
   isOpen: boolean;
@@ -57,7 +57,7 @@ export const ShiftTimePreviewDialog: React.FC<ShiftTimePreviewDialogProps> = ({
                   <Typography sx={{ color: "text.secondary" }}>
                     {item.original}
                   </Typography>
-                  <ArrowForwardIcon sx={{ color: "text.secondary" }} />
+                  <AppIcons.CHANGE_FROM_TO sx={{ color: "text.secondary" }} />
                   <Typography sx={{ fontWeight: "bold" }}>
                     {item.new}
                   </Typography>

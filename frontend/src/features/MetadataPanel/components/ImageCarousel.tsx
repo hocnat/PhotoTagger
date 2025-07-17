@@ -1,9 +1,7 @@
 import { Box, IconButton, SxProps } from "@mui/material";
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import Slider from "react-slick";
 import { Theme } from "@mui/material/styles";
+import { AppIcons } from "config/AppIcons";
 
 // --- Vertical Arrow Components with conditional rendering ---
 function VerticalNextArrow(props: any) {
@@ -28,7 +26,7 @@ function VerticalNextArrow(props: any) {
       }}
       size="small"
     >
-      <KeyboardArrowDownIcon />
+      <AppIcons.MOVE_DOWN />
     </IconButton>
   );
 }
@@ -55,7 +53,7 @@ function VerticalPrevArrow(props: any) {
       }}
       size="small"
     >
-      <KeyboardArrowUpIcon />
+      <AppIcons.MOVE_UP />
     </IconButton>
   );
 }
@@ -139,7 +137,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
                 transition: "opacity 0.3s",
               }}
             >
-              <ZoomInIcon fontSize="large" />
+              <AppIcons.ZOOM_IN fontSize="large" />
             </Box>
           </Box>
         ))}

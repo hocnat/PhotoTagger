@@ -1,11 +1,14 @@
 import { Tooltip, IconButton } from "@mui/material";
-import SyncIcon from "@mui/icons-material/Sync";
+import { AppIcons } from "config/AppIcons";
 
 const ConsolidationIndicator: React.FC = () => {
   return (
     <Tooltip title="This value is not fully consolidated. Saving will fix this.">
       <IconButton size="small" edge="end" tabIndex={-1}>
-        <SyncIcon fontSize="small" sx={{ color: "action.active" }} />
+        <AppIcons.CONSOLIDATION
+          fontSize="small"
+          sx={{ color: "action.active" }}
+        />
       </IconButton>
     </Tooltip>
   );

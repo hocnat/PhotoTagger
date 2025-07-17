@@ -8,9 +8,8 @@ import {
   List,
   ListItem,
 } from "@mui/material";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import { CountryMapping } from "types";
+import { AppIcons } from "config/AppIcons";
 
 interface CountryMappingEditorProps {
   mappings: CountryMapping[];
@@ -107,17 +106,14 @@ export const CountryMappingEditor: React.FC<CountryMappingEditorProps> = ({
                 slotProps={{ htmlInput: { maxLength: 2 } }}
                 error={mapping.code.trim().length !== 2}
               />
-              <IconButton
-                onClick={() => handleDeleteMapping(originalIndex)}
-                color="error"
-              >
-                <RemoveCircleOutlineIcon />
+              <IconButton onClick={() => handleDeleteMapping(originalIndex)}>
+                <AppIcons.DELETE />
               </IconButton>
             </ListItem>
           );
         })}
       </List>
-      <Button startIcon={<AddCircleOutlineIcon />} onClick={handleAddMapping}>
+      <Button startIcon={<AppIcons.ADD />} onClick={handleAddMapping}>
         Add Mapping
       </Button>
     </Box>

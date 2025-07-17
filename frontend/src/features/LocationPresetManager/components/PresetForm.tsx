@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Button, TextField, Paper, Typography } from "@mui/material";
-import MapIcon from "@mui/icons-material/Map";
 import { LatLng } from "leaflet";
 
 import { LocationPreset, LocationPresetData } from "types";
@@ -8,6 +7,7 @@ import CountryInput from "components/CountryInput";
 import MapModal from "components/MapModal";
 import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
+import { AppIcons } from "config/AppIcons";
 
 const parseGpsString = (
   gpsString?: string
@@ -125,7 +125,7 @@ const PresetForm: React.FC<PresetFormProps> = ({
         />
         <Button
           variant="outlined"
-          startIcon={<MapIcon />}
+          startIcon={<AppIcons.MAP />}
           onClick={() => setIsMapOpen(true)}
           fullWidth
         >

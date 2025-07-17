@@ -12,17 +12,7 @@ import {
   CssBaseline,
   Tooltip,
 } from "@mui/material";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import SpellcheckIcon from "@mui/icons-material/Spellcheck"; // IMPORT the new icon
-import EditIcon from "@mui/icons-material/Edit";
-import SettingsIcon from "@mui/icons-material/Settings";
-import PublicIcon from "@mui/icons-material/Public";
-import StyleIcon from "@mui/icons-material/Style";
-import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
-import MoreTimeIcon from "@mui/icons-material/MoreTime";
-
-import { HealthReport, ImageFile, RenameFileResult } from "types";
+import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsDialog } from "./features/SettingsDialog";
@@ -34,7 +24,6 @@ import { ImageGallery } from "./features/ImageGallery";
 import { ShiftTimeInputDialog } from "./features/TimeShift/components/ShiftTimeInputDialog";
 import { ShiftTimePreviewDialog } from "./features/TimeShift/components/ShiftTimePreviewDialog";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
-
 import {
   useUnsavedChangesContext,
   UnsavedChangesProvider,
@@ -50,6 +39,7 @@ import {
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
+import { AppIcons } from "./config/AppIcons";
 
 import "./App.css";
 
@@ -223,7 +213,7 @@ const AppContent: React.FC = () => {
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
       >
         <Toolbar>
-          <PhotoLibraryIcon sx={{ mr: 2 }} />
+          <AppIcons.APP sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             PhotoTagger
           </Typography>
@@ -233,7 +223,7 @@ const AppContent: React.FC = () => {
               onClick={handlePanelOpen}
               disabled={selectedImages.length === 0}
             >
-              <EditIcon />
+              <AppIcons.EDIT />
             </IconButton>
           </Tooltip>
           <Tooltip title="Shift date/time">
@@ -246,7 +236,7 @@ const AppContent: React.FC = () => {
               }
               disabled={selectedImages.length === 0}
             >
-              <MoreTimeIcon />
+              <AppIcons.TIME_SHIFT />
             </IconButton>
           </Tooltip>
           <Tooltip title="Rename files">
@@ -267,7 +257,7 @@ const AppContent: React.FC = () => {
               {isRenamePreviewLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                <SpellcheckIcon />
+                <AppIcons.FILENAME />
               )}
             </IconButton>
           </Tooltip>
@@ -280,23 +270,23 @@ const AppContent: React.FC = () => {
               {isHealthChecking ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                <HealthAndSafetyIcon />
+                <AppIcons.HEALTH_CHECK />
               )}
             </IconButton>
           </Tooltip>
           <Tooltip title="Manage Keywords">
             <IconButton color="inherit" onClick={handleKeywordManagerOpen}>
-              <StyleIcon />
+              <AppIcons.KEYWORDS />
             </IconButton>
           </Tooltip>
           <Tooltip title="Manage Location Presets">
             <IconButton color="inherit" onClick={handlePresetManagerOpen}>
-              <PublicIcon />
+              <AppIcons.LOCATION />
             </IconButton>
           </Tooltip>
           <Tooltip title="Settings">
             <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
-              <SettingsIcon />
+              <AppIcons.SETTINGS />
             </IconButton>
           </Tooltip>
         </Toolbar>
@@ -346,7 +336,7 @@ const AppContent: React.FC = () => {
               isLoading ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                <FolderOpenIcon />
+                <AppIcons.LOAD />
               )
             }
           >
