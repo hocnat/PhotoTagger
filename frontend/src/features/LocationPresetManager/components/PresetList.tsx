@@ -140,7 +140,11 @@ const PresetList: React.FC<PresetListProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setToDelete(null)}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error">
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+          >
             Delete
           </Button>
         </DialogActions>

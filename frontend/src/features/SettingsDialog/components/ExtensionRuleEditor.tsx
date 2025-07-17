@@ -116,7 +116,11 @@ export const ExtensionRuleEditor: React.FC<ExtensionRuleEditorProps> = ({
           );
         })}
       </List>
-      <Button startIcon={<AppIcons.ADD />} onClick={handleAddRule}>
+      <Button
+        startIcon={<AppIcons.ADD />}
+        onClick={handleAddRule}
+        variant="outlined"
+      >
         Add Rule
       </Button>
     </Box>

@@ -329,7 +329,7 @@ const AppContent: React.FC = () => {
             sx={{ flex: "1 1 300px" }}
           />
           <Button
-            variant="contained"
+            variant="outlined"
             onClick={handleLoadFolder}
             disabled={isLoading || !folderInput}
             startIcon={

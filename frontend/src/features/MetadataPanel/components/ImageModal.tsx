@@ -4,14 +4,7 @@ import {
   useControls,
 } from "react-zoom-pan-pinch";
 
-import {
-  Modal,
-  Box,
-  Typography,
-  IconButton,
-  Button,
-  ButtonGroup,
-} from "@mui/material";
+import { Modal, Box, Typography, IconButton, Paper } from "@mui/material";
 import { AppIcons } from "config/AppIcons";
 
 interface ImageModalProps {
@@ -38,21 +31,27 @@ const modalStyle = {
 const Controls = () => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   return (
-    <ButtonGroup
-      variant="contained"
-      aria-label="outlined primary button group"
-      sx={{ position: "absolute", top: 16, right: 70, zIndex: 1 }}
+    <Paper
+      elevation={4}
+      sx={{
+        position: "absolute",
+        top: 16,
+        right: 70,
+        zIndex: 1,
+        display: "flex",
+        borderRadius: "20px",
+      }}
     >
-      <Button onClick={() => zoomIn()}>
+      <IconButton onClick={() => zoomIn()}>
         <AppIcons.ZOOM_IN />
-      </Button>
-      <Button onClick={() => zoomOut()}>
+      </IconButton>
+      <IconButton onClick={() => zoomOut()}>
         <AppIcons.ZOOM_OUT />
-      </Button>
-      <Button onClick={() => resetTransform()}>
+      </IconButton>
+      <IconButton onClick={() => resetTransform()}>
         <AppIcons.RESET />
-      </Button>
-    </ButtonGroup>
+      </IconButton>
+    </Paper>
   );
 };
 

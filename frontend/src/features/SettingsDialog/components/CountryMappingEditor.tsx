@@ -113,7 +113,11 @@ export const CountryMappingEditor: React.FC<CountryMappingEditorProps> = ({
           );
         })}
       </List>
-      <Button startIcon={<AppIcons.ADD />} onClick={handleAddMapping}>
+      <Button
+        startIcon={<AppIcons.ADD />}
+        onClick={handleAddMapping}
+        variant="outlined"
+      >
         Add Mapping
       </Button>
     </Box>

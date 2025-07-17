@@ -317,7 +317,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSavePreset} disabled={!presetName.trim()}>
+          <Button
+            onClick={handleSavePreset}
+            disabled={!presetName.trim()}
+            variant="contained"
+          >
             Save
           </Button>
         </DialogActions>
