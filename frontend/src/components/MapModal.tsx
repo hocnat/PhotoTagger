@@ -57,7 +57,8 @@ const modalStyle = {
   width: "90%",
   maxWidth: 800,
   bgcolor: "background.paper",
-  border: "2px solid #000",
+  border: (theme: any) => `1px solid ${theme.palette.divider}`,
+  borderRadius: 1,
   boxShadow: 24,
   p: 4,
 };

@@ -3,9 +3,19 @@ import Slider from "react-slick";
 import { Theme } from "@mui/material/styles";
 import { AppIcons } from "config/AppIcons";
 
-// --- Vertical Arrow Components with conditional rendering ---
-function VerticalNextArrow(props: any) {
-  const { onClick, currentSlide, slideCount, slidesToShow } = props;
+interface ArrowProps {
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  currentSlide?: number;
+  slideCount?: number;
+  slidesToShow?: number;
+}
+
+const VerticalNextArrow: React.FC<ArrowProps> = ({
+  onClick,
+  currentSlide = 0,
+  slideCount = 0,
+  slidesToShow = 0,
+}) => {
   const isLastSlide = currentSlide >= slideCount - slidesToShow;
 
   if (isLastSlide) {
@@ -29,10 +39,12 @@ function VerticalNextArrow(props: any) {
       <AppIcons.MOVE_DOWN />
     </IconButton>
   );
-}
+};
 
-function VerticalPrevArrow(props: any) {
-  const { onClick, currentSlide } = props;
+const VerticalPrevArrow: React.FC<ArrowProps> = ({
+  onClick,
+  currentSlide = 0,
+}) => {
   const isFirstSlide = currentSlide === 0;
 
   if (isFirstSlide) {
@@ -56,7 +68,7 @@ function VerticalPrevArrow(props: any) {
       <AppIcons.MOVE_UP />
     </IconButton>
   );
-}
+};
 
 interface ImageCarouselProps {
   imageNames: string[];

@@ -196,7 +196,6 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
       >
         {isOpen ? <AppIcons.MOVE_RIGHT /> : <AppIcons.MOVE_LEFT />}
       </Fab>
-      (
       {isOpen && (
         <Drawer
           sx={{
@@ -221,7 +220,6 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
           </Box>
         </Drawer>
       )}
-      )
     </>
   );
 };
