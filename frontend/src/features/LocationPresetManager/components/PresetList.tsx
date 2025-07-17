@@ -10,16 +10,11 @@ import {
   TableRow,
   Paper,
   Typography,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Button,
 } from "@mui/material";
 import { format, parseISO } from "date-fns";
 import { LocationPreset } from "types";
 import SearchInput from "components/SearchInput";
+import { ConfirmationDialog } from "components/ConfirmationDialog"; // Import the reusable component
 import { AppIcons } from "config/AppIcons";
 
 interface PresetListProps {
@@ -52,12 +47,10 @@ const PresetList: React.FC<PresetListProps> = ({
     return format(parseISO(dateString), "yyyy-MM-dd HH:mm");
   };
 
-  // Filter the presets based on the user's search text.
   const filteredPresets = presets.filter((preset) => {
     const searchText = filterText.toLowerCase();
     if (!searchText) return true;
 
-    // Check against multiple relevant fields for a comprehensive search.
     return (
       preset.name.toLowerCase().includes(searchText) ||
       preset.data.Location?.toLowerCase().includes(searchText) ||
@@ -130,25 +123,20 @@ const PresetList: React.FC<PresetListProps> = ({
         </Table>
       </TableContainer>
 
-      <Dialog open={!!toDelete} onClose={() => setToDelete(null)}>
-        <DialogTitle>Delete Preset?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
+      <ConfirmationDialog
+        isOpen={!!toDelete}
+        onClose={() => setToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Preset?"
+        message={
+          <>
             Are you sure you want to delete the preset "
             <strong>{toDelete?.name}</strong>"? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setToDelete(null)}>Cancel</Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </>
+        }
+        confirmButtonText="Delete"
+        confirmButtonColor="error"
+      />
     </>
   );
 };
