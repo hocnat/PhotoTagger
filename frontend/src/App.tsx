@@ -1,13 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import {
-  Box,
-  TextField,
-  Button,
-  CircularProgress,
-  Drawer,
-  CssBaseline,
-  Toolbar,
-} from "@mui/material";
+import { Box, Drawer, CssBaseline, Toolbar } from "@mui/material";
 import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
@@ -20,6 +12,7 @@ import { ImageGallery } from "./features/ImageGallery";
 import { ShiftTimeInputDialog } from "./features/TimeShift/components/ShiftTimeInputDialog";
 import { ShiftTimePreviewDialog } from "./features/TimeShift/components/ShiftTimePreviewDialog";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
+import { PromptDialog } from "./components/PromptDialog";
 import {
   useUnsavedChangesContext,
   UnsavedChangesProvider,
@@ -38,7 +31,6 @@ import { MainAppBar } from "./layout/MainAppBar/MainAppBar";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
-import { AppIcons } from "./config/AppIcons";
 
 import "./App.css";
 
@@ -48,6 +40,7 @@ const AppContent: React.FC = () => {
   const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
   const [isKeywordManagerOpen, setIsKeywordManagerOpen] = useState(false);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+  const [isFolderPromptOpen, setFolderPromptOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const { imageData, folderInput, setFolderInput, isLoading, loadImages } =
@@ -82,34 +75,39 @@ const AppContent: React.FC = () => {
     setHealthReportsMap(newMap);
   }, [healthCheckReports]);
 
-  const _fetchAndReload = useCallback(async () => {
-    setIsPanelOpen(false);
-    setSelectedImages([]);
-    setHealthReportsMap({});
-
-    const loadedFiles = await loadImages(folderInput, () => setIsDirty(false));
-
-    if (loadedFiles && loadedFiles.length > 0) {
-      const fullPaths = loadedFiles.map(
-        (file) => `${folderInput}\\${file.filename}`
-      );
-      runHealthCheck(fullPaths, { isManualTrigger: false });
-    }
-  }, [loadImages, folderInput, runHealthCheck, setIsDirty, setSelectedImages]);
-
-  const handleLoadFolder = useCallback(() => {
-    promptAction(_fetchAndReload);
-  }, [promptAction, _fetchAndReload]);
-
   useEffect(() => {
-    if (folderInput && !isLoading && !initialLoadDone) {
-      _fetchAndReload();
-      setInitialLoadDone(true);
+    if (folderInput && (!initialLoadDone || imageData.folder !== folderInput)) {
+      const fetchAndReload = async () => {
+        setIsPanelOpen(false);
+        setSelectedImages([]);
+        setHealthReportsMap({});
+
+        const loadedFiles = await loadImages(folderInput, () =>
+          setIsDirty(false)
+        );
+
+        if (loadedFiles && loadedFiles.length > 0) {
+          const fullPaths = loadedFiles.map(
+            (file) => `${folderInput}\\${file.filename}`
+          );
+          runHealthCheck(fullPaths, { isManualTrigger: false });
+        }
+      };
+      fetchAndReload();
+      if (!initialLoadDone) setInitialLoadDone(true);
     }
-  }, [folderInput, isLoading, initialLoadDone, _fetchAndReload]);
+  }, [
+    folderInput,
+    initialLoadDone,
+    imageData.folder,
+    loadImages,
+    runHealthCheck,
+    setIsDirty,
+    setSelectedImages,
+  ]);
 
   const handleGenericSuccess = (updatedFilePaths: string[]) => {
-    _fetchAndReload();
+    setFolderInput((current) => current + "");
     if (updatedFilePaths.length > 0) {
       runHealthCheck(updatedFilePaths, { isManualTrigger: false });
     }
@@ -205,11 +203,12 @@ const AppContent: React.FC = () => {
   };
 
   const appContextValue = {
+    folderPath: imageData.folder,
     selectionCount: selectedImages.length,
     isLoading,
     isRenamePreviewLoading,
     isHealthChecking,
-    onOpenFolder: handleLoadFolder,
+    onOpenFolder: () => promptAction(() => setFolderPromptOpen(true)),
     onEdit: handlePanelOpen,
     onTimeShift: () =>
       openTimeShiftDialog(
@@ -239,46 +238,7 @@ const AppContent: React.FC = () => {
             marginRight: "32px",
           }}
         >
-          {/* A Toolbar component is needed here to offset the content below the fixed AppBar */}
           <Toolbar />
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              mb: 2,
-              alignItems: "center",
-              p: 2,
-              bgcolor: "background.paper",
-              borderRadius: 1,
-              boxShadow: 1,
-              flexShrink: 0,
-              flexWrap: "wrap",
-            }}
-          >
-            <TextField
-              label="Image Folder Path"
-              value={folderInput}
-              onChange={(e) => setFolderInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLoadFolder();
-              }}
-              sx={{ flex: "1 1 300px" }}
-            />
-            <Button
-              variant="outlined"
-              onClick={handleLoadFolder}
-              disabled={isLoading || !folderInput}
-              startIcon={
-                isLoading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <AppIcons.LOAD />
-                )
-              }
-            >
-              {isLoading ? "Loading..." : "Load"}
-            </Button>
-          </Box>
 
           <ImageGallery
             healthReportsMap={healthReportsMap}
@@ -370,6 +330,17 @@ const AppContent: React.FC = () => {
         <SettingsDialog
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+        />
+        <PromptDialog
+          isOpen={isFolderPromptOpen}
+          onClose={() => setFolderPromptOpen(false)}
+          onSave={(path) => {
+            setFolderInput(path);
+            setFolderPromptOpen(false);
+          }}
+          title="Open Folder"
+          message="Please enter the full path to the folder containing your images."
+          label="Image Folder Path"
         />
       </Box>
     </AppProvider>

@@ -32,7 +32,6 @@ export const PromptDialog: React.FC<PromptDialogProps> = ({
 }) => {
   const [value, setValue] = useState("");
 
-  // Reset the input value whenever the dialog is opened
   useEffect(() => {
     if (isOpen) {
       setValue("");
@@ -46,7 +45,7 @@ export const PromptDialog: React.FC<PromptDialogProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose}>
+    <Dialog open={isOpen} onClose={onClose} disableRestoreFocus>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{message}</DialogContentText>

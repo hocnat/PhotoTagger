@@ -3,6 +3,7 @@ import { createContext, useContext, ReactNode } from "react";
 // Define the shape of the context data. This includes all the state and handlers
 // that child components like the AppBar might need.
 interface AppContextType {
+  folderPath: string;
   selectionCount: number;
   isLoading: boolean;
   isRenamePreviewLoading: boolean;
