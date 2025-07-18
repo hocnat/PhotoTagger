@@ -147,7 +147,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             }
           }}
           renderInput={(params) => (
-            <TextField {...params} label="Apply Location Preset" size="small" />
+            <TextField {...params} label="Apply Location Preset" />
           )}
         />
         <IconButton
@@ -171,8 +171,6 @@ const LocationSection: React.FC<LocationSectionProps> = ({
       <TextField
         fullWidth
         label="GPS Position"
-        variant="outlined"
-        size="small"
         value={gpsDisplayValue === "(Mixed Values)" ? "" : gpsDisplayValue}
         placeholder={
           gpsDisplayValue === "(Mixed Values)"
@@ -205,8 +203,6 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             key={key}
             fullWidth
             label={label}
-            variant="outlined"
-            size="small"
             value={getDisplayValue(field)}
             placeholder={getPlaceholder(field)}
             onChange={(e) =>
@@ -252,8 +248,6 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         </Stack>
         <TextField
           label="Country Code"
-          variant="outlined"
-          size="small"
           value={getDisplayValue(CountryCode)}
           placeholder={getPlaceholder(CountryCode) || "(Mixed)"}
           onChange={(e) =>

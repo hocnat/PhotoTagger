@@ -87,7 +87,6 @@ export const ExtensionRuleEditor: React.FC<ExtensionRuleEditorProps> = ({
             >
               <TextField
                 label="Extension"
-                size="small"
                 value={rule.extension}
                 onChange={(e) =>
                   handleRuleChange(originalIndex, "extension", e.target.value)
@@ -96,7 +95,7 @@ export const ExtensionRuleEditor: React.FC<ExtensionRuleEditorProps> = ({
                 error={!rule.extension.trim()}
                 inputRef={isNewRow ? lastInputRef : null}
               />
-              <FormControl size="small" sx={{ minWidth: 120 }}>
+              <FormControl sx={{ minWidth: 120 }} size="small">
                 <InputLabel>Casing</InputLabel>
                 <Select
                   value={rule.casing}

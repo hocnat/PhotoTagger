@@ -174,7 +174,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <TextField
               fullWidth
               label="Specific Folder Path"
-              size="small"
               value={localSettings.appBehavior.fixedPath}
               onChange={(e) =>
                 handleFieldChange("appBehavior", "fixedPath", e.target.value)
@@ -196,7 +195,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           <TextField
             fullWidth
             label="Pattern"
-            size="small"
             value={localSettings.renameSettings.pattern}
             onChange={(e) =>
               handleFieldChange("renameSettings", "pattern", e.target.value)

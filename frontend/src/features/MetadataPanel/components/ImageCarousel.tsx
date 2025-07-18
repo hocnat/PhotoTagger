@@ -34,7 +34,6 @@ const VerticalNextArrow: React.FC<ArrowProps> = ({
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         "&:hover": { backgroundColor: "white" },
       }}
-      size="small"
     >
       <AppIcons.MOVE_DOWN />
     </IconButton>
@@ -63,7 +62,6 @@ const VerticalPrevArrow: React.FC<ArrowProps> = ({
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         "&:hover": { backgroundColor: "white" },
       }}
-      size="small"
     >
       <AppIcons.MOVE_UP />
     </IconButton>

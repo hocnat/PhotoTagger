@@ -17,7 +17,6 @@ const CreatorSection: React.FC = () => {
       <Stack spacing={2}>
         <TextField
           label="Creator"
-          size="small"
           fullWidth
           value={getDisplayValue(creatorField)}
           placeholder={getPlaceholder(creatorField)}
@@ -40,7 +39,6 @@ const CreatorSection: React.FC = () => {
         />
         <TextField
           label="Copyright"
-          size="small"
           fullWidth
           value={getDisplayValue(copyrightField)}
           placeholder={getPlaceholder(copyrightField)}

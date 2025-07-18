@@ -56,8 +56,6 @@ export const PromptDialog: React.FC<PromptDialogProps> = ({
           label={label}
           type="text"
           fullWidth
-          variant="outlined"
-          size="small"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {

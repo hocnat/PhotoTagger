@@ -252,7 +252,6 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         label="Google MyMaps URL"
         type="url"
         fullWidth
-        variant="outlined"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         disabled={step === "fetching"}

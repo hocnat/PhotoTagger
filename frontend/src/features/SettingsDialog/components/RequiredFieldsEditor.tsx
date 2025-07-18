@@ -51,9 +51,7 @@ export const RequiredFieldsEditor: React.FC<RequiredFieldsEditorProps> = ({
         renderInput={(params) => (
           <TextField
             {...params}
-            variant="outlined"
             label="Required Fields"
-            size="small"
             placeholder={isLoading ? "Loading fields..." : "Select fields"}
           />
         )}

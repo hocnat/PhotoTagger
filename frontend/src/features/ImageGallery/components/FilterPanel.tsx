@@ -126,7 +126,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         exclusive
         onChange={handleStatusChange}
         aria-label="health status filter"
-        size="small"
       >
         <ToggleButton value="all" aria-label="all images">
           All

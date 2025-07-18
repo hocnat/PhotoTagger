@@ -102,11 +102,7 @@ const KeywordForm: React.FC<KeywordFormProps> = ({
             }}
             renderTags={(value: readonly string[], getTagProps) =>
               value.map((option: string, index: number) => (
-                <Chip
-                  variant="outlined"
-                  label={option}
-                  {...getTagProps({ index })}
-                />
+                <Chip label={option} {...getTagProps({ index })} />
               ))
             }
             renderInput={(params) => (

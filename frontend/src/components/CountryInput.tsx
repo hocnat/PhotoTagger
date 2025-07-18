@@ -62,9 +62,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
       }}
       options={countryMappings}
       sx={{ width: "100%", ...sx }}
-      renderInput={(params) => (
-        <TextField {...params} label={label} variant="outlined" size="small" />
-      )}
+      renderInput={(params) => <TextField {...params} label={label} />}
     />
   );
 };

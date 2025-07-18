@@ -75,20 +75,13 @@ const KeywordListItem: React.FC<{
                 <Tooltip title="Parent">
                   <Chip
                     label={`Parent: ${parent.name}`}
-                    size="small"
-                    variant="outlined"
                     sx={{ mr: 1, mb: 0.5 }}
                   />
                 </Tooltip>
               )}
               {item.data.synonyms.map((syn) => (
                 <Tooltip key={syn} title="Synonym">
-                  <Chip
-                    label={syn}
-                    size="small"
-                    variant="outlined"
-                    sx={{ mr: 1, mb: 0.5 }}
-                  />
+                  <Chip label={syn} sx={{ mr: 1, mb: 0.5 }} />
                 </Tooltip>
               ))}
             </Box>

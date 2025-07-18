@@ -53,8 +53,6 @@ const ContentSection: React.FC = () => {
     <FormSection title="Content">
       <TextField
         label="Title"
-        variant="outlined"
-        size="small"
         fullWidth
         value={getDisplayValue(titleField)}
         placeholder={getPlaceholder(titleField)}
@@ -95,8 +93,6 @@ const ContentSection: React.FC = () => {
           renderInput={(params) => (
             <TextField
               {...params}
-              variant="outlined"
-              size="small"
               label="Keywords"
               placeholder="Add keyword..."
             />
@@ -131,12 +127,7 @@ const ContentSection: React.FC = () => {
                       }}
                     >
                       {otherTerms.map((term) => (
-                        <Chip
-                          key={term}
-                          label={term}
-                          size="small"
-                          variant="outlined"
-                        />
+                        <Chip key={term} label={term} />
                       ))}
                     </Box>
                   </>
@@ -164,7 +155,6 @@ const ContentSection: React.FC = () => {
             <Chip
               key={keyword.name}
               label={keyword.name}
-              size="small"
               variant={keyword.status === "common" ? "filled" : "outlined"}
               sx={
                 keyword.status === "partial"

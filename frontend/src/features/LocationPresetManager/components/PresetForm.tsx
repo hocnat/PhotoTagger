@@ -131,7 +131,6 @@ const PresetForm: React.FC<PresetFormProps> = ({
             label="Preset Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            size="small"
           />
           <Button
             variant="outlined"
@@ -144,7 +143,6 @@ const PresetForm: React.FC<PresetFormProps> = ({
           <TextField
             fullWidth
             label="GPS Position"
-            size="small"
             value={gpsDisplayValue}
             placeholder="e.g., 48.8583, 2.2945"
             onChange={(e) => {
@@ -161,19 +159,16 @@ const PresetForm: React.FC<PresetFormProps> = ({
           />
           <TextField
             label="Location"
-            size="small"
             value={formData.Location || ""}
             onChange={(e) => handleFieldChange("Location", e.target.value)}
           />
           <TextField
             label="City"
-            size="small"
             value={formData.City || ""}
             onChange={(e) => handleFieldChange("City", e.target.value)}
           />
           <TextField
             label="State"
-            size="small"
             value={formData.State || ""}
             onChange={(e) => handleFieldChange("State", e.target.value)}
           />
@@ -185,7 +180,6 @@ const PresetForm: React.FC<PresetFormProps> = ({
             />
             <TextField
               label="Country Code"
-              size="small"
               value={formData.CountryCode || ""}
               onChange={(e) => handleFieldChange("CountryCode", e.target.value)}
               sx={{ width: 100, flexShrink: 0 }}

@@ -320,8 +320,6 @@ const AppContent: React.FC = () => {
         >
           <TextField
             label="Image Folder Path"
-            variant="outlined"
-            size="small"
             value={folderInput}
             onChange={(e) => setFolderInput(e.target.value)}
             onKeyDown={(e) => {

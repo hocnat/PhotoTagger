@@ -66,9 +66,7 @@ const DateTimeSection: React.FC = () => {
         </Stack>
         <TextField
           label="Offset Time Original"
-          variant="outlined"
           fullWidth
-          size="small"
           value={offsetField.status === "unique" ? offsetField.value || "" : ""}
           placeholder={getPlaceholder(offsetField) || "+01:00"}
           onChange={(e) =>

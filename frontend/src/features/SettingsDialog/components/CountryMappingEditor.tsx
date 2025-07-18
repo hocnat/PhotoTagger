@@ -85,7 +85,6 @@ export const CountryMappingEditor: React.FC<CountryMappingEditorProps> = ({
             >
               <TextField
                 label="Country Name"
-                size="small"
                 fullWidth
                 value={mapping.name}
                 onChange={(e) =>
@@ -97,7 +96,6 @@ export const CountryMappingEditor: React.FC<CountryMappingEditorProps> = ({
               />
               <TextField
                 label="Code"
-                size="small"
                 value={mapping.code}
                 onChange={(e) =>
                   handleMappingChange(originalIndex, "code", e.target.value)
