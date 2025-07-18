@@ -7,6 +7,7 @@ import {
   Autocomplete,
   Typography,
   Paper,
+  Stack,
 } from "@mui/material";
 import { Keyword } from "types";
 
@@ -81,78 +82,77 @@ const KeywordForm: React.FC<KeywordFormProps> = ({
         {initialKeyword ? "Edit Keyword" : "Add New Keyword"}
       </Typography>
       <Box component="form" onSubmit={handleSubmit} noValidate>
-        <TextField
-          label="Primary Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          fullWidth
-          required
-          margin="normal"
-          variant="outlined"
-          autoFocus={!initialKeyword}
-        />
+        <Stack spacing={2} sx={{ mt: 2 }}>
+          <TextField
+            label="Primary Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            required
+            autoFocus={!initialKeyword}
+          />
 
-        <Autocomplete
-          multiple
-          freeSolo
-          options={[]}
-          value={synonyms}
-          onChange={(event, newValue) => {
-            setSynonyms(newValue as string[]);
-          }}
-          renderTags={(value: readonly string[], getTagProps) =>
-            value.map((option: string, index: number) => (
-              <Chip
-                variant="outlined"
-                label={option}
-                {...getTagProps({ index })}
+          <Autocomplete
+            multiple
+            freeSolo
+            options={[]}
+            value={synonyms}
+            onChange={(event, newValue) => {
+              setSynonyms(newValue as string[]);
+            }}
+            renderTags={(value: readonly string[], getTagProps) =>
+              value.map((option: string, index: number) => (
+                <Chip
+                  variant="outlined"
+                  label={option}
+                  {...getTagProps({ index })}
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Synonyms"
+                placeholder="Type and press Enter to add synonyms"
               />
-            ))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="outlined"
-              label="Synonyms"
-              placeholder="Type and press Enter to add synonyms"
-              margin="normal"
-            />
-          )}
-        />
+            )}
+          />
 
-        <Autocomplete
-          freeSolo
-          options={possibleParents}
-          getOptionLabel={(option) =>
-            typeof option === "string" ? option : option.name
-          }
-          isOptionEqualToValue={(option, value) => {
-            if (typeof value === "string") return false;
-            return option.id === value.id;
-          }}
-          value={parent}
-          onChange={(event, newValue) => {
-            setParent(newValue);
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Parent"
-              variant="outlined"
-              margin="normal"
-              placeholder="Type or select a parent keyword"
-            />
-          )}
-        />
+          <Autocomplete
+            freeSolo
+            options={possibleParents}
+            getOptionLabel={(option) =>
+              typeof option === "string" ? option : option.name
+            }
+            isOptionEqualToValue={(option, value) => {
+              if (typeof value === "string") return false;
+              return option.id === value.id;
+            }}
+            value={parent}
+            onChange={(event, newValue) => {
+              setParent(newValue);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Parent"
+                placeholder="Type or select a parent keyword"
+              />
+            )}
+          />
 
-        <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-          <Button onClick={onCancel} sx={{ mr: 2 }}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="contained" disabled={!name.trim()}>
-            Save
-          </Button>
-        </Box>
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="flex-end"
+            sx={{ mt: 1 }}
+          >
+            <Button onClick={onCancel}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={!name.trim()}>
+              Save
+            </Button>
+          </Stack>
+        </Stack>
       </Box>
     </Paper>
   );

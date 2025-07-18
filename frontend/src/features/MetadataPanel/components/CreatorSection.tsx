@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import { Stack, TextField } from "@mui/material";
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import { getDirtyFieldSx } from "../utils/styleUtils";
@@ -14,57 +14,54 @@ const CreatorSection: React.FC = () => {
 
   return (
     <FormSection title="Creator">
-      <TextField
-        label="Creator"
-        variant="outlined"
-        size="small"
-        fullWidth
-        value={getDisplayValue(creatorField)}
-        placeholder={getPlaceholder(creatorField)}
-        onChange={(e) =>
-          handleFieldChange("Creator", "Creator", e.target.value)
-        }
-        sx={getDirtyFieldSx(isFieldDirty("Creator", "Creator"))}
-        slotProps={{
-          input: {
-            endAdornment: (
-              <ConsolidationAdornment
-                show={
-                  creatorField.status === "unique" &&
-                  !creatorField.isConsolidated
-                }
-              />
-            ),
-          },
-        }}
-      />
-      <TextField
-        label="Copyright"
-        variant="outlined"
-        size="small"
-        fullWidth
-        value={getDisplayValue(copyrightField)}
-        placeholder={getPlaceholder(copyrightField)}
-        onChange={(e) =>
-          handleFieldChange("Creator", "Copyright", e.target.value)
-        }
-        sx={{
-          mt: 2,
-          ...getDirtyFieldSx(isFieldDirty("Creator", "Copyright")),
-        }}
-        slotProps={{
-          input: {
-            endAdornment: (
-              <ConsolidationAdornment
-                show={
-                  copyrightField.status === "unique" &&
-                  !copyrightField.isConsolidated
-                }
-              />
-            ),
-          },
-        }}
-      />
+      <Stack spacing={2}>
+        <TextField
+          label="Creator"
+          size="small"
+          fullWidth
+          value={getDisplayValue(creatorField)}
+          placeholder={getPlaceholder(creatorField)}
+          onChange={(e) =>
+            handleFieldChange("Creator", "Creator", e.target.value)
+          }
+          sx={getDirtyFieldSx(isFieldDirty("Creator", "Creator"))}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <ConsolidationAdornment
+                  show={
+                    creatorField.status === "unique" &&
+                    !creatorField.isConsolidated
+                  }
+                />
+              ),
+            },
+          }}
+        />
+        <TextField
+          label="Copyright"
+          size="small"
+          fullWidth
+          value={getDisplayValue(copyrightField)}
+          placeholder={getPlaceholder(copyrightField)}
+          onChange={(e) =>
+            handleFieldChange("Creator", "Copyright", e.target.value)
+          }
+          sx={getDirtyFieldSx(isFieldDirty("Creator", "Copyright"))}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <ConsolidationAdornment
+                  show={
+                    copyrightField.status === "unique" &&
+                    !copyrightField.isConsolidated
+                  }
+                />
+              ),
+            },
+          }}
+        />
+      </Stack>
     </FormSection>
   );
 };

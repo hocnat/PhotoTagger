@@ -225,7 +225,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           />
         );
       })}
-      <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+      <Stack direction="row" spacing={2} alignItems="flex-start">
         <Stack
           direction="row"
           spacing={1}
@@ -277,7 +277,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             },
           }}
         />
-      </Box>
+      </Stack>
       <MapModal
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}

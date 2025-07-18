@@ -4,7 +4,14 @@ import {
   useControls,
 } from "react-zoom-pan-pinch";
 
-import { Modal, Box, Typography, IconButton, Paper } from "@mui/material";
+import {
+  Modal,
+  Box,
+  Typography,
+  IconButton,
+  Paper,
+  Stack,
+} from "@mui/material";
 import { AppIcons } from "config/AppIcons";
 
 interface ImageModalProps {
@@ -72,14 +79,11 @@ const ImageModal: React.FC<ImageModalProps> = ({
       aria-labelledby="image-preview-modal-title"
     >
       <Box sx={modalStyle}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 1,
-            flexShrink: 0,
-          }}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 1, flexShrink: 0 }}
         >
           <Typography id="image-preview-modal-title" variant="h6">
             {imageName}
@@ -87,7 +91,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
           <IconButton onClick={onClose}>
             <AppIcons.CLOSE />
           </IconButton>
-        </Box>
+        </Stack>
         <Box
           sx={{
             flexGrow: 1,

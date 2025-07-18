@@ -25,8 +25,8 @@ interface ShiftTimePreviewDialogProps {
 export const ShiftTimePreviewDialog: React.FC<ShiftTimePreviewDialogProps> = ({
   isOpen,
   onClose,
-  onConfirm,
   onBack,
+  onConfirm,
   previewData,
   isSaving,
 }) => {
@@ -71,6 +71,7 @@ export const ShiftTimePreviewDialog: React.FC<ShiftTimePreviewDialogProps> = ({
         <Button onClick={onBack} disabled={isSaving}>
           Back
         </Button>
+        <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose} disabled={isSaving}>
           Cancel
         </Button>

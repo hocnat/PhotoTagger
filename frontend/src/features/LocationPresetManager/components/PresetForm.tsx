@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { Box, Button, TextField, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Paper,
+  Typography,
+  Stack,
+} from "@mui/material";
 import { LatLng } from "leaflet";
 
 import { LocationPreset, LocationPresetData } from "types";
@@ -117,89 +124,89 @@ const PresetForm: React.FC<PresetFormProps> = ({
       <Typography variant="h5" sx={{ mb: 3 }}>
         {initialPreset ? "Edit Preset" : "Add New Preset"}
       </Typography>
-      <Box
-        component="form"
-        noValidate
-        autoComplete="off"
-        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-      >
-        <TextField
-          required
-          label="Preset Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          size="small"
-        />
-        <Button
-          variant="outlined"
-          startIcon={<AppIcons.MAP />}
-          onClick={() => setIsMapOpen(true)}
-          fullWidth
-        >
-          Select on Map
-        </Button>
-        <TextField
-          fullWidth
-          label="GPS Position"
-          size="small"
-          value={gpsDisplayValue}
-          placeholder="e.g., 48.8583, 2.2945"
-          onChange={(e) => {
-            const coords = parseGpsString(e.target.value);
-            handleFieldChange(
-              "Latitude",
-              coords ? String(coords.lat) : e.target.value.split(",")[0] || ""
-            );
-            handleFieldChange(
-              "Longitude",
-              coords ? String(coords.lng) : e.target.value.split(",")[1] || ""
-            );
-          }}
-        />
-        <TextField
-          label="Location"
-          size="small"
-          value={formData.Location || ""}
-          onChange={(e) => handleFieldChange("Location", e.target.value)}
-        />
-        <TextField
-          label="City"
-          size="small"
-          value={formData.City || ""}
-          onChange={(e) => handleFieldChange("City", e.target.value)}
-        />
-        <TextField
-          label="State"
-          size="small"
-          value={formData.State || ""}
-          onChange={(e) => handleFieldChange("State", e.target.value)}
-        />
-        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-          <CountryInput
-            label="Country"
-            value={formData.Country || ""}
-            onChange={handleCountryChange}
+      <Box component="form" noValidate autoComplete="off">
+        <Stack spacing={2}>
+          <TextField
+            required
+            label="Preset Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            size="small"
+          />
+          <Button
+            variant="outlined"
+            startIcon={<AppIcons.MAP />}
+            onClick={() => setIsMapOpen(true)}
+            fullWidth
+          >
+            Select on Map
+          </Button>
+          <TextField
+            fullWidth
+            label="GPS Position"
+            size="small"
+            value={gpsDisplayValue}
+            placeholder="e.g., 48.8583, 2.2945"
+            onChange={(e) => {
+              const coords = parseGpsString(e.target.value);
+              handleFieldChange(
+                "Latitude",
+                coords ? String(coords.lat) : e.target.value.split(",")[0] || ""
+              );
+              handleFieldChange(
+                "Longitude",
+                coords ? String(coords.lng) : e.target.value.split(",")[1] || ""
+              );
+            }}
           />
           <TextField
-            label="Country Code"
+            label="Location"
             size="small"
-            value={formData.CountryCode || ""}
-            onChange={(e) => handleFieldChange("CountryCode", e.target.value)}
-            sx={{ width: 100, flexShrink: 0 }}
+            value={formData.Location || ""}
+            onChange={(e) => handleFieldChange("Location", e.target.value)}
           />
-        </Box>
-        <Box
-          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
-        >
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveClick}
-            disabled={!name.trim()}
+          <TextField
+            label="City"
+            size="small"
+            value={formData.City || ""}
+            onChange={(e) => handleFieldChange("City", e.target.value)}
+          />
+          <TextField
+            label="State"
+            size="small"
+            value={formData.State || ""}
+            onChange={(e) => handleFieldChange("State", e.target.value)}
+          />
+          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+            <CountryInput
+              label="Country"
+              value={formData.Country || ""}
+              onChange={handleCountryChange}
+            />
+            <TextField
+              label="Country Code"
+              size="small"
+              value={formData.CountryCode || ""}
+              onChange={(e) => handleFieldChange("CountryCode", e.target.value)}
+              sx={{ width: 100, flexShrink: 0 }}
+            />
+          </Box>
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="flex-end"
+            sx={{ pt: 1 }}
           >
-            Save
-          </Button>
-        </Box>
+            <Button onClick={onCancel}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={handleSaveClick}
+              disabled={!name.trim()}
+            >
+              Save
+            </Button>
+          </Stack>
+        </Stack>
       </Box>
       <MapModal
         isOpen={isMapOpen}

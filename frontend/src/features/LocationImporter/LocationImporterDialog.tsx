@@ -18,6 +18,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Stack,
 } from "@mui/material";
 import * as apiService from "api/apiService";
 import {
@@ -38,7 +39,6 @@ type ImportStep =
   | "conflict"
   | "saving";
 
-// The state for the review step is a combination of the original name and the editable preset data
 interface ReviewItem {
   name: string;
   data: LocationPresetData;
@@ -270,7 +270,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
       <Typography variant="body1" sx={{ mb: 1 }}>
         Found {placemarks.length} locations. Select the ones you wish to import.
       </Typography>
-      <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
         <Button
           onClick={() =>
             setSelection(
@@ -284,7 +284,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         <Button onClick={() => setSelection({})} size="small">
           Deselect All
         </Button>
-      </Box>
+      </Stack>
       <List
         dense
         sx={{
@@ -319,21 +319,18 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
     </>
   );
   const renderEnrichingStep = () => (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "200px",
-      }}
+    <Stack
+      sx={{ height: "200px" }}
+      alignItems="center"
+      justifyContent="center"
+      spacing={2}
     >
       <CircularProgress />
-      <Typography sx={{ mt: 2 }}>Fetching location details...</Typography>
+      <Typography>Fetching location details...</Typography>
       <Typography variant="caption" color="text.secondary">
         To respect fair use policies, we are processing one location per second.
       </Typography>
-    </Box>
+    </Stack>
   );
 
   const renderReviewStep = () => (
@@ -473,17 +470,15 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         return renderConflictStep();
       case "saving":
         return (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "200px",
-            }}
+          <Stack
+            sx={{ height: "200px" }}
+            alignItems="center"
+            justifyContent="center"
+            spacing={2}
           >
             <CircularProgress />
-            <Typography sx={{ ml: 2 }}>Saving...</Typography>
-          </Box>
+            <Typography>Saving...</Typography>
+          </Stack>
         );
       default:
         return null;
@@ -495,7 +490,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
     switch (step) {
       case "url":
         return (
-          <>
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button onClick={handleClose}>Cancel</Button>
             <Button
               onClick={handleFetch}
@@ -504,7 +499,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
             >
               Fetch Places
             </Button>
-          </>
+          </Stack>
         );
       case "fetching":
         return (
@@ -515,9 +510,13 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         );
       case "select":
         return (
-          <>
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ width: "100%" }}
+            justifyContent="space-between"
+          >
             <Button onClick={() => setStep("url")}>Back</Button>
-            <Box sx={{ flexGrow: 1 }} />
             <Button
               variant="contained"
               disabled={selectedCount === 0}
@@ -525,27 +524,35 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
             >
               Get Location Details ({selectedCount})
             </Button>
-          </>
+          </Stack>
         );
       case "review":
         return (
-          <>
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ width: "100%" }}
+            justifyContent="space-between"
+          >
             <Button onClick={() => setStep("select")}>Back</Button>
-            <Box sx={{ flexGrow: 1 }} />
             <Button variant="contained" onClick={handleSave}>
               Save Presets
             </Button>
-          </>
+          </Stack>
         );
       case "conflict":
         return (
-          <>
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ width: "100%" }}
+            justifyContent="space-between"
+          >
             <Button onClick={() => setStep("review")}>Back</Button>
-            <Box sx={{ flexGrow: 1 }} />
             <Button variant="contained" onClick={handleConfirmConflicts}>
               Confirm & Save
             </Button>
-          </>
+          </Stack>
         );
       default:
         return <Button onClick={handleClose}>Close</Button>;
