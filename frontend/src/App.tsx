@@ -1,16 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   Box,
-  AppBar,
-  Toolbar,
-  Typography,
   TextField,
   Button,
   CircularProgress,
-  IconButton,
   Drawer,
   CssBaseline,
-  Tooltip,
+  Toolbar,
 } from "@mui/material";
 import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
@@ -37,6 +33,8 @@ import {
   ImageLoaderProvider,
 } from "./context/ImageLoaderContext";
 import { LocationPresetsProvider } from "./context/LocationPresetsContext";
+import { AppProvider } from "./context/AppContext";
+import { MainAppBar } from "./layout/MainAppBar/MainAppBar";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
@@ -206,233 +204,175 @@ const AppContent: React.FC = () => {
     )}`;
   };
 
+  const appContextValue = {
+    selectionCount: selectedImages.length,
+    isLoading,
+    isRenamePreviewLoading,
+    isHealthChecking,
+    onOpenFolder: handleLoadFolder,
+    onEdit: handlePanelOpen,
+    onTimeShift: () =>
+      openTimeShiftDialog(
+        selectedImages.map((f) => `${imageData.folder}\\${f}`)
+      ),
+    onRename: () =>
+      openRenameDialog(selectedImages.map((f) => `${imageData.folder}\\${f}`)),
+    onAnalyze: handleRunHealthCheck,
+    onKeywords: handleKeywordManagerOpen,
+    onLocations: handlePresetManagerOpen,
+    onSettings: () => setIsSettingsOpen(true),
+  };
+
   return (
-    <Box sx={{ display: "flex" }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
-      >
-        <Toolbar>
-          <AppIcons.APP sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            PhotoTagger
-          </Typography>
-          <Tooltip title="Edit metadata">
-            <IconButton
-              color="inherit"
-              onClick={handlePanelOpen}
-              disabled={selectedImages.length === 0}
-            >
-              <AppIcons.EDIT />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Shift date/time">
-            <IconButton
-              color="inherit"
-              onClick={() =>
-                openTimeShiftDialog(
-                  selectedImages.map((f) => `${imageData.folder}\\${f}`)
-                )
-              }
-              disabled={selectedImages.length === 0}
-            >
-              <AppIcons.TIME_SHIFT />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Rename files">
-            <IconButton
-              color="inherit"
-              disabled={
-                isLoading ||
-                isRenamePreviewLoading ||
-                selectedImages.length === 0
-              }
-              onClick={() => {
-                const fullPaths = selectedImages.map(
-                  (name) => `${imageData.folder}\\${name}`
-                );
-                openRenameDialog(fullPaths);
-              }}
-            >
-              {isRenamePreviewLoading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                <AppIcons.FILENAME />
-              )}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Analyze files">
-            <IconButton
-              color="inherit"
-              onClick={handleRunHealthCheck}
-              disabled={selectedImages.length === 0 || isHealthChecking}
-            >
-              {isHealthChecking ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                <AppIcons.HEALTH_CHECK />
-              )}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Manage Keywords">
-            <IconButton color="inherit" onClick={handleKeywordManagerOpen}>
-              <AppIcons.KEYWORDS />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Manage Location Presets">
-            <IconButton color="inherit" onClick={handlePresetManagerOpen}>
-              <AppIcons.LOCATION />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Settings">
-            <IconButton color="inherit" onClick={() => setIsSettingsOpen(true)}>
-              <AppIcons.SETTINGS />
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          marginRight: "32px",
-        }}
-      >
-        <Toolbar />
+    <AppProvider value={appContextValue}>
+      <Box sx={{ display: "flex" }}>
+        <CssBaseline />
+        <MainAppBar />
         <Box
+          component="main"
           sx={{
-            display: "flex",
-            gap: 2,
-            mb: 2,
-            alignItems: "center",
+            flexGrow: 1,
             p: 2,
-            bgcolor: "background.paper",
-            borderRadius: 1,
-            boxShadow: 1,
-            flexShrink: 0,
-            flexWrap: "wrap",
+            display: "flex",
+            flexDirection: "column",
+            height: "100vh",
+            marginRight: "32px",
           }}
         >
-          <TextField
-            label="Image Folder Path"
-            value={folderInput}
-            onChange={(e) => setFolderInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleLoadFolder();
+          {/* A Toolbar component is needed here to offset the content below the fixed AppBar */}
+          <Toolbar />
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              mb: 2,
+              alignItems: "center",
+              p: 2,
+              bgcolor: "background.paper",
+              borderRadius: 1,
+              boxShadow: 1,
+              flexShrink: 0,
+              flexWrap: "wrap",
             }}
-            sx={{ flex: "1 1 300px" }}
-          />
-          <Button
-            variant="outlined"
-            onClick={handleLoadFolder}
-            disabled={isLoading || !folderInput}
-            startIcon={
-              isLoading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <AppIcons.LOAD />
-              )
-            }
           >
-            {isLoading ? "Loading..." : "Load"}
-          </Button>
+            <TextField
+              label="Image Folder Path"
+              value={folderInput}
+              onChange={(e) => setFolderInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLoadFolder();
+              }}
+              sx={{ flex: "1 1 300px" }}
+            />
+            <Button
+              variant="outlined"
+              onClick={handleLoadFolder}
+              disabled={isLoading || !folderInput}
+              startIcon={
+                isLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <AppIcons.LOAD />
+                )
+              }
+            >
+              {isLoading ? "Loading..." : "Load"}
+            </Button>
+          </Box>
+
+          <ImageGallery
+            healthReportsMap={healthReportsMap}
+            onPanelOpen={handlePanelOpen}
+            onImageDoubleClick={handleImageDoubleClick}
+          />
         </Box>
 
-        <ImageGallery
-          healthReportsMap={healthReportsMap}
-          onPanelOpen={handlePanelOpen}
-          onImageDoubleClick={handleImageDoubleClick}
+        <InfoPanel
+          folderPath={imageData.folder}
+          selectedImage={selectedImages.length === 1 ? selectedImages[0] : null}
+          isOpen={isInfoPanelOpen}
+          onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
+        />
+        <Drawer
+          variant="temporary"
+          anchor="left"
+          open={isKeywordManagerOpen}
+          onClose={() => setIsKeywordManagerOpen(false)}
+          sx={{
+            width: "100%",
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: "100%",
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          <KeywordManager onClose={() => setIsKeywordManagerOpen(false)} />
+        </Drawer>
+        <Drawer
+          variant="temporary"
+          anchor="left"
+          open={isPresetManagerOpen}
+          onClose={() => setIsPresetManagerOpen(false)}
+          sx={{
+            width: "100%",
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: "100%",
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          <LocationPresetManager
+            onClose={() => setIsPresetManagerOpen(false)}
+          />
+        </Drawer>
+        <Drawer
+          variant="temporary"
+          anchor="right"
+          open={isPanelOpen}
+          sx={{
+            width: "100%",
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: "100%",
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          {isPanelOpen && selectedImages.length > 0 && (
+            <MetadataPanel
+              key={selectedImages.join("-")}
+              folderPath={imageData.folder}
+              getImageUrl={getImageUrl}
+              onClose={handlePanelClose}
+              onSaveSuccess={handleSaveSuccess}
+            />
+          )}
+        </Drawer>
+        <HealthCheckDrawer
+          isOpen={isHealthDrawerOpen}
+          onClose={closeHealthDrawer}
+          reports={healthCheckReports}
+          isLoading={isHealthChecking}
+        />
+        <ShiftTimeInputDialog {...timeShiftInputDialogProps} />
+        <ShiftTimePreviewDialog {...timeShiftPreviewDialogProps} />
+        <ConfirmationDialog
+          isOpen={isConfirmationOpen}
+          title="Unsaved Changes"
+          message="You have unsaved changes. Are you sure you want to proceed without saving?"
+          onConfirm={handleUnsavedChangesConfirm}
+          onClose={handleUnsavedChangesClose}
+          confirmButtonText="Proceed"
+        />
+        <RenameDialog {...renameDialogProps} />
+        <SettingsDialog
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
         />
       </Box>
-
-      <InfoPanel
-        folderPath={imageData.folder}
-        selectedImage={selectedImages.length === 1 ? selectedImages[0] : null}
-        isOpen={isInfoPanelOpen}
-        onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
-      />
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={isKeywordManagerOpen}
-        onClose={() => setIsKeywordManagerOpen(false)}
-        sx={{
-          width: "100%",
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: "100%",
-            boxSizing: "border-box",
-          },
-        }}
-      >
-        <KeywordManager onClose={() => setIsKeywordManagerOpen(false)} />
-      </Drawer>
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={isPresetManagerOpen}
-        onClose={() => setIsPresetManagerOpen(false)}
-        sx={{
-          width: "100%",
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: "100%",
-            boxSizing: "border-box",
-          },
-        }}
-      >
-        <LocationPresetManager onClose={() => setIsPresetManagerOpen(false)} />
-      </Drawer>
-      <Drawer
-        variant="temporary"
-        anchor="right"
-        open={isPanelOpen}
-        sx={{
-          width: "100%",
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: "100%",
-            boxSizing: "border-box",
-          },
-        }}
-      >
-        {isPanelOpen && selectedImages.length > 0 && (
-          <MetadataPanel
-            key={selectedImages.join("-")}
-            folderPath={imageData.folder}
-            getImageUrl={getImageUrl}
-            onClose={handlePanelClose}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        )}
-      </Drawer>
-      <HealthCheckDrawer
-        isOpen={isHealthDrawerOpen}
-        onClose={closeHealthDrawer}
-        reports={healthCheckReports}
-        isLoading={isHealthChecking}
-      />
-      <ShiftTimeInputDialog {...timeShiftInputDialogProps} />
-      <ShiftTimePreviewDialog {...timeShiftPreviewDialogProps} />
-      <ConfirmationDialog
-        isOpen={isConfirmationOpen}
-        title="Unsaved Changes"
-        message="You have unsaved changes. Are you sure you want to proceed without saving?"
-        onConfirm={handleUnsavedChangesConfirm}
-        onClose={handleUnsavedChangesClose}
-        confirmButtonText="Proceed"
-      />
-      <RenameDialog {...renameDialogProps} />
-      <SettingsDialog
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
-    </Box>
+    </AppProvider>
   );
 };
 
