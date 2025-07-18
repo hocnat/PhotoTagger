@@ -137,23 +137,22 @@ export const useMetadataEditor = ({
       data: LocationPresetData,
       blockName: "LocationCreated" | "LocationShown"
     ) => {
-      let newBlockState = { ...formState[blockName] } as LocationData;
-      for (const [key, value] of Object.entries(data)) {
+      const newBlockState = Object.entries(data).reduce((acc, [key, value]) => {
         const formKey = key as keyof LocationData;
-        if (formKey in newBlockState && value !== undefined) {
-          (newBlockState[formKey] as any) = {
-            status: "unique",
-            value,
-            isConsolidated: true, // Applying a preset makes fields consolidated by definition.
-          };
-        }
-      }
+        acc[formKey] = {
+          status: "unique",
+          value: value || "",
+          isConsolidated: true,
+        };
+        return acc;
+      }, {} as LocationData);
+
       setFormState((prevState) => ({
         ...prevState,
         [blockName]: newBlockState,
       }));
     },
-    [formState, setFormState]
+    [setFormState]
   );
 
   /**
@@ -164,8 +163,6 @@ export const useMetadataEditor = ({
     blockName: "LocationCreated" | "LocationShown",
     latlng: LatLng
   ) => {
-    // 1. Define the new location data object, clearing all fields except lat/lon.
-    // This ensures old values are wiped.
     const newLocationData: LocationPresetData = {
       Latitude: String(latlng.lat),
       Longitude: String(latlng.lng),
@@ -177,44 +174,22 @@ export const useMetadataEditor = ({
     };
 
     try {
-      // 2. Call the geocoding service to get new address details.
-      const enrichedData = await apiService.enrichCoordinates([
+      const [enriched] = await apiService.enrichCoordinates([
         { latitude: latlng.lat, longitude: latlng.lng },
       ]);
-      const locationInfo = enrichedData[0];
 
-      // 3. If successful, populate the new data object.
-      if (locationInfo) {
-        newLocationData.City = locationInfo.city;
-        newLocationData.State = locationInfo.state;
-        newLocationData.Country = locationInfo.country;
-        newLocationData.CountryCode = locationInfo.countryCode;
+      if (enriched) {
+        newLocationData.City = enriched.city;
+        newLocationData.State = enriched.state;
+        newLocationData.Country = enriched.country;
+        newLocationData.CountryCode = enriched.countryCode;
       }
     } catch (error) {
-      showNotification(
-        "Could not fetch location details. Please fill them manually.",
-        "warning"
-      );
+      showNotification("Could not fetch location details.", "warning");
       console.error("Reverse geocoding failed:", error);
     }
 
-    // 4. Apply the complete new data block using the same logic as applyLocationPreset.
-    let newBlockState = { ...formState[blockName] } as LocationData;
-    for (const [key, value] of Object.entries(newLocationData)) {
-      const formKey = key as keyof LocationData;
-      if (formKey in newBlockState) {
-        // Check if the key is valid for LocationData
-        (newBlockState[formKey] as any) = {
-          status: "unique",
-          value: value || "",
-          isConsolidated: true,
-        };
-      }
-    }
-    setFormState((prevState) => ({
-      ...prevState,
-      [blockName]: newBlockState,
-    }));
+    applyLocationPreset(newLocationData, blockName);
   };
 
   const handleSave = async () => {
@@ -377,9 +352,7 @@ export const useMetadataEditor = ({
     try {
       await apiService.saveMetadata(payload);
       showNotification("Metadata saved successfully.", "success");
-
       setIsDirty(false);
-
       const updatedPaths = files_to_update.map((f) => f.path);
       onSaveSuccess(updatedPaths);
     } catch (err) {

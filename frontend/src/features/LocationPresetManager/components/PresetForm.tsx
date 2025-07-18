@@ -9,6 +9,16 @@ import * as apiService from "api/apiService";
 import { useNotification } from "hooks/useNotification";
 import { AppIcons } from "config/AppIcons";
 
+const EMPTY_LOCATION_PRESET_DATA: LocationPresetData = {
+  Latitude: "",
+  Longitude: "",
+  Location: "",
+  City: "",
+  State: "",
+  Country: "",
+  CountryCode: "",
+};
+
 const parseGpsString = (
   gpsString?: string
 ): { lat: number; lng: number } | null => {
@@ -36,17 +46,19 @@ const PresetForm: React.FC<PresetFormProps> = ({
   onSave,
 }) => {
   const [name, setName] = useState("");
-  const [formData, setFormData] = useState<LocationPresetData>({});
+  const [formData, setFormData] = useState<LocationPresetData>(
+    EMPTY_LOCATION_PRESET_DATA
+  );
   const [isMapOpen, setIsMapOpen] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
     if (initialPreset) {
       setName(initialPreset.name);
-      setFormData(initialPreset.data);
+      setFormData({ ...EMPTY_LOCATION_PRESET_DATA, ...initialPreset.data });
     } else {
       setName("");
-      setFormData({});
+      setFormData(EMPTY_LOCATION_PRESET_DATA);
     }
   }, [initialPreset]);
 
@@ -67,15 +79,10 @@ const PresetForm: React.FC<PresetFormProps> = ({
 
   const handleLocationSet = async (latlng: LatLng) => {
     setIsMapOpen(false);
-    const newLocationData: LocationPresetData = {
-      Latitude: String(latlng.lat),
-      Longitude: String(latlng.lng),
-      Location: "",
-      City: "",
-      State: "",
-      Country: "",
-      CountryCode: "",
-    };
+    const newLocationData = { ...EMPTY_LOCATION_PRESET_DATA };
+    newLocationData.Latitude = String(latlng.lat);
+    newLocationData.Longitude = String(latlng.lng);
+
     try {
       const [enriched] = await apiService.enrichCoordinates([
         { latitude: latlng.lat, longitude: latlng.lng },

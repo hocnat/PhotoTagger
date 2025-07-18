@@ -36,6 +36,7 @@ import {
   useImageLoaderContext,
   ImageLoaderProvider,
 } from "./context/ImageLoaderContext";
+import { LocationPresetsProvider } from "./context/LocationPresetsContext";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
@@ -442,7 +443,9 @@ const App: React.FC = () => {
     <UnsavedChangesProvider>
       <ImageLoaderProvider>
         <ImageSelectionProvider>
-          <AppContent />
+          <LocationPresetsProvider>
+            <AppContent />
+          </LocationPresetsProvider>
         </ImageSelectionProvider>
       </ImageLoaderProvider>
     </UnsavedChangesProvider>

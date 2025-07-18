@@ -5,20 +5,16 @@ import {
   Button,
   TextField,
   Autocomplete,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   IconButton,
   Stack,
 } from "@mui/material";
 import { LatLng } from "leaflet";
 
-import { useLocationPresets } from "../../../hooks/useLocationPresets";
+import { useLocationPresetsContext } from "context/LocationPresetsContext";
 import FormSection from "./FormSection";
 import CountryInput from "components/CountryInput";
 import MapModal from "components/MapModal";
+import { PromptDialog } from "components/PromptDialog";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
@@ -61,8 +57,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
 
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [presetName, setPresetName] = useState("");
-  const { presets, addPreset, trackUsage } = useLocationPresets();
+  const { presets, addPreset, trackUsage } = useLocationPresetsContext();
 
   const locationData = formState[dataBlockName];
 
@@ -101,19 +96,15 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     }
   };
 
-  const handleOpenSaveDialog = () => {
-    setPresetName("");
-    setSaveDialogOpen(true);
-  };
-
-  const handleSavePreset = () => {
+  const handleSavePreset = (presetName: string) => {
     const dataToSave: LocationPresetData = {};
     for (const [key, field] of Object.entries(locationData)) {
-      if (field.status === "unique" && field.value) {
-        (dataToSave as any)[key] = field.value;
+      if (field.status === "unique") {
+        (dataToSave as any)[key] = field.value || "";
       }
     }
-    if (Object.keys(dataToSave).length > 0) {
+
+    if (Object.values(dataToSave).some((val) => val !== "")) {
       addPreset(presetName, dataToSave).then(() => setSaveDialogOpen(false));
     } else {
       setSaveDialogOpen(false);
@@ -160,7 +151,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           )}
         />
         <IconButton
-          onClick={handleOpenSaveDialog}
+          onClick={() => setSaveDialogOpen(true)}
           disabled={!locationFieldsPopulated}
           title="Save current location as a preset"
         >
@@ -297,35 +288,14 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           gpsDisplayValue !== "(Mixed Values)" ? gpsDisplayValue : undefined
         )}
       />
-      <Dialog open={isSaveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
-        <DialogTitle>Save Location Preset</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Enter a name for this location preset.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Preset Name"
-            type="text"
-            fullWidth
-            variant="standard"
-            value={presetName}
-            onChange={(e) => setPresetName(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleSavePreset}
-            disabled={!presetName.trim()}
-            variant="contained"
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <PromptDialog
+        isOpen={isSaveDialogOpen}
+        onClose={() => setSaveDialogOpen(false)}
+        onSave={handleSavePreset}
+        title="Save Location Preset"
+        message="Enter a name for this location preset."
+        label="Preset Name"
+      />
     </FormSection>
   );
 };
