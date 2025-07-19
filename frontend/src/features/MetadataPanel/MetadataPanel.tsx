@@ -7,8 +7,9 @@ import {
   IconButton,
   Stack,
   Grid,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 
 import { useMetadataEditor } from "./hooks/useMetadataEditor";
 import { MetadataEditorProvider } from "./context/MetadataEditorContext";
@@ -27,15 +28,6 @@ interface MetadataPanelProps {
   onClose: () => void;
   onSaveSuccess: (updatedFilePaths: string[]) => void;
 }
-
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  padding: theme.spacing(0, 1, 0, 2),
-  justifyContent: "space-between",
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  flexShrink: 0,
-}));
 
 const carouselWidth = 240;
 
@@ -110,19 +102,27 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
   return (
     <MetadataEditorProvider value={metadataEditor}>
       <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-        <DrawerHeader>
-          <Box>
-            <Typography variant="h6" component="h2">
-              Metadata
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {selectedImages.length} item(s) selected
-            </Typography>
-          </Box>
-          <IconButton onClick={onClose} aria-label="close metadata panel">
-            <AppIcons.CLOSE />
-          </IconButton>
-        </DrawerHeader>
+        <AppBar position="static" color="default" elevation={1}>
+          <Toolbar>
+            <AppIcons.EDIT sx={{ mr: 2 }} />
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" component="h2">
+                Metadata
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedImages.length} item(s) selected
+              </Typography>
+            </Box>
+            <IconButton
+              edge="end"
+              color="inherit"
+              onClick={onClose}
+              aria-label="close metadata panel"
+            >
+              <AppIcons.CLOSE />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
 
         <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
           <Box
@@ -132,6 +132,7 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               borderRight: 1,
               borderColor: "divider",
               overflowY: "auto",
+              bgcolor: "background.paper", // Use paper for a slight contrast
             }}
           >
             <ImageCarousel
@@ -149,7 +150,14 @@ const MetadataPanel: React.FC<MetadataPanelProps> = ({
               overflow: "hidden",
             }}
           >
-            <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
+            <Box
+              sx={{
+                flexGrow: 1,
+                overflowY: "auto",
+                p: 3,
+                bgcolor: "background.default",
+              }}
+            >
               {isMetadataLoading ? (
                 <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
                   <CircularProgress />

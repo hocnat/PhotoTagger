@@ -53,7 +53,6 @@ export const KeywordManager: React.FC<KeywordManagerProps> = ({ onClose }) => {
     let parentId: string | null = null;
 
     if (typeof parent === "string") {
-      // It's a new keyword to be created on the fly.
       const newParentName = parent.trim();
       if (newParentName) {
         const newParent = await addKeyword(newParentName, {
@@ -104,12 +103,7 @@ export const KeywordManager: React.FC<KeywordManagerProps> = ({ onClose }) => {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar />
-      <AppBar
-        position="static"
-        color="default"
-        sx={{ flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
-      >
+      <AppBar position="static" color="default" elevation={1}>
         <Toolbar>
           <AppIcons.KEYWORDS sx={{ mr: 2 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>

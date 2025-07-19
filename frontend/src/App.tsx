@@ -28,6 +28,7 @@ import {
 import { LocationPresetsProvider } from "./context/LocationPresetsContext";
 import { AppProvider } from "./context/AppContext";
 import { MainAppBar } from "./layout/MainAppBar/MainAppBar";
+import { SelectionToolbar } from "./layout/SelectionToolbar/SelectionToolbar";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
@@ -39,7 +40,6 @@ const AppContent: React.FC = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
   const [isKeywordManagerOpen, setIsKeywordManagerOpen] = useState(false);
-  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [isFolderPromptOpen, setFolderPromptOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
@@ -133,11 +133,11 @@ const AppContent: React.FC = () => {
   } = useTimeShift({ onSuccess: handleGenericSuccess });
 
   const handleRunHealthCheck = () => {
-    if (selectedImages.length > 0 && imageData.folder) {
-      const fullPaths = selectedImages.map(
-        (name) => `${imageData.folder}\\${name}`
+    if (imageData.files.length > 0 && imageData.folder) {
+      const allFilePaths = imageData.files.map(
+        (file) => `${imageData.folder}\\${file.filename}`
       );
-      runHealthCheck(fullPaths, { isManualTrigger: true });
+      runHealthCheck(allFilePaths, { isManualTrigger: true });
     }
   };
 
@@ -150,7 +150,6 @@ const AppContent: React.FC = () => {
     if (selectedImages.length > 0) {
       setIsPresetManagerOpen(false);
       setIsKeywordManagerOpen(false);
-      setIsInfoPanelOpen(false);
       setIsPanelOpen(true);
     }
   }, [selectedImages.length]);
@@ -163,7 +162,6 @@ const AppContent: React.FC = () => {
     promptAction(() => {
       setIsPanelOpen(false);
       setIsKeywordManagerOpen(false);
-      setIsInfoPanelOpen(false);
       setIsPresetManagerOpen(true);
     });
   };
@@ -172,7 +170,6 @@ const AppContent: React.FC = () => {
     promptAction(() => {
       setIsPanelOpen(false);
       setIsPresetManagerOpen(false);
-      setIsInfoPanelOpen(false);
       setIsKeywordManagerOpen(true);
     });
   };
@@ -181,7 +178,6 @@ const AppContent: React.FC = () => {
     promptAction(() => {
       setIsPresetManagerOpen(false);
       setIsKeywordManagerOpen(false);
-      setIsInfoPanelOpen(false);
       selectSingleImage(imageName);
       setIsDirty(false);
       setIsPanelOpen(true);
@@ -227,6 +223,7 @@ const AppContent: React.FC = () => {
       <Box sx={{ display: "flex" }}>
         <CssBaseline />
         <MainAppBar />
+        <SelectionToolbar />
         <Box
           component="main"
           sx={{
@@ -235,9 +232,9 @@ const AppContent: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             height: "100vh",
-            marginRight: "32px",
           }}
         >
+          <Toolbar />
           <Toolbar />
 
           <ImageGallery
@@ -250,8 +247,6 @@ const AppContent: React.FC = () => {
         <InfoPanel
           folderPath={imageData.folder}
           selectedImage={selectedImages.length === 1 ? selectedImages[0] : null}
-          isOpen={isInfoPanelOpen}
-          onToggle={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
         />
         <Drawer
           variant="temporary"
@@ -292,8 +287,6 @@ const AppContent: React.FC = () => {
           anchor="right"
           open={isPanelOpen}
           sx={{
-            width: "100%",
-            flexShrink: 0,
             "& .MuiDrawer-paper": {
               width: "100%",
               boxSizing: "border-box",

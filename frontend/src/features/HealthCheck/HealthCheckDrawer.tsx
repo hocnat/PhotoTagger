@@ -18,8 +18,6 @@ import {
 import { HealthReport } from "types";
 import { AppIcons } from "config/AppIcons";
 
-const metadataDrawerWidth = 960;
-
 interface HealthCheckDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -68,77 +66,86 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
       open={isOpen}
       onClose={onClose}
       sx={{
-        width: metadataDrawerWidth,
+        width: "100%",
         flexShrink: 0,
         "& .MuiDrawer-paper": {
-          width: metadataDrawerWidth,
+          width: "100%",
           boxSizing: "border-box",
         },
       }}
     >
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
-          <AppIcons.HEALTH_CHECK sx={{ mr: 2 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Image Health Report
-          </Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose}>
-            <AppIcons.CLOSE />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-      <Box sx={{ p: 2, overflowY: "auto" }}>
-        {isLoading && (
-          <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
-        {!isLoading &&
-          reports.map((report) => (
-            <Accordion
-              key={report.filename}
-              defaultExpanded={getOverallStatus(report) === "error"}
-            >
-              <AccordionSummary expandIcon={<AppIcons.MOVE_DOWN />}>
-                {getOverallStatus(report) === "ok" ? (
-                  <AppIcons.SUMMARY_SUCCESS color="action" sx={{ mr: 1 }} />
-                ) : (
-                  <AppIcons.SUMMARY_WARNING color="warning" sx={{ mr: 1 }} />
-                )}
-                <Typography sx={{ wordBreak: "break-all" }}>
-                  {report.filename}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <List dense>
-                  {checkOrder.map((key) => {
-                    const check = report.checks[key];
-                    const details = checkDetailsMap[key];
-                    return (
-                      <ListItem key={key}>
-                        <ListItemIcon sx={{ minWidth: 32, mr: 1 }}>
-                          {check.status === "ok" ? (
-                            <AppIcons.STATUS_SUCCESS color="success" />
-                          ) : (
-                            <AppIcons.STATUS_ERROR color="error" />
-                          )}
-                        </ListItemIcon>
-                        <ListItemIcon
-                          sx={{ minWidth: 40, color: "text.secondary" }}
-                        >
-                          {details.icon}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={details.label}
-                          secondary={check.message}
-                        />
-                      </ListItem>
-                    );
-                  })}
-                </List>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+      <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <AppBar position="static" color="default" elevation={1}>
+          <Toolbar>
+            <AppIcons.HEALTH_CHECK sx={{ mr: 2 }} />
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              Image Health Report
+            </Typography>
+            <IconButton edge="end" color="inherit" onClick={onClose}>
+              <AppIcons.CLOSE />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+        <Box
+          sx={{
+            flexGrow: 1,
+            p: 2,
+            overflowY: "auto",
+            bgcolor: "background.default",
+          }}
+        >
+          {isLoading && (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+          {!isLoading &&
+            reports.map((report) => (
+              <Accordion
+                key={report.filename}
+                defaultExpanded={getOverallStatus(report) === "error"}
+              >
+                <AccordionSummary expandIcon={<AppIcons.MOVE_DOWN />}>
+                  {getOverallStatus(report) === "ok" ? (
+                    <AppIcons.SUMMARY_SUCCESS color="action" sx={{ mr: 1 }} />
+                  ) : (
+                    <AppIcons.SUMMARY_WARNING color="warning" sx={{ mr: 1 }} />
+                  )}
+                  <Typography sx={{ wordBreak: "break-all" }}>
+                    {report.filename}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <List dense>
+                    {checkOrder.map((key) => {
+                      const check = report.checks[key];
+                      const details = checkDetailsMap[key];
+                      return (
+                        <ListItem key={key}>
+                          <ListItemIcon sx={{ minWidth: 32, mr: 1 }}>
+                            {check.status === "ok" ? (
+                              <AppIcons.STATUS_SUCCESS color="success" />
+                            ) : (
+                              <AppIcons.STATUS_ERROR color="error" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemIcon
+                            sx={{ minWidth: 40, color: "text.secondary" }}
+                          >
+                            {details.icon}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={details.label}
+                            secondary={check.message}
+                          />
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+        </Box>
       </Box>
     </Drawer>
   );

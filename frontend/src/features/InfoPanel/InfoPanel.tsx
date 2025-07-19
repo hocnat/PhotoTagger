@@ -4,19 +4,15 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Fab,
   Divider,
 } from "@mui/material";
 import { useSingleImageReader } from "./hooks/useSingleImageReader";
-import { AppIcons } from "config/AppIcons";
 
-const INFO_PANEL_WIDTH = 500;
+const INFO_PANEL_WIDTH = 360;
 
 interface InfoPanelProps {
   folderPath: string;
   selectedImage: string | null;
-  isOpen: boolean;
-  onToggle: () => void;
 }
 
 const SECTIONS = [
@@ -68,14 +64,16 @@ const SECTIONS = [
 export const InfoPanel: React.FC<InfoPanelProps> = ({
   folderPath,
   selectedImage,
-  isOpen,
-  onToggle,
 }) => {
   const { metadata, isLoading, error } = useSingleImageReader(
     folderPath,
     selectedImage,
-    isOpen
+    true
   );
+
+  const mainAppBarHeight = 64;
+  const selectionToolbarHeight = 64;
+  const totalToolbarHeight = mainAppBarHeight + selectionToolbarHeight + 4;
 
   const renderContent = () => {
     if (isLoading) {
@@ -105,7 +103,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
 
     return (
       <Box>
-        {SECTIONS.map((section, sectionIndex) => (
+        {SECTIONS.map((section) => (
           <Box key={section.title} sx={{ mb: 1.5 }}>
             <Typography
               variant="overline"
@@ -118,7 +116,6 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
             <Box sx={{ pt: 0.5 }}>
               {section.fields.map((field) => {
                 let displayValue: string | null = null;
-
                 if (field.key === "GPSPositionCreated") {
                   const lat = metadata.LatitudeCreated?.value;
                   const lon = metadata.LongitudeCreated?.value;
@@ -136,10 +133,8 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
                       : String(value);
                   }
                 }
-
                 const isFieldEmpty =
                   !displayValue || displayValue.trim().length === 0;
-
                 return (
                   <Box
                     key={field.key}
@@ -177,49 +172,29 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   };
 
   return (
-    <>
-      <Fab
-        size="small"
-        onClick={onToggle}
-        sx={{
-          position: "fixed",
-          top: "50%",
-          transform: "translateY(-50%)",
-          right: isOpen ? INFO_PANEL_WIDTH + 4 : 4,
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          transition: (theme) =>
-            theme.transitions.create("right", {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-        }}
-      >
-        {isOpen ? <AppIcons.MOVE_RIGHT /> : <AppIcons.MOVE_LEFT />}
-      </Fab>
-      {isOpen && (
-        <Drawer
-          sx={{
-            width: INFO_PANEL_WIDTH,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": {
-              width: INFO_PANEL_WIDTH,
-              boxSizing: "border-box",
-              mt: "64px",
-              height: "calc(100% - 64px)",
-            },
-          }}
-          variant="persistent"
-          anchor="right"
-          open={isOpen}
-        >
-          <Box sx={{ overflowY: "auto", p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Info Panel
-            </Typography>
-            {renderContent()}
-          </Box>
-        </Drawer>
-      )}
-    </>
+    <Drawer
+      variant="permanent"
+      anchor="right"
+      open
+      sx={{
+        width: INFO_PANEL_WIDTH,
+        flexShrink: 0,
+        "& .MuiDrawer-paper": {
+          width: INFO_PANEL_WIDTH,
+          boxSizing: "border-box",
+          mt: `${totalToolbarHeight}px`,
+          height: `calc(100% - ${totalToolbarHeight}px)`,
+          borderLeft: 1,
+          borderColor: "divider",
+        },
+      }}
+    >
+      <Box sx={{ overflowY: "auto", p: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Info Panel
+        </Typography>
+        {renderContent()}
+      </Box>
+    </Drawer>
   );
 };

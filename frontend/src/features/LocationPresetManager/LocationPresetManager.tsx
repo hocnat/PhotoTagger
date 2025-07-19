@@ -6,6 +6,7 @@ import {
   Typography,
   IconButton,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import { LocationPreset, LocationPresetData } from "types";
 import { LocationImporterDialog } from "../LocationImporter";
@@ -29,8 +30,14 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
   );
   const [isImporterOpen, setIsImporterOpen] = useState(false);
 
-  const { presets, fetchPresets, addPreset, updatePreset, deletePreset } =
-    useLocationPresets();
+  const {
+    presets,
+    isLoading,
+    fetchPresets,
+    addPreset,
+    updatePreset,
+    deletePreset,
+  } = useLocationPresets();
 
   const handleShowForm = (preset: LocationPreset | null = null) => {
     setEditingPreset(preset);
@@ -62,12 +69,7 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar />
-      <AppBar
-        position="static"
-        color="default"
-        sx={{ flexShrink: 0, borderBottom: 1, borderColor: "divider" }}
-      >
+      <AppBar position="static" color="default" elevation={1}>
         <Toolbar>
           <AppIcons.LOCATION sx={{ mr: 2 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -107,14 +109,15 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
           bgcolor: "background.default",
         }}
       >
-        {view === "LIST" && (
+        {isLoading && <CircularProgress />}
+        {!isLoading && view === "LIST" && (
           <PresetList
             presets={presets}
             onEdit={handleShowForm}
             onDelete={handleDeletePreset}
           />
         )}
-        {view === "FORM" && (
+        {!isLoading && view === "FORM" && (
           <PresetForm
             initialPreset={editingPreset}
             onCancel={handleShowList}
