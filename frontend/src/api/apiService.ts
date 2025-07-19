@@ -10,6 +10,7 @@ import {
   KeywordSuggestion,
   LocationPreset,
   LocationPresetData,
+  MetadataSchema,
   Placemark,
   RenameFileResult,
   RenamePreviewItem,
@@ -210,6 +211,11 @@ export const runHealthCheck = (
 export const getMetadataFields = (): Promise<string[]> =>
   fetch(`${API_BASE_URL}/metadata-fields`).then((response) =>
     handleResponse<string[]>(response)
+  );
+
+export const getMetadataSchema = (): Promise<MetadataSchema> =>
+  fetch(`${API_BASE_URL}/metadata-schema`).then((response) =>
+    handleResponse<MetadataSchema>(response)
   );
 
 // --- Time Shift ---

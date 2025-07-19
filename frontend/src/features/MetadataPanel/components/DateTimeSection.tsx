@@ -1,28 +1,35 @@
 import { Stack, TextField } from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
+import { useSchemaContext } from "context/SchemaContext";
 
 const DateTimeSection: React.FC = () => {
   const { formState, handleFieldChange, getDateTimeObject, isFieldDirty } =
     useMetadata();
+  const { schema } = useSchemaContext();
 
-  if (!formState.DateTime) return null;
+  if (!formState.DateTime || !schema) return null;
 
   const { DateTimeOriginal: dateField, OffsetTimeOriginal: offsetField } =
     formState.DateTime;
 
   return (
-    <FormSection title="Date & Time">
+    <FormSection
+      title={schema.find((g) => g.groupName === "Date & Time")?.groupName || ""}
+    >
       <Stack spacing={2}>
         <Stack direction="row" spacing={1} alignItems="center">
           <DateTimePicker
-            label="Date Time Original"
+            label={
+              schema
+                .flatMap((g) => g.fields)
+                .find((f) => f.key === "DateTimeOriginal")?.label
+            }
             value={getDateTimeObject()}
             onChange={(date) => {
               const newDateStr = date
@@ -54,8 +61,6 @@ const DateTimeSection: React.FC = () => {
             }}
             slotProps={{
               textField: {
-                size: "small",
-                variant: "outlined",
                 placeholder: getPlaceholder(dateField),
               },
             }}
@@ -65,7 +70,11 @@ const DateTimeSection: React.FC = () => {
           )}
         </Stack>
         <TextField
-          label="Offset Time Original"
+          label={
+            schema
+              .flatMap((g) => g.fields)
+              .find((f) => f.key === "OffsetTimeOriginal")?.label
+          }
           fullWidth
           value={offsetField.status === "unique" ? offsetField.value || "" : ""}
           placeholder={getPlaceholder(offsetField) || "+01:00"}

@@ -289,6 +289,10 @@ export interface HealthReport {
   };
 }
 
+// ====================================================================================
+// Time Shift
+// ====================================================================================
+
 /**
  * The data structure for a time shift operation payload.
  */
@@ -353,3 +357,28 @@ export interface CountryMapping {
   code: string;
   name: string;
 }
+
+// ====================================================================================
+// Schema
+// ====================================================================================
+
+/**
+ * The structure of a single field's schema information.
+ */
+export interface MetadataSchemaField {
+  key: string;
+  label: string;
+}
+
+/**
+ * The structure for a group of fields in the schema.
+ */
+export interface MetadataSchemaGroup {
+  groupName: string;
+  fields: MetadataSchemaField[];
+}
+
+/**
+ * The complete metadata schema, as an ordered array of groups.
+ */
+export type MetadataSchema = MetadataSchemaGroup[];

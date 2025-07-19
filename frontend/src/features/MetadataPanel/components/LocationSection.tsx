@@ -9,7 +9,6 @@ import {
   Stack,
 } from "@mui/material";
 import { LatLng } from "leaflet";
-
 import { useLocationPresetsContext } from "context/LocationPresetsContext";
 import FormSection from "./FormSection";
 import CountryInput from "components/CountryInput";
@@ -21,6 +20,7 @@ import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
 import { AppIcons } from "config/AppIcons";
+import { useSchemaContext } from "context/SchemaContext";
 
 interface LocationSectionProps {
   title: string;
@@ -31,7 +31,6 @@ const parseGpsString = (
   gpsString?: string
 ): { lat: number; lng: number } | null => {
   if (!gpsString || typeof gpsString !== "string") return null;
-
   const parts = gpsString.split(",").map((s) => s.trim());
   if (parts.length === 2) {
     const lat = parseFloat(parts[0]);
@@ -54,12 +53,19 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     applyLocationPreset,
     isFieldDirty,
   } = useMetadata();
-
+  const { schema } = useSchemaContext();
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const { presets, addPreset, trackUsage } = useLocationPresetsContext();
 
   const locationData = formState[dataBlockName];
+
+  const flatSchema = useMemo(() => {
+    if (!schema) {
+      return [];
+    }
+    return schema.flatMap((g) => g.fields);
+  }, [schema]);
 
   const gpsDisplayValue = useMemo(() => {
     if (!locationData) return "";
@@ -77,7 +83,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     return "";
   }, [locationData]);
 
-  if (!locationData) return null;
+  if (!locationData || !schema) return null;
 
   const { Latitude, Longitude, Location, City, State, Country, CountryCode } =
     locationData;
@@ -86,7 +92,6 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     const value = e.target.value;
     const coords = parseGpsString(value);
     if (coords) {
-      // When GPS is set manually, we only update the coordinates
       handleFieldChange(dataBlockName, "Latitude", String(coords.lat));
       handleFieldChange(dataBlockName, "Longitude", String(coords.lng));
     } else {
@@ -111,27 +116,12 @@ const LocationSection: React.FC<LocationSectionProps> = ({
     }
   };
 
-  const hasGps =
-    Latitude.status === "unique" &&
-    Longitude.status === "unique" &&
-    String(Latitude.value || "").trim() !== "" &&
-    String(Longitude.value || "").trim() !== "";
-  const hasLocation =
-    Location.status === "unique" && String(Location.value || "").trim() !== "";
-  const hasCity =
-    City.status === "unique" && String(City.value || "").trim() !== "";
-  const hasState =
-    State.status === "unique" && String(State.value || "").trim() !== "";
-  const hasCountry =
-    Country.status === "unique" && String(Country.value || "").trim() !== "";
-  const locationFieldsPopulated =
-    hasGps || hasLocation || hasCity || hasState || hasCountry;
+  const locationFieldsPopulated = Object.values(locationData).some(
+    (field) =>
+      field.status === "unique" && String(field.value || "").trim() !== ""
+  );
 
-  const textFields: { key: keyof typeof locationData; label: string }[] = [
-    { key: "Location", label: "Location" },
-    { key: "City", label: "City" },
-    { key: "State", label: "State" },
-  ];
+  const suffix = dataBlockName === "LocationShown" ? "Shown" : "Created";
 
   return (
     <FormSection title={title}>
@@ -170,7 +160,9 @@ const LocationSection: React.FC<LocationSectionProps> = ({
 
       <TextField
         fullWidth
-        label="GPS Position"
+        label={`${
+          flatSchema.find((f) => f.key === "LatitudeCreated")?.label
+        }, ${flatSchema.find((f) => f.key === "LongitudeCreated")?.label}`}
         value={gpsDisplayValue === "(Mixed Values)" ? "" : gpsDisplayValue}
         placeholder={
           gpsDisplayValue === "(Mixed Values)"
@@ -196,31 +188,63 @@ const LocationSection: React.FC<LocationSectionProps> = ({
         }}
       />
 
-      {textFields.map(({ key, label }) => {
-        const field = locationData[key];
-        return (
-          <TextField
-            key={key}
-            fullWidth
-            label={label}
-            value={getDisplayValue(field)}
-            placeholder={getPlaceholder(field)}
-            onChange={(e) =>
-              handleFieldChange(dataBlockName, key, e.target.value)
-            }
-            sx={getDirtyFieldSx(isFieldDirty(dataBlockName, key))}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <ConsolidationAdornment
-                    show={field.status === "unique" && !field.isConsolidated}
-                  />
-                ),
-              },
-            }}
-          />
-        );
-      })}
+      <TextField
+        fullWidth
+        label={flatSchema.find((f) => f.key === `Location${suffix}`)?.label}
+        value={getDisplayValue(Location)}
+        placeholder={getPlaceholder(Location)}
+        onChange={(e) =>
+          handleFieldChange(dataBlockName, "Location", e.target.value)
+        }
+        sx={getDirtyFieldSx(isFieldDirty(dataBlockName, "Location"))}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <ConsolidationAdornment
+                show={Location.status === "unique" && !Location.isConsolidated}
+              />
+            ),
+          },
+        }}
+      />
+      <TextField
+        fullWidth
+        label={flatSchema.find((f) => f.key === `City${suffix}`)?.label}
+        value={getDisplayValue(City)}
+        placeholder={getPlaceholder(City)}
+        onChange={(e) =>
+          handleFieldChange(dataBlockName, "City", e.target.value)
+        }
+        sx={getDirtyFieldSx(isFieldDirty(dataBlockName, "City"))}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <ConsolidationAdornment
+                show={City.status === "unique" && !City.isConsolidated}
+              />
+            ),
+          },
+        }}
+      />
+      <TextField
+        fullWidth
+        label={flatSchema.find((f) => f.key === `State${suffix}`)?.label}
+        value={getDisplayValue(State)}
+        placeholder={getPlaceholder(State)}
+        onChange={(e) =>
+          handleFieldChange(dataBlockName, "State", e.target.value)
+        }
+        sx={getDirtyFieldSx(isFieldDirty(dataBlockName, "State"))}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <ConsolidationAdornment
+                show={State.status === "unique" && !State.isConsolidated}
+              />
+            ),
+          },
+        }}
+      />
       <Stack direction="row" spacing={2} alignItems="flex-start">
         <Stack
           direction="row"
@@ -235,7 +259,9 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           }}
         >
           <CountryInput
-            label="Country"
+            label={
+              flatSchema.find((f) => f.key === `Country${suffix}`)?.label || ""
+            }
             value={getDisplayValue(Country)}
             onChange={(country, code) => {
               handleFieldChange(dataBlockName, "Country", country);
@@ -247,7 +273,9 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           )}
         </Stack>
         <TextField
-          label="Country Code"
+          label={
+            flatSchema.find((f) => f.key === `CountryCode${suffix}`)?.label
+          }
           value={getDisplayValue(CountryCode)}
           placeholder={getPlaceholder(CountryCode) || "(Mixed)"}
           onChange={(e) =>

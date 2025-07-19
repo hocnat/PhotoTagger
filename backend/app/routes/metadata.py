@@ -1,5 +1,6 @@
 import os
 from flask import Blueprint, request, jsonify
+from collections import OrderedDict
 
 from app.metadata_schema import TAG_MAP
 from app.services.exif_service import (
@@ -82,3 +83,32 @@ def save_metadata():
 def get_metadata_fields():
     """Returns a list of all application-level metadata field names."""
     return jsonify(list(TAG_MAP.keys()))
+
+
+@metadata_bp.route("/metadata-schema", methods=["GET"])
+def get_metadata_schema():
+    """
+    Exposes the metadata schema to the frontend as an ORDERED list of groups,
+    which in turn contain an ordered list of fields.
+    """
+    # Use an OrderedDict to maintain the order of groups as they appear in the schema
+    groups = OrderedDict()
+
+    for field_name, details in TAG_MAP.items():
+        group_name = details.get("group", "Other")
+        if group_name not in groups:
+            groups[group_name] = []
+
+        groups[group_name].append(
+            {
+                "key": field_name,
+                "label": details.get("label", field_name),
+            }
+        )
+
+    # Transform the ordered dictionary into the final list structure
+    schema_as_list = [
+        {"groupName": name, "fields": fields} for name, fields in groups.items()
+    ]
+
+    return jsonify(schema_as_list)

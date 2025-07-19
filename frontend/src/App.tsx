@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Box, Drawer, CssBaseline, Toolbar } from "@mui/material";
 import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
@@ -26,6 +26,7 @@ import {
   ImageLoaderProvider,
 } from "./context/ImageLoaderContext";
 import { LocationPresetsProvider } from "./context/LocationPresetsContext";
+import { SchemaProvider } from "./context/SchemaContext";
 import { AppProvider } from "./context/AppContext";
 import { MainAppBar } from "./layout/MainAppBar/MainAppBar";
 import { SelectionToolbar } from "./layout/SelectionToolbar/SelectionToolbar";
@@ -45,7 +46,6 @@ type ActivePanel =
 
 const AppContent: React.FC = () => {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
-
   const [isFolderPromptOpen, setFolderPromptOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
@@ -344,7 +344,9 @@ const App: React.FC = () => {
       <ImageLoaderProvider>
         <ImageSelectionProvider>
           <LocationPresetsProvider>
-            <AppContent />
+            <SchemaProvider>
+              <AppContent />
+            </SchemaProvider>
           </LocationPresetsProvider>
         </ImageSelectionProvider>
       </ImageLoaderProvider>

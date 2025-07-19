@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { Autocomplete, TextField, Typography } from "@mui/material";
-import * as apiService from "api/apiService";
-import { useNotification } from "hooks/useNotification";
+import { useMemo } from "react";
+import { Autocomplete, Chip, TextField, Typography } from "@mui/material";
+import { useSchemaContext } from "context/SchemaContext";
 
 interface RequiredFieldsEditorProps {
   requiredFields: string[];
@@ -12,25 +11,23 @@ export const RequiredFieldsEditor: React.FC<RequiredFieldsEditorProps> = ({
   requiredFields,
   onChange,
 }) => {
-  const [availableFields, setAvailableFields] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { showNotification } = useNotification();
+  const { schema, isLoading } = useSchemaContext();
 
-  useEffect(() => {
-    apiService
-      .getMetadataFields()
-      .then((data) => {
-        setAvailableFields(data);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch metadata fields:", err);
-        showNotification("Failed to load available metadata fields.", "error");
-        setAvailableFields([]);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [showNotification]);
+  const availableFields = useMemo(() => {
+    if (!schema) return [];
+    return schema.flatMap((group) =>
+      group.fields.map((field) => ({
+        key: field.key,
+        label: field.label,
+        group: group.groupName,
+      }))
+    );
+  }, [schema]);
+
+  const value = useMemo(
+    () => availableFields.filter((field) => requiredFields.includes(field.key)),
+    [availableFields, requiredFields]
+  );
 
   return (
     <>
@@ -45,8 +42,21 @@ export const RequiredFieldsEditor: React.FC<RequiredFieldsEditorProps> = ({
         multiple
         loading={isLoading}
         options={availableFields}
-        value={requiredFields}
-        onChange={(event, newValue) => onChange(newValue)}
+        groupBy={(option) => option.group}
+        getOptionLabel={(option) => option.label}
+        value={value}
+        onChange={(event, newValue) => {
+          onChange(newValue.map((v) => v.key));
+        }}
+        isOptionEqualToValue={(option, value) => option.key === value.key}
+        renderTags={(tagValue, getTagProps) =>
+          tagValue.map((option, index) => (
+            <Chip
+              label={`${option.group} > ${option.label}`}
+              {...getTagProps({ index })}
+            />
+          ))
+        }
         renderInput={(params) => (
           <TextField
             {...params}

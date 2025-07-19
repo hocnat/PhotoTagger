@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Box,
   Drawer,
@@ -7,6 +8,7 @@ import {
   Divider,
 } from "@mui/material";
 import { useSingleImageReader } from "./hooks/useSingleImageReader";
+import { useSchemaContext } from "context/SchemaContext";
 
 const INFO_PANEL_WIDTH = 360;
 
@@ -14,52 +16,6 @@ interface InfoPanelProps {
   folderPath: string;
   selectedImage: string | null;
 }
-
-const SECTIONS = [
-  {
-    title: "Content",
-    fields: [
-      { key: "Title", label: "Title" },
-      { key: "Keywords", label: "Keywords" },
-    ],
-  },
-  {
-    title: "Date & Time",
-    fields: [
-      { key: "DateTimeOriginal", label: "Date/Time" },
-      { key: "OffsetTimeOriginal", label: "Offset" },
-    ],
-  },
-  {
-    title: "Creator & Copyright",
-    fields: [
-      { key: "Creator", label: "Creator" },
-      { key: "Copyright", label: "Copyright" },
-    ],
-  },
-  {
-    title: "Location Created",
-    fields: [
-      { key: "GPSPositionCreated", label: "GPS" },
-      { key: "LocationCreated", label: "Location" },
-      { key: "CityCreated", label: "City" },
-      { key: "StateCreated", label: "State" },
-      { key: "CountryCreated", label: "Country" },
-      { key: "CountryCodeCreated", label: "Code" },
-    ],
-  },
-  {
-    title: "Location Shown",
-    fields: [
-      { key: "GPSPositionShown", label: "GPS" },
-      { key: "LocationShown", label: "Location" },
-      { key: "CityShown", label: "City" },
-      { key: "StateShown", label: "State" },
-      { key: "CountryShown", label: "Country" },
-      { key: "CountryCodeShown", label: "Code" },
-    ],
-  },
-];
 
 export const InfoPanel: React.FC<InfoPanelProps> = ({
   folderPath,
@@ -70,6 +26,62 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
     selectedImage,
     true
   );
+  const { schema } = useSchemaContext();
+
+  const SECTIONS = useMemo(() => {
+    if (!schema) {
+      return [];
+    }
+
+    const gpsCreatedKey = "GPSPositionCreated";
+    const gpsShownKey = "GPSPositionShown";
+
+    const flatSchema = schema.flatMap((g) => g.fields);
+    const latCreatedLabel = flatSchema.find(
+      (f) => f.key === "LatitudeCreated"
+    )?.label;
+    const lonCreatedLabel = flatSchema.find(
+      (f) => f.key === "LongitudeCreated"
+    )?.label;
+    const latShownLabel = flatSchema.find(
+      (f) => f.key === "LatitudeShown"
+    )?.label;
+    const lonShownLabel = flatSchema.find(
+      (f) => f.key === "LongitudeShown"
+    )?.label;
+
+    const gpsCreatedLabel =
+      latCreatedLabel && lonCreatedLabel
+        ? `${latCreatedLabel}, ${lonCreatedLabel}`
+        : "";
+    const gpsShownLabel =
+      latShownLabel && lonShownLabel
+        ? `${latShownLabel}, ${lonShownLabel}`
+        : "";
+
+    return schema.map((group) => {
+      const newFields: { key: string; label: string }[] = [];
+      let hasAddedGpsCreated = false;
+      let hasAddedGpsShown = false;
+
+      group.fields.forEach((field) => {
+        if (field.key === "LatitudeCreated" && !hasAddedGpsCreated) {
+          newFields.push({ key: gpsCreatedKey, label: gpsCreatedLabel });
+          hasAddedGpsCreated = true;
+        } else if (field.key === "LongitudeCreated") {
+          // Skip
+        } else if (field.key === "LatitudeShown" && !hasAddedGpsShown) {
+          newFields.push({ key: gpsShownKey, label: gpsShownLabel });
+          hasAddedGpsShown = true;
+        } else if (field.key === "LongitudeShown") {
+          // Skip
+        } else {
+          newFields.push(field);
+        }
+      });
+      return { title: group.groupName, fields: newFields };
+    });
+  }, [schema]);
 
   const mainAppBarHeight = 64;
   const selectionToolbarHeight = 64;

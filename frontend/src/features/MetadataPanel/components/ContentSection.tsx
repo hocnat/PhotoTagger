@@ -8,13 +8,13 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-
 import FormSection from "./FormSection";
 import ConsolidationAdornment from "./ConsolidationAdornment";
 import ConsolidationIndicator from "./ConsolidationIndicator";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
+import { useSchemaContext } from "context/SchemaContext";
 
 const ContentSection: React.FC = () => {
   const {
@@ -24,23 +24,21 @@ const ContentSection: React.FC = () => {
     handleKeywordInputChange,
     isFieldDirty,
   } = useMetadata();
+  const { schema } = useSchemaContext();
 
-  if (!formState.Content) return null;
+  if (!formState.Content || !schema) return null;
 
   const { Title: titleField, Keywords: keywordsField } = formState.Content;
   const areKeywordsDirty = isFieldDirty("Content", "Keywords");
 
   const addKeywordsToState = (keywordsToAdd: string[]) => {
     if (keywordsField.status !== "unique") return;
-
     const existingKeywordNames = new Set(
       keywordsField.value.map((kw) => kw.name)
     );
-
     const newKeywords: ChipData[] = keywordsToAdd
       .filter((name) => !existingKeywordNames.has(name))
       .map((name) => ({ name, status: "common" }));
-
     if (newKeywords.length > 0) {
       handleFieldChange("Content", "Keywords", [
         ...keywordsField.value,
@@ -50,9 +48,13 @@ const ContentSection: React.FC = () => {
   };
 
   return (
-    <FormSection title="Content">
+    <FormSection
+      title={schema.find((g) => g.groupName === "Content")?.groupName || ""}
+    >
       <TextField
-        label="Title"
+        label={
+          schema.flatMap((g) => g.fields).find((f) => f.key === "Title")?.label
+        }
         fullWidth
         value={getDisplayValue(titleField)}
         placeholder={getPlaceholder(titleField)}
@@ -78,7 +80,7 @@ const ContentSection: React.FC = () => {
           filterOptions={(x) => x}
           getOptionLabel={(option) => {
             if (typeof option === "string") return option;
-            return option.matchedTerm; // Use the matched term for the input field value
+            return option.matchedTerm;
           }}
           value={null}
           onInputChange={handleKeywordInputChange}
@@ -93,7 +95,11 @@ const ContentSection: React.FC = () => {
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Keywords"
+              label={
+                schema
+                  .flatMap((g) => g.fields)
+                  .find((f) => f.key === "Keywords")?.label
+              }
               placeholder="Add keyword..."
             />
           )}
@@ -102,7 +108,6 @@ const ContentSection: React.FC = () => {
             const otherTerms = option.allTermsToAdd.filter(
               (term) => term !== option.matchedTerm
             );
-
             return (
               <Box
                 component="li"

@@ -1,6 +1,7 @@
 import os
 from app.services import exif_service
 from app.services.rename_service import generate_filename_from_pattern
+from app.metadata_schema import TAG_MAP
 
 
 class HealthCheckService:
@@ -51,7 +52,12 @@ class HealthCheckService:
                 isinstance(field_data, dict)
                 and field_data.get("isConsolidated") is False
             ):
-                unconsolidated_fields.append(field_name)
+                schema_info = TAG_MAP.get(field_name, {})
+                label = schema_info.get("label", field_name)
+                group = schema_info.get("group")
+                # Format as "Group > Label" for clarity
+                display_name = f"{group} > {label}" if group else label
+                unconsolidated_fields.append(display_name)
 
         if not unconsolidated_fields:
             return {"status": "ok", "message": "All fields are consolidated."}
@@ -70,7 +76,12 @@ class HealthCheckService:
             field = metadata.get(field_name)
             value = field.get("value") if field else None
             if value is None or (isinstance(value, (list, str)) and not value):
-                missing_fields.append(field_name)
+                schema_info = TAG_MAP.get(field_name, {})
+                label = schema_info.get("label", field_name)
+                group = schema_info.get("group")
+                # Format as "Group > Label" for clarity
+                display_name = f"{group} > {label}" if group else label
+                missing_fields.append(display_name)
 
         if not missing_fields:
             return {"status": "ok", "message": "All required fields are present."}

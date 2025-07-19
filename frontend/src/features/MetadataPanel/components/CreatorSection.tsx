@@ -4,19 +4,27 @@ import ConsolidationAdornment from "./ConsolidationAdornment";
 import { getDirtyFieldSx } from "../utils/styleUtils";
 import { getDisplayValue, getPlaceholder } from "../utils/metadataUtils";
 import { useMetadata } from "../context/MetadataEditorContext";
+import { useSchemaContext } from "context/SchemaContext";
 
 const CreatorSection: React.FC = () => {
   const { formState, handleFieldChange, isFieldDirty } = useMetadata();
-  if (!formState.Creator) return null;
+  const { schema } = useSchemaContext();
+
+  if (!formState.Creator || !schema) return null;
 
   const { Creator: creatorField, Copyright: copyrightField } =
     formState.Creator;
 
   return (
-    <FormSection title="Creator">
+    <FormSection
+      title={schema.find((g) => g.groupName === "Creator")?.groupName || ""}
+    >
       <Stack spacing={2}>
         <TextField
-          label="Creator"
+          label={
+            schema.flatMap((g) => g.fields).find((f) => f.key === "Creator")
+              ?.label
+          }
           fullWidth
           value={getDisplayValue(creatorField)}
           placeholder={getPlaceholder(creatorField)}
@@ -38,7 +46,10 @@ const CreatorSection: React.FC = () => {
           }}
         />
         <TextField
-          label="Copyright"
+          label={
+            schema.flatMap((g) => g.fields).find((f) => f.key === "Copyright")
+              ?.label
+          }
           fullWidth
           value={getDisplayValue(copyrightField)}
           placeholder={getPlaceholder(copyrightField)}

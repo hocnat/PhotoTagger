@@ -12,50 +12,10 @@ import {
   ListSubheader,
 } from "@mui/material";
 import { FilterState } from "../hooks/useImageFiltering";
-import * as apiService from "api/apiService";
 import SearchInput from "components/SearchInput";
 import { AppIcons } from "config/AppIcons";
-
-interface GroupedField {
-  groupName: string;
-  fields: string[];
-}
-
-const groupMetadataFields = (fields: string[]): GroupedField[] => {
-  const groups: Record<string, string[]> = {
-    Content: [],
-    "Date & Time": [],
-    Creator: [],
-    "Location Created": [],
-    "Location Shown": [],
-    Other: [],
-  };
-
-  const fieldToGroupMap: { [key: string]: keyof typeof groups } = {
-    Title: "Content",
-    Keywords: "Content",
-    DateTimeOriginal: "Date & Time",
-    OffsetTimeOriginal: "Date & Time",
-    Creator: "Creator",
-    Copyright: "Creator",
-  };
-
-  fields.forEach((field) => {
-    if (fieldToGroupMap[field]) {
-      groups[fieldToGroupMap[field]].push(field);
-    } else if (field.endsWith("Created")) {
-      groups["Location Created"].push(field);
-    } else if (field.endsWith("Shown")) {
-      groups["Location Shown"].push(field);
-    } else {
-      groups.Other.push(field);
-    }
-  });
-
-  return Object.entries(groups)
-    .map(([groupName, fields]) => ({ groupName, fields }))
-    .filter((group) => group.fields.length > 0);
-};
+import { useSchemaContext } from "context/SchemaContext";
+import { MetadataSchemaGroup } from "types";
 
 interface FilterPanelProps {
   filterState: FilterState;
@@ -66,22 +26,16 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   filterState,
   onFilterChange,
 }) => {
+  const { schema } = useSchemaContext();
   const [groupedMetadataFields, setGroupedMetadataFields] = useState<
-    GroupedField[]
+    MetadataSchemaGroup[]
   >([]);
 
   useEffect(() => {
-    const fetchAndGroupFields = async () => {
-      try {
-        const flatFields = await apiService.getMetadataFields();
-        const groupedFields = groupMetadataFields(flatFields);
-        setGroupedMetadataFields(groupedFields);
-      } catch (error) {
-        console.error("Failed to fetch or group metadata fields:", error);
-      }
-    };
-    fetchAndGroupFields();
-  }, []);
+    if (schema) {
+      setGroupedMetadataFields(schema);
+    }
+  }, [schema]);
 
   const handleStatusChange = (
     event: React.MouseEvent<HTMLElement>,
@@ -171,8 +125,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                 {group.groupName}
               </ListSubheader>,
               ...group.fields.map((field) => (
-                <MenuItem key={field} value={field}>
-                  {field}
+                <MenuItem key={field.key} value={field.key}>
+                  {field.label}
                 </MenuItem>
               )),
             ];
