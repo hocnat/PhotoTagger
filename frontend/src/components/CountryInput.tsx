@@ -1,5 +1,5 @@
 import { TextField, Autocomplete } from "@mui/material";
-import { useSettings } from "features/SettingsDialog/hooks/useSettings";
+import { useSettings } from "features/SettingsManager/hooks/useSettings";
 import { CountryMapping } from "types";
 
 interface CountryInputProps {

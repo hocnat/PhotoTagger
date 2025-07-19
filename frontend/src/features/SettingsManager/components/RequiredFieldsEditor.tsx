@@ -16,7 +16,6 @@ export const RequiredFieldsEditor: React.FC<RequiredFieldsEditorProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const { showNotification } = useNotification();
 
-  // Fetch the list of valid field names from the API when the component mounts.
   useEffect(() => {
     apiService
       .getMetadataFields()

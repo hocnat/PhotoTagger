@@ -28,7 +28,7 @@ import {
   EnrichedCoordinate,
 } from "types";
 import { useNotification } from "hooks/useNotification";
-import { useSettings } from "features/SettingsDialog/hooks/useSettings";
+import { useSettings } from "features/SettingsManager/hooks/useSettings";
 
 type ImportStep =
   | "url"

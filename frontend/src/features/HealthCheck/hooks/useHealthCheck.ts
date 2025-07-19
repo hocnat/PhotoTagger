@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HealthReport } from "types";
 import * as apiService from "api/apiService";
-import { useSettings } from "features/SettingsDialog/hooks/useSettings";
+import { useSettings } from "features/SettingsManager/hooks/useSettings";
 import { useNotification } from "hooks/useNotification";
 
 interface RunCheckOptions {

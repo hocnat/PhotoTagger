@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import * as apiService from "api/apiService";
-import { useSettings } from "features/SettingsDialog/hooks/useSettings";
+import { useSettings } from "features/SettingsManager/hooks/useSettings";
 import { ApiError, ImageFile } from "types";
 
 interface ImageData {

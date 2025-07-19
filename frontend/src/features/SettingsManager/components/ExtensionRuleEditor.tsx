@@ -28,10 +28,9 @@ export const ExtensionRuleEditor: React.FC<ExtensionRuleEditorProps> = ({
   const lastInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // If a new row was just added, focus the corresponding input field.
     if (justAdded && lastInputRef.current) {
       lastInputRef.current.focus();
-      setJustAdded(false); // Reset the flag
+      setJustAdded(false);
     }
   }, [justAdded]);
 
@@ -40,7 +39,7 @@ export const ExtensionRuleEditor: React.FC<ExtensionRuleEditorProps> = ({
       return;
     }
     onChange([...rules, { extension: "", casing: "lowercase" }]);
-    setJustAdded(true); // Set the flag to trigger the focus effect
+    setJustAdded(true);
   };
 
   const handleRuleChange = (

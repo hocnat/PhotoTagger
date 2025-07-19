@@ -3,7 +3,7 @@ import { Box, Drawer, CssBaseline, Toolbar } from "@mui/material";
 import { HealthReport, RenameFileResult } from "types";
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
-import { SettingsDialog } from "./features/SettingsDialog";
+import { SettingsManager } from "./features/SettingsManager/SettingsManager";
 import { LocationPresetManager } from "./features/LocationPresetManager";
 import { KeywordManager } from "./features/KeywordManager";
 import { HealthCheckDrawer } from "./features/HealthCheck/HealthCheckDrawer";
@@ -320,10 +320,24 @@ const AppContent: React.FC = () => {
           confirmButtonText="Proceed"
         />
         <RenameDialog {...renameDialogProps} />
-        <SettingsDialog
-          isOpen={isSettingsOpen}
+        <Drawer
+          variant="temporary"
+          anchor="left"
+          open={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
-        />
+          sx={{
+            width: "100%",
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: "100%",
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          {isSettingsOpen && (
+            <SettingsManager onClose={() => setIsSettingsOpen(false)} />
+          )}
+        </Drawer>
         <PromptDialog
           isOpen={isFolderPromptOpen}
           onClose={() => setFolderPromptOpen(false)}

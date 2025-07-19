@@ -24,10 +24,9 @@ export const CountryMappingEditor: React.FC<CountryMappingEditorProps> = ({
   const lastInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // If a new row was just added, focus the corresponding input field.
     if (justAdded && lastInputRef.current) {
       lastInputRef.current.focus();
-      setJustAdded(false); // Reset the flag
+      setJustAdded(false);
     }
   }, [justAdded]);
 
@@ -36,7 +35,7 @@ export const CountryMappingEditor: React.FC<CountryMappingEditorProps> = ({
       return;
     }
     onChange([...mappings, { code: "", name: "" }]);
-    setJustAdded(true); // Set the flag to trigger the focus effect
+    setJustAdded(true);
   };
 
   const handleMappingChange = (
