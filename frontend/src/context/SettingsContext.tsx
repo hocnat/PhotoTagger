@@ -4,6 +4,7 @@ import {
   useEffect,
   useCallback,
   ReactNode,
+  useContext,
 } from "react";
 import { AppSettings } from "types";
 import * as apiService from "api/apiService";
@@ -17,6 +18,20 @@ export interface SettingsContextType {
 export const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined
 );
+
+/**
+ * A custom hook to provide easy access to the SettingsContext.
+ * This is the standard way for components to consume the settings data.
+ */
+export const useSettingsContext = (): SettingsContextType => {
+  const context = useContext(SettingsContext);
+  if (context === undefined) {
+    throw new Error(
+      "useSettingsContext must be used within a SettingsProvider"
+    );
+  }
+  return context;
+};
 
 interface SettingsProviderProps {
   children: ReactNode;

@@ -35,11 +35,17 @@ import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
 
 import "./App.css";
 
+type ActivePanel =
+  | "keywords"
+  | "locations"
+  | "settings"
+  | "metadata"
+  | "healthReport"
+  | null;
+
 const AppContent: React.FC = () => {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
-  const [isKeywordManagerOpen, setIsKeywordManagerOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+
   const [isFolderPromptOpen, setFolderPromptOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
@@ -59,8 +65,6 @@ const AppContent: React.FC = () => {
     runCheck: runHealthCheck,
     reports: healthCheckReports,
     isChecking: isHealthChecking,
-    isDrawerOpen: isHealthDrawerOpen,
-    closeDrawer: closeHealthDrawer,
   } = useHealthCheck();
 
   const [healthReportsMap, setHealthReportsMap] = useState<
@@ -78,7 +82,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (folderInput && (!initialLoadDone || imageData.folder !== folderInput)) {
       const fetchAndReload = async () => {
-        setIsPanelOpen(false);
+        setActivePanel(null);
         setSelectedImages([]);
         setHealthReportsMap({});
 
@@ -138,57 +142,35 @@ const AppContent: React.FC = () => {
         (file) => `${imageData.folder}\\${file.filename}`
       );
       runHealthCheck(allFilePaths, { isManualTrigger: true });
+      setActivePanel("healthReport");
     }
   };
 
   const handleSaveSuccess = (updatedFilePaths: string[]) => {
-    setIsPanelOpen(false);
+    setActivePanel(null);
     handleGenericSuccess(updatedFilePaths);
   };
 
-  const handlePanelOpen = useCallback(() => {
-    if (selectedImages.length > 0) {
-      setIsPresetManagerOpen(false);
-      setIsKeywordManagerOpen(false);
-      setIsPanelOpen(true);
-    }
-  }, [selectedImages.length]);
-
-  const handlePanelClose = () => {
-    promptAction(() => setIsPanelOpen(false));
-  };
-
-  const handlePresetManagerOpen = () => {
+  const handlePanelOpen = (panel: ActivePanel) => {
     promptAction(() => {
-      setIsPanelOpen(false);
-      setIsKeywordManagerOpen(false);
-      setIsPresetManagerOpen(true);
-    });
-  };
-
-  const handleKeywordManagerOpen = () => {
-    promptAction(() => {
-      setIsPanelOpen(false);
-      setIsPresetManagerOpen(false);
-      setIsKeywordManagerOpen(true);
+      if (panel === "metadata" && selectedImages.length === 0) return;
+      setActivePanel(panel);
     });
   };
 
   const handleImageDoubleClick = (imageName: string) => {
     promptAction(() => {
-      setIsPresetManagerOpen(false);
-      setIsKeywordManagerOpen(false);
       selectSingleImage(imageName);
       setIsDirty(false);
-      setIsPanelOpen(true);
+      setActivePanel("metadata");
     });
   };
 
   useEffect(() => {
-    if (selectedImages.length === 0 && isPanelOpen) {
-      setIsPanelOpen(false);
+    if (selectedImages.length === 0 && activePanel === "metadata") {
+      setActivePanel(null);
     }
-  }, [selectedImages.length, isPanelOpen]);
+  }, [selectedImages.length, activePanel]);
 
   const getImageUrl = (imageName: string): string => {
     if (!imageData.folder || !imageName) return "";
@@ -205,7 +187,7 @@ const AppContent: React.FC = () => {
     isRenamePreviewLoading,
     isHealthChecking,
     onOpenFolder: () => promptAction(() => setFolderPromptOpen(true)),
-    onEdit: handlePanelOpen,
+    onEdit: () => handlePanelOpen("metadata"),
     onTimeShift: () =>
       openTimeShiftDialog(
         selectedImages.map((f) => `${imageData.folder}\\${f}`)
@@ -213,9 +195,9 @@ const AppContent: React.FC = () => {
     onRename: () =>
       openRenameDialog(selectedImages.map((f) => `${imageData.folder}\\${f}`)),
     onAnalyze: handleRunHealthCheck,
-    onKeywords: handleKeywordManagerOpen,
-    onLocations: handlePresetManagerOpen,
-    onSettings: () => setIsSettingsOpen(true),
+    onKeywords: () => handlePanelOpen("keywords"),
+    onLocations: () => handlePanelOpen("locations"),
+    onSettings: () => handlePanelOpen("settings"),
   };
 
   return (
@@ -239,7 +221,7 @@ const AppContent: React.FC = () => {
 
           <ImageGallery
             healthReportsMap={healthReportsMap}
-            onPanelOpen={handlePanelOpen}
+            onPanelOpen={() => handlePanelOpen("metadata")}
             onImageDoubleClick={handleImageDoubleClick}
           />
         </Box>
@@ -251,8 +233,8 @@ const AppContent: React.FC = () => {
         <Drawer
           variant="temporary"
           anchor="left"
-          open={isKeywordManagerOpen}
-          onClose={() => setIsKeywordManagerOpen(false)}
+          open={activePanel === "keywords"}
+          onClose={() => setActivePanel(null)}
           sx={{
             width: "100%",
             flexShrink: 0,
@@ -262,13 +244,15 @@ const AppContent: React.FC = () => {
             },
           }}
         >
-          <KeywordManager onClose={() => setIsKeywordManagerOpen(false)} />
+          {activePanel === "keywords" && (
+            <KeywordManager onClose={() => setActivePanel(null)} />
+          )}
         </Drawer>
         <Drawer
           variant="temporary"
           anchor="left"
-          open={isPresetManagerOpen}
-          onClose={() => setIsPresetManagerOpen(false)}
+          open={activePanel === "locations"}
+          onClose={() => setActivePanel(null)}
           sx={{
             width: "100%",
             flexShrink: 0,
@@ -278,14 +262,14 @@ const AppContent: React.FC = () => {
             },
           }}
         >
-          <LocationPresetManager
-            onClose={() => setIsPresetManagerOpen(false)}
-          />
+          {activePanel === "locations" && (
+            <LocationPresetManager onClose={() => setActivePanel(null)} />
+          )}
         </Drawer>
         <Drawer
           variant="temporary"
           anchor="right"
-          open={isPanelOpen}
+          open={activePanel === "metadata"}
           sx={{
             "& .MuiDrawer-paper": {
               width: "100%",
@@ -293,19 +277,19 @@ const AppContent: React.FC = () => {
             },
           }}
         >
-          {isPanelOpen && selectedImages.length > 0 && (
+          {activePanel === "metadata" && selectedImages.length > 0 && (
             <MetadataPanel
               key={selectedImages.join("-")}
               folderPath={imageData.folder}
               getImageUrl={getImageUrl}
-              onClose={handlePanelClose}
+              onClose={() => setActivePanel(null)}
               onSaveSuccess={handleSaveSuccess}
             />
           )}
         </Drawer>
         <HealthCheckReport
-          isOpen={isHealthDrawerOpen}
-          onClose={closeHealthDrawer}
+          isOpen={activePanel === "healthReport"}
+          onClose={() => setActivePanel(null)}
           reports={healthCheckReports}
           isLoading={isHealthChecking}
         />
@@ -323,8 +307,8 @@ const AppContent: React.FC = () => {
         <Drawer
           variant="temporary"
           anchor="left"
-          open={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
+          open={activePanel === "settings"}
+          onClose={() => setActivePanel(null)}
           sx={{
             width: "100%",
             flexShrink: 0,
@@ -334,8 +318,8 @@ const AppContent: React.FC = () => {
             },
           }}
         >
-          {isSettingsOpen && (
-            <SettingsManager onClose={() => setIsSettingsOpen(false)} />
+          {activePanel === "settings" && (
+            <SettingsManager onClose={() => setActivePanel(null)} />
           )}
         </Drawer>
         <PromptDialog

@@ -1,67 +1,62 @@
-import { useState } from "react";
-import { HealthReport } from "types";
-import * as apiService from "api/apiService";
-import { useSettings } from "features/SettingsManager/hooks/useSettings";
+import { useState, useCallback } from "react";
+import { useSettingsContext } from "context/SettingsContext";
 import { useNotification } from "hooks/useNotification";
+import * as apiService from "api/apiService";
+import { HealthReport } from "types";
 
 interface RunCheckOptions {
   isManualTrigger?: boolean;
 }
 
+/**
+ * A hook to manage the health check analysis. It is responsible for calling
+ * the API, managing the loading state, and holding the resulting reports.
+ */
 export const useHealthCheck = () => {
-  const [isChecking, setIsChecking] = useState(false);
-  const [reports, setReports] = useState<HealthReport[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { settings } = useSettings();
+  const { settings } = useSettingsContext();
   const { showNotification } = useNotification();
+  const [reports, setReports] = useState<HealthReport[]>([]);
+  const [isChecking, setIsChecking] = useState(false);
 
-  const runCheck = async (
-    filePaths: string[],
-    options: RunCheckOptions = {}
-  ) => {
-    if (!settings || filePaths.length === 0) {
-      return;
-    }
+  const runCheck = useCallback(
+    async (filePaths: string[], options: RunCheckOptions = {}) => {
+      if (!settings || filePaths.length === 0) {
+        return;
+      }
 
-    setIsChecking(true);
+      const { isManualTrigger = false } = options;
 
-    // The fix: Open the drawer if the check was manually triggered by the user,
-    // regardless of the number of files.
-    if (options.isManualTrigger) {
-      setIsDrawerOpen(true);
-    }
+      if (isManualTrigger) {
+        setIsChecking(true);
+      }
 
-    const rules = {
-      required_fields: settings.appBehavior.requiredFields,
-      rename_pattern: settings.renameSettings.pattern,
-    };
+      try {
+        const rules = {
+          required_fields: settings.appBehavior.requiredFields,
+          rename_pattern: settings.renameSettings.pattern,
+        };
+        const newReports = await apiService.runHealthCheck(filePaths, rules);
 
-    try {
-      const data = await apiService.runHealthCheck(filePaths, rules);
-      setReports((prevReports) => {
-        const newReportsMap = new Map(prevReports.map((r) => [r.filename, r]));
-        data.forEach((newReport) => {
-          newReportsMap.set(newReport.filename, newReport);
+        setReports((prevReports) => {
+          const reportMap = new Map(prevReports.map((r) => [r.filename, r]));
+          newReports.forEach((r) => reportMap.set(r.filename, r));
+          return Array.from(reportMap.values());
         });
-        return Array.from(newReportsMap.values());
-      });
-    } catch (error) {
-      showNotification("Failed to run health check.", "error");
-      console.error(error);
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-  };
+      } catch (error) {
+        console.error("Health check failed:", error);
+        showNotification("Failed to run health check.", "error");
+      } finally {
+        if (isManualTrigger) {
+          setIsChecking(false);
+        }
+      }
+    },
+    [settings, showNotification]
+  );
 
   return {
-    isChecking,
-    reports,
-    isDrawerOpen,
     runCheck,
-    closeDrawer,
+    reports,
+    isChecking,
   };
 };
