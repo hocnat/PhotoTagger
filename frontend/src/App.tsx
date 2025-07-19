@@ -6,7 +6,7 @@ import { RenameDialog } from "./features/RenameDialog";
 import { SettingsManager } from "./features/SettingsManager/SettingsManager";
 import { LocationPresetManager } from "./features/LocationPresetManager";
 import { KeywordManager } from "./features/KeywordManager";
-import { HealthCheckDrawer } from "./features/HealthCheck/HealthCheckDrawer";
+import { HealthCheckReport } from "./features/HealthCheck/HealthCheckReport";
 import { InfoPanel } from "./features/InfoPanel/InfoPanel";
 import { ImageGallery } from "./features/ImageGallery";
 import { ShiftTimeInputDialog } from "./features/TimeShift/components/ShiftTimeInputDialog";
@@ -303,7 +303,7 @@ const AppContent: React.FC = () => {
             />
           )}
         </Drawer>
-        <HealthCheckDrawer
+        <HealthCheckReport
           isOpen={isHealthDrawerOpen}
           onClose={closeHealthDrawer}
           reports={healthCheckReports}

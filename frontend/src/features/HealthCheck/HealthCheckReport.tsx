@@ -18,7 +18,7 @@ import {
 import { HealthReport } from "types";
 import { AppIcons } from "config/AppIcons";
 
-interface HealthCheckDrawerProps {
+interface HealthCheckReportProps {
   isOpen: boolean;
   onClose: () => void;
   reports: HealthReport[];
@@ -53,7 +53,7 @@ const checkDetailsMap = {
   },
 };
 
-export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
+export const HealthCheckReport: React.FC<HealthCheckReportProps> = ({
   isOpen,
   onClose,
   reports,
@@ -79,7 +79,7 @@ export const HealthCheckDrawer: React.FC<HealthCheckDrawerProps> = ({
           <Toolbar>
             <AppIcons.HEALTH_CHECK sx={{ mr: 2 }} />
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Image Health Report
+              Health Check Report
             </Typography>
             <IconButton edge="end" color="inherit" onClick={onClose}>
               <AppIcons.CLOSE />

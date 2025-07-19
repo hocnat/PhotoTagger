@@ -79,7 +79,7 @@ const KeywordForm: React.FC<KeywordFormProps> = ({
   return (
     <Paper sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
       <Typography variant="h5" gutterBottom>
-        {initialKeyword ? "Edit Keyword" : "Add New Keyword"}
+        {initialKeyword ? "Edit Keyword" : "Add Keyword"}
       </Typography>
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Stack spacing={2} sx={{ mt: 2 }}>

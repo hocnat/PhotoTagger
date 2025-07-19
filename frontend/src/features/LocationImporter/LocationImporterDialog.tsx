@@ -19,6 +19,9 @@ import {
   FormControlLabel,
   Radio,
   Stack,
+  ListItemButton,
+  Checkbox,
+  Paper,
 } from "@mui/material";
 import * as apiService from "api/apiService";
 import {
@@ -112,11 +115,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
         return;
       }
       setPlacemarks(fetchedPlacemarks);
-      const initialSelection = fetchedPlacemarks.reduce(
-        (acc, p) => ({ ...acc, [p.name]: true }),
-        {} as Record<string, boolean>
-      );
-      setSelection(initialSelection);
+      setSelection({});
       setStep("select");
     } catch (err: any) {
       setError((err as ApiError)?.message || "An unexpected error occurred.");
@@ -264,59 +263,84 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
       />
     </>
   );
-  const renderSelectStep = () => (
-    <>
-      <Typography variant="body1" sx={{ mb: 1 }}>
-        Found {placemarks.length} locations. Select the ones you wish to import.
-      </Typography>
-      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-        <Button
-          onClick={() =>
-            setSelection(
-              placemarks.reduce((acc, p) => ({ ...acc, [p.name]: true }), {})
-            )
-          }
-          size="small"
-        >
-          Select All
-        </Button>
-        <Button onClick={() => setSelection({})} size="small">
-          Deselect All
-        </Button>
-      </Stack>
-      <List
-        dense
-        sx={{
-          width: "100%",
-          maxHeight: 400,
-          overflow: "auto",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 1,
-        }}
-      >
-        {placemarks.map((p) => (
-          <ListItem
-            key={p.name}
-            secondaryAction={
-              <Switch
-                edge="end"
-                onChange={() =>
-                  setSelection((prev) => ({ ...prev, [p.name]: !prev[p.name] }))
-                }
-                checked={selection[p.name] || false}
-              />
-            }
-            disablePadding
+
+  const renderSelectStep = () => {
+    const selectedCount = Object.values(selection).filter(Boolean).length;
+    const totalCount = placemarks.length;
+    const isAllSelected = totalCount > 0 && selectedCount === totalCount;
+    const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
+
+    const handleToggleSelectAll = () => {
+      if (isAllSelected) {
+        setSelection({});
+      } else {
+        setSelection(
+          placemarks.reduce((acc, p) => ({ ...acc, [p.name]: true }), {})
+        );
+      }
+    };
+
+    return (
+      <>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          Found {totalCount} locations. Select the ones you wish to import.
+        </Typography>
+        <Paper variant="outlined" sx={{ mb: 1 }}>
+          <Box sx={{ p: 1, borderBottom: 1, borderColor: "divider" }}>
+            <FormControlLabel
+              label={`${selectedCount} / ${totalCount} selected`}
+              control={
+                <Checkbox
+                  checked={isAllSelected}
+                  indeterminate={isIndeterminate}
+                  onChange={handleToggleSelectAll}
+                />
+              }
+            />
+          </Box>
+          <List
+            dense
+            sx={{
+              width: "100%",
+              maxHeight: 350,
+              overflow: "auto",
+            }}
           >
-            <Box sx={{ pl: 2, flexGrow: 1 }}>
-              <ListItemText primary={p.name} />
-            </Box>
-          </ListItem>
-        ))}
-      </List>
-    </>
-  );
+            {placemarks.map((p) => (
+              <ListItem
+                key={p.name}
+                secondaryAction={
+                  <Switch
+                    edge="end"
+                    onChange={() =>
+                      setSelection((prev) => ({
+                        ...prev,
+                        [p.name]: !prev[p.name],
+                      }))
+                    }
+                    checked={selection[p.name] || false}
+                  />
+                }
+                disablePadding
+              >
+                <ListItemButton
+                  onClick={() =>
+                    setSelection((prev) => ({
+                      ...prev,
+                      [p.name]: !prev[p.name],
+                    }))
+                  }
+                >
+                  <ListItemText primary={p.name} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      </>
+    );
+  };
+
   const renderEnrichingStep = () => (
     <Stack
       sx={{ height: "200px" }}

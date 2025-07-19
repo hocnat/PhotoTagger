@@ -62,7 +62,7 @@ const PresetList: React.FC<PresetListProps> = ({
 
   return (
     <>
-      <Box sx={{ mb: 2, maxWidth: "500px" }}>
+      <Box sx={{ mb: 2 }}>
         <SearchInput
           fullWidth
           placeholder="Search by name, city, country..."

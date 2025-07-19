@@ -80,7 +80,7 @@ export const LocationPresetManager: React.FC<LocationPresetManagerProps> = ({
             onClick={() => handleShowForm()}
             sx={{ mr: 2 }}
           >
-            Add New Preset
+            Add
           </Button>
           <Button
             variant="outlined"

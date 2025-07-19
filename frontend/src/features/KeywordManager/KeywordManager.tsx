@@ -114,7 +114,7 @@ export const KeywordManager: React.FC<KeywordManagerProps> = ({ onClose }) => {
             onClick={() => handleShowForm()}
             sx={{ mr: 2 }}
           >
-            Add New Keyword
+            Add
           </Button>
           <IconButton
             edge="end"

@@ -42,7 +42,9 @@ const KeywordListItem: React.FC<{
         sx={{
           pl: item.level * 4,
           borderLeft: item.level > 0 ? "2px solid #eee" : "none",
-          ml: item.level > 0 ? 2 : 0,
+          "&:hover": {
+            backgroundColor: (theme) => theme.palette.action.hover,
+          },
         }}
         secondaryAction={
           <Box>

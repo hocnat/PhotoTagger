@@ -120,15 +120,15 @@ const PresetForm: React.FC<PresetFormProps> = ({
   }, [formData]);
 
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
       <Typography variant="h5" sx={{ mb: 3 }}>
-        {initialPreset ? "Edit Preset" : "Add New Preset"}
+        {initialPreset ? "Edit Location Preset" : "Add Location Preset"}
       </Typography>
       <Box component="form" noValidate autoComplete="off">
         <Stack spacing={2}>
           <TextField
             required
-            label="Preset Name"
+            label="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />

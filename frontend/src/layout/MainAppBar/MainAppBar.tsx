@@ -44,7 +44,7 @@ export const MainAppBar: React.FC = () => {
             <AppIcons.LOAD />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Analyze All Images">
+        <Tooltip title="Run Health Check">
           <IconButton
             color="inherit"
             onClick={onAnalyze}
