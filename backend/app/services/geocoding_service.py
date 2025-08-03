@@ -1,6 +1,8 @@
 import time
 from typing import List, Dict, Any
 from geopy.geocoders import Nominatim
+import gpxpy
+from datetime import datetime, timezone, timedelta
 
 from config import GEOPY_USER_AGENT
 from app.services.settings_service import load_settings
@@ -75,3 +77,67 @@ def enrich_coordinates(coordinates: List[Dict[str, float]]) -> List[Dict[str, An
             time.sleep(1)
 
     return enriched_locations
+
+
+def match_photos_to_gpx(gpx_content_str: str, photos: List[Dict[str, str]]) -> Dict[str, Any]:
+    """
+    Matches photos to the closest point in a GPX track based on timestamps,
+    but only if the time difference is within a defined threshold.
+    """
+    try:
+        gpx = gpxpy.parse(gpx_content_str)
+    except gpxpy.gpx.GPXXMLSyntaxException:
+        return {"matches": [], "track": None}
+
+    track_points = []
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                if point.time:
+                    track_points.append(point)
+    
+    track_points.sort(key=lambda p: p.time)
+
+    track_coordinates = [[p.longitude, p.latitude] for p in track_points]
+    geojson_track = {
+        "type": "LineString",
+        "coordinates": track_coordinates
+    } if track_coordinates else None
+
+    if not track_points:
+        return {"matches": [], "track": geojson_track}
+
+    threshold = timedelta(seconds=30)
+    matches = []
+
+    for photo in photos:
+        try:
+            dt_str = photo.get('dateTime', '')
+            naive_dt = datetime.strptime(dt_str, "%Y:%m:%d %H:%M:%S")
+
+            offset_str = photo.get('offsetTime', '')
+            sign = -1 if offset_str.startswith('-') else 1
+            h, m = map(int, offset_str.replace('+', '-').split('-')[-1].split(':'))
+            
+            photo_tz = timezone(timedelta(hours=h, minutes=m) * sign)
+            aware_dt = naive_dt.replace(tzinfo=photo_tz)
+            
+        except (ValueError, TypeError, IndexError):
+            matches.append({ "filename": photo.get('filename'), "coordinates": None })
+            continue
+
+        closest_point = min(track_points, key=lambda p: abs(p.time - aware_dt))
+        time_difference = abs(closest_point.time - aware_dt)
+
+        if time_difference <= threshold:
+            matches.append({
+                "filename": photo.get('filename'),
+                "coordinates": {
+                    "latitude": closest_point.latitude,
+                    "longitude": closest_point.longitude
+                }
+            })
+        else:
+            matches.append({ "filename": photo.get('filename'), "coordinates": None })
+
+    return {"matches": matches, "track": geojson_track}

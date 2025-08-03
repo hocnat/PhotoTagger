@@ -7,6 +7,7 @@ interface CountryInputProps {
   value: string;
   onChange: (countryName: string, countryCode: string) => void;
   sx?: object;
+  disabled?: boolean;
 }
 
 const CountryInput: React.FC<CountryInputProps> = ({
@@ -14,6 +15,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
   value,
   onChange,
   sx,
+  disabled,
 }) => {
   const { settings } = useSettings();
   const countryMappings = settings?.countryMappings || [];
@@ -48,6 +50,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
 
   return (
     <Autocomplete
+      key={value}
       value={autocompleteValue}
       onChange={handleAutocompleteChange}
       freeSolo
@@ -62,6 +65,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
       }}
       options={countryMappings}
       sx={{ width: "100%", ...sx }}
+      disabled={disabled}
       renderInput={(params) => <TextField {...params} label={label} />}
     />
   );

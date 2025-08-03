@@ -10,6 +10,7 @@ interface AppContextType {
   isHealthChecking: boolean;
   onOpenFolder: () => void;
   onEdit: () => void;
+  onGeotagFromGpx: () => void;
   onTimeShift: () => void;
   onRename: () => void;
   onAnalyze: () => void;

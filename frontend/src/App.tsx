@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Box, Drawer, CssBaseline, Toolbar } from "@mui/material";
-import { HealthReport, RenameFileResult } from "types";
+import { HealthReport, ImageFile, RenameFileResult } from "types";
+import { GeotaggingManager } from "./features/Geotagging/GeotaggingManager";
 import { MetadataPanel } from "./features/MetadataPanel";
 import { RenameDialog } from "./features/RenameDialog";
 import { SettingsManager } from "./features/SettingsManager/SettingsManager";
@@ -33,6 +34,7 @@ import { SelectionToolbar } from "./layout/SelectionToolbar/SelectionToolbar";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
+import { useNotification } from "./hooks/useNotification";
 
 import "./App.css";
 
@@ -42,12 +44,65 @@ type ActivePanel =
   | "settings"
   | "metadata"
   | "healthReport"
+  | "geotagging"
   | null;
+
+const useGpxFilePicker = ({
+  onFileRead,
+}: {
+  onFileRead: (content: string) => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { showNotification } = useNotification();
+
+  useEffect(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".gpx";
+    input.style.display = "none";
+    input.onchange = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      if (target.files && target.files.length > 0) {
+        const file = target.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          if (content) {
+            onFileRead(content);
+          } else {
+            showNotification("Could not read the GPX file.", "error");
+          }
+        };
+        reader.onerror = () => {
+          showNotification(
+            `Error reading file: ${reader.error?.message}`,
+            "error"
+          );
+        };
+        reader.readAsText(file);
+      }
+    };
+    (inputRef as React.MutableRefObject<HTMLInputElement>).current = input;
+  }, [onFileRead, showNotification]);
+
+  const openGpxPicker = useCallback(() => {
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
+  }, []);
+
+  return { openGpxPicker };
+};
 
 const AppContent: React.FC = () => {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [isFolderPromptOpen, setFolderPromptOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+
+  const [gpxFileContent, setGpxFileContent] = useState<string | null>(null);
+  const [imagesForGeotagging, setImagesForGeotagging] = useState<ImageFile[]>(
+    []
+  );
 
   const { imageData, folderInput, setFolderInput, isLoading, loadImages } =
     useImageLoaderContext();
@@ -116,6 +171,17 @@ const AppContent: React.FC = () => {
       runHealthCheck(updatedFilePaths, { isManualTrigger: false });
     }
   };
+
+  const { openGpxPicker } = useGpxFilePicker({
+    onFileRead: (content) => {
+      const selectedImageFiles = imageData.files.filter((f) =>
+        selectedImages.includes(f.filename)
+      );
+      setGpxFileContent(content);
+      setImagesForGeotagging(selectedImageFiles);
+      setActivePanel("geotagging");
+    },
+  });
 
   const {
     openRenameDialog,
@@ -188,6 +254,7 @@ const AppContent: React.FC = () => {
     isHealthChecking,
     onOpenFolder: () => promptAction(() => setFolderPromptOpen(true)),
     onEdit: () => handlePanelOpen("metadata"),
+    onGeotagFromGpx: openGpxPicker,
     onTimeShift: () =>
       openTimeShiftDialog(
         selectedImages.map((f) => `${imageData.folder}\\${f}`)
@@ -286,6 +353,31 @@ const AppContent: React.FC = () => {
               onSaveSuccess={handleSaveSuccess}
             />
           )}
+        </Drawer>
+        <Drawer
+          variant="temporary"
+          anchor="right"
+          open={activePanel === "geotagging"}
+          sx={{
+            "& .MuiDrawer-paper": {
+              width: "100%",
+              height: "100%",
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          {activePanel === "geotagging" &&
+            gpxFileContent &&
+            imagesForGeotagging.length > 0 && (
+              <GeotaggingManager
+                gpxContent={gpxFileContent}
+                images={imagesForGeotagging}
+                onClose={() => setActivePanel(null)}
+                onSaveSuccess={handleSaveSuccess}
+                folderPath={imageData.folder!}
+                getImageUrl={getImageUrl}
+              />
+            )}
         </Drawer>
         <HealthCheckReport
           isOpen={activePanel === "healthReport"}

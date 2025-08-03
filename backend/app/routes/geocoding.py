@@ -21,3 +21,23 @@ def enrich_coords():
         return jsonify(enriched_data)
     except Exception as e:
         return jsonify({"error": f"Failed to enrich coordinate data: {e}"}), 500
+
+
+@geocoding_bp.route("/geocoding/match-gpx", methods=["POST"])
+def match_gpx():
+    """
+    Receives GPX file content and a list of image timestamps,
+    returns matched GPS coordinates for each image and a GeoJSON of the track.
+    """
+    data = request.get_json()
+    if not data or "gpxContent" not in data or "files" not in data:
+        return jsonify({"message": "Missing gpxContent or files in request"}), 400
+
+    gpx_content = data['gpxContent']
+    files = data['files']
+    
+    try:
+        result = geocoding_service.match_photos_to_gpx(gpx_content, files)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": "Failed to process GPX data"}), 500

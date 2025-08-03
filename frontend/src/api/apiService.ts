@@ -3,6 +3,8 @@ import {
   AppSettings,
   EnrichedCoordinate,
   GpsCoordinate,
+  GpxMatchRequest,
+  GpxMatchResult,
   HealthReport,
   ImageFile,
   Keyword,
@@ -160,7 +162,7 @@ export const fetchLocationsFromUrl = (url: string): Promise<Placemark[]> =>
     body: JSON.stringify({ url }),
   }).then((response) => handleResponse<Placemark[]>(response));
 
-// --- Geocoding ---
+// --- Geocoding & Geotagging ---
 
 export const enrichCoordinates = (
   coordinates: GpsCoordinate[]
@@ -170,6 +172,15 @@ export const enrichCoordinates = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ coordinates }),
   }).then((response) => handleResponse<EnrichedCoordinate[]>(response));
+
+export const matchGpxTrack = (
+  payload: GpxMatchRequest
+): Promise<GpxMatchResult> =>
+  fetch(`${API_BASE_URL}/geocoding/match-gpx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then((response) => handleResponse<GpxMatchResult>(response));
 
 // --- Settings ---
 

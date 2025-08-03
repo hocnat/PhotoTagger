@@ -169,7 +169,7 @@ export interface RenamePreviewItem {
 }
 
 // ====================================================================================
-// Geocoding, Location Importer & User Presets
+// Geocoding, Geotagging, Location Importer & User Presets
 // ====================================================================================
 
 /**
@@ -188,6 +188,34 @@ export interface EnrichedCoordinate extends GpsCoordinate {
   state: string;
   country: string;
   countryCode: string;
+}
+
+/**
+ * The payload for matching image files to a GPX track.
+ */
+export interface GpxMatchRequest {
+  gpxContent: string;
+  files: {
+    filename: string;
+    dateTime: string;
+    offsetTime: string;
+  }[];
+}
+
+/**
+ * The result from matching images to a GPX track, including the track itself.
+ */
+export interface GpxMatchResult {
+  matches: ImageGpsMatch[];
+  track: GeoJSON.LineString | null;
+}
+
+/**
+ * The result of matching a single image to a GPX track.
+ */
+export interface ImageGpsMatch {
+  filename: string;
+  coordinates: GpsCoordinate | null;
 }
 
 /**

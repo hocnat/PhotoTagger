@@ -30,7 +30,6 @@ const ImageGrid: React.FC<ImageGridProps> = ({
         const imageName = image.filename;
         const isSelected = selectedImages.includes(imageName);
         const reportChecks = healthReportsMap[imageName];
-        // Construct the full path dynamically for the API call.
         const fullPath = `${folderPath}\\${imageName}`;
         const imageUrl = `http://localhost:5000/api/image_data?path=${encodeURIComponent(
           fullPath
@@ -44,15 +43,44 @@ const ImageGrid: React.FC<ImageGridProps> = ({
             id={`image-card-${index}`}
             onClick={(e) => onImageClick(e, imageName, index)}
             onDoubleClick={() => onImageDoubleClick(imageName)}
-            sx={{ position: "relative" }}
+            sx={{
+              position: "relative",
+              overflow: "hidden",
+              aspectRatio: "1 / 1",
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
-            <img src={imageUrl} alt={imageName} className="thumbnail" />
+            <Box
+              sx={{
+                flexGrow: 1,
+                bgcolor: "grey.100",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                m: "4px",
+                borderRadius: 1,
+              }}
+            >
+              <Box
+                component="img"
+                src={imageUrl}
+                alt={imageName}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
+
             {reportChecks && (
               <Box
                 sx={{
                   position: "absolute",
-                  top: 4,
-                  right: 4,
+                  top: 8,
+                  right: 8,
                   bgcolor: "rgba(255, 255, 255, 0.8)",
                   p: 0.5,
                   borderRadius: 1,
@@ -62,17 +90,21 @@ const ImageGrid: React.FC<ImageGridProps> = ({
                 <HealthIndicatorIcons checks={reportChecks} />
               </Box>
             )}
-            <Typography
-              variant="caption"
-              sx={{
-                mt: 1,
-                p: 0.5,
-                display: "block",
-                wordWrap: "break-word",
-              }}
-            >
-              {imageName}
-            </Typography>
+
+            <Box sx={{ flexShrink: 0, px: 1, pb: 0.5, pt: 0.5 }}>
+              <Typography
+                variant="caption"
+                display="block"
+                align="center"
+                sx={{
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {imageName}
+              </Typography>
+            </Box>
           </Paper>
         );
       })}

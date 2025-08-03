@@ -18,6 +18,7 @@ export const SelectionToolbar: React.FC = () => {
     isLoading,
     isRenamePreviewLoading,
     onEdit,
+    onGeotagFromGpx,
     onTimeShift,
     onRename,
   } = useAppContext();
@@ -55,6 +56,13 @@ export const SelectionToolbar: React.FC = () => {
               <span>
                 <IconButton onClick={onEdit} disabled={!hasSelection}>
                   <AppIcons.EDIT />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Geotag from GPX track">
+              <span>
+                <IconButton onClick={onGeotagFromGpx} disabled={!hasSelection}>
+                  <AppIcons.GEOTAG_GPX />
                 </IconButton>
               </span>
             </Tooltip>

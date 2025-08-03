@@ -17,9 +17,11 @@ import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import MapIcon from "@mui/icons-material/Map";
 import MoreTimeIcon from "@mui/icons-material/MoreTime";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import PlaceIcon from "@mui/icons-material/Place";
 import PublicIcon from "@mui/icons-material/Public";
 import RemoveIcon from "@mui/icons-material/Remove";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import RouteIcon from "@mui/icons-material/Route";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SpellcheckIcon from "@mui/icons-material/Spellcheck";
@@ -60,6 +62,7 @@ export const AppIcons = {
   LOCATION: PublicIcon,
   MAP: MapIcon,
   TIME_SHIFT: MoreTimeIcon,
+  GEOTAG_GPX: RouteIcon,
 
   // --- Health Check & Status Indicators ---
   // Individual check types
@@ -80,6 +83,7 @@ export const AppIcons = {
   // --- Miscellaneous Actions ---
   BOOKMARK: BookmarkAddIcon,
   IMPORT: CloudUploadOutlinedIcon,
+  MARKER: PlaceIcon,
   ZOOM_IN: ZoomInIcon,
   ZOOM_OUT: ZoomOutIcon,
 } as const;

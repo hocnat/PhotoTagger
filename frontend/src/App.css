@@ -5,6 +5,7 @@
   /* Defines a responsive grid that creates as many 150px columns as will fit */
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px; /* A bit more space, aligns with MUI theme spacing (2 * 8px) */
+  grid-auto-rows: min-content;
 }
 
 .image-card {
@@ -27,14 +28,6 @@
   border-color: #1976d2; /* MUI's primary blue color */
   box-shadow: 0 0 12px rgba(25, 118, 210, 0.7);
   transform: scale(1.03);
-}
-
-.thumbnail {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 6px; /* Slightly smaller radius to fit inside the card padding */
-  display: block; /* Removes any weird bottom space on the image */
 }
 
 .file-placeholder {
