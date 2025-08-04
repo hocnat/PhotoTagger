@@ -15,6 +15,7 @@ export const ImageListPanel: React.FC<ImageListPanelProps> = ({
   const {
     selectedFilenames,
     handleSelectionChange,
+    handleKeyDown,
     allMatches,
     unmatchableFilenames,
   } = useGeotaggingContext();
@@ -24,7 +25,7 @@ export const ImageListPanel: React.FC<ImageListPanelProps> = ({
   );
 
   return (
-    <Box>
+    <Box onKeyDown={handleKeyDown} tabIndex={-1}>
       <List dense sx={{ py: 0 }}>
         {images.map((image) => (
           <ImageListItem

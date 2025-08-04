@@ -31,6 +31,7 @@ export const ImageListItem: React.FC<ImageListItemProps> = ({
 
   return (
     <ListItem
+      id={`geotag-item-${filename}`}
       disablePadding
       onClick={onClick}
       sx={{ opacity: isUnmatchable ? 0.6 : 1 }}

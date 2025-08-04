@@ -217,6 +217,46 @@ export const useGeotagger = ({
     [orderedFilenames]
   );
 
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+      event.preventDefault();
+
+      let lastSelectedIndex = lastSelectedFilenameRef.current
+        ? orderedFilenames.indexOf(lastSelectedFilenameRef.current)
+        : -1;
+
+      if (lastSelectedIndex === -1 && orderedFilenames.length > 0) {
+        lastSelectedIndex = 0;
+      }
+
+      let nextIndex = lastSelectedIndex;
+      if (event.key === "ArrowUp") {
+        nextIndex = Math.max(0, lastSelectedIndex - 1);
+      } else if (event.key === "ArrowDown") {
+        nextIndex = Math.min(
+          orderedFilenames.length - 1,
+          lastSelectedIndex + 1
+        );
+      }
+
+      const newSelectedFilename = orderedFilenames[nextIndex];
+      if (newSelectedFilename) {
+        setSelectedFilenames(new Set([newSelectedFilename]));
+        lastSelectedFilenameRef.current = newSelectedFilename;
+
+        // Ensure the newly selected item is scrolled into view
+        const element = document.getElementById(
+          `geotag-item-${newSelectedFilename}`
+        );
+        element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    },
+    [orderedFilenames]
+  );
+
   const handleFormFieldChange = useCallback(
     (field: keyof LocationPresetData, value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
@@ -303,6 +343,7 @@ export const useGeotagger = ({
     contextValue: {
       selectedFilenames,
       handleSelectionChange,
+      handleKeyDown,
       isAnythingSelected,
       allMatches: matchResult?.matches || [],
       unmatchableFilenames,

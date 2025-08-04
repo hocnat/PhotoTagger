@@ -6,6 +6,7 @@ interface GeotaggingContextType {
   // Selection state
   selectedFilenames: Set<string>;
   handleSelectionChange: (event: React.MouseEvent, filename: string) => void;
+  handleKeyDown: (event: React.KeyboardEvent) => void;
   isAnythingSelected: boolean;
 
   // Data state
