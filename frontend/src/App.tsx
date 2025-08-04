@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Box, Drawer, CssBaseline, Toolbar } from "@mui/material";
 import { HealthReport, ImageFile, RenameFileResult } from "types";
 import { GeotaggingManager } from "./features/Geotagging/GeotaggingManager";
@@ -34,7 +34,7 @@ import { SelectionToolbar } from "./layout/SelectionToolbar/SelectionToolbar";
 import { useRenameDialog } from "./features/RenameDialog";
 import { useHealthCheck } from "./features/HealthCheck/hooks/useHealthCheck";
 import { useTimeShift } from "./features/TimeShift/hooks/useTimeShift";
-import { useNotification } from "./hooks/useNotification";
+import { useGpxFilePicker } from "./hooks/useGpxFilePicker";
 
 import "./App.css";
 
@@ -46,53 +46,6 @@ type ActivePanel =
   | "healthReport"
   | "geotagging"
   | null;
-
-const useGpxFilePicker = ({
-  onFileRead,
-}: {
-  onFileRead: (content: string) => void;
-}) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { showNotification } = useNotification();
-
-  useEffect(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".gpx";
-    input.style.display = "none";
-    input.onchange = (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      if (target.files && target.files.length > 0) {
-        const file = target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          if (content) {
-            onFileRead(content);
-          } else {
-            showNotification("Could not read the GPX file.", "error");
-          }
-        };
-        reader.onerror = () => {
-          showNotification(
-            `Error reading file: ${reader.error?.message}`,
-            "error"
-          );
-        };
-        reader.readAsText(file);
-      }
-    };
-    (inputRef as React.MutableRefObject<HTMLInputElement>).current = input;
-  }, [onFileRead, showNotification]);
-
-  const openGpxPicker = useCallback(() => {
-    if (inputRef.current) {
-      inputRef.current.click();
-    }
-  }, []);
-
-  return { openGpxPicker };
-};
 
 const AppContent: React.FC = () => {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);

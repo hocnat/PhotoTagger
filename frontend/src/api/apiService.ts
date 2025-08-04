@@ -162,12 +162,12 @@ export const fetchLocationsFromUrl = (url: string): Promise<Placemark[]> =>
     body: JSON.stringify({ url }),
   }).then((response) => handleResponse<Placemark[]>(response));
 
-// --- Geocoding & Geotagging ---
+// --- Geotagging ---
 
 export const enrichCoordinates = (
   coordinates: GpsCoordinate[]
 ): Promise<EnrichedCoordinate[]> =>
-  fetch(`${API_BASE_URL}/geocoding/enrich-coordinates`, {
+  fetch(`${API_BASE_URL}/geotagging/enrich-coordinates`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ coordinates }),
@@ -176,7 +176,7 @@ export const enrichCoordinates = (
 export const matchGpxTrack = (
   payload: GpxMatchRequest
 ): Promise<GpxMatchResult> =>
-  fetch(`${API_BASE_URL}/geocoding/match-gpx`, {
+  fetch(`${API_BASE_URL}/geotagging/match-gpx`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

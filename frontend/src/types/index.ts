@@ -169,7 +169,7 @@ export interface RenamePreviewItem {
 }
 
 // ====================================================================================
-// Geocoding, Geotagging, Location Importer & User Presets
+// Geotagging, Location Importer & User Presets
 // ====================================================================================
 
 /**

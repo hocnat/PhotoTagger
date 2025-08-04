@@ -1,15 +1,13 @@
 from flask import Blueprint, request, jsonify
-from ..services import geocoding_service
+from ..services import geotagging_service
 
-geocoding_bp = Blueprint("geocoding_bp", __name__)
+geotagging_bp = Blueprint("geotagging_bp", __name__)
 
 
-@geocoding_bp.route("/geocoding/enrich-coordinates", methods=["POST"])
+@geotagging_bp.route("/geotagging/enrich-coordinates", methods=["POST"])
 def enrich_coords():
     """
     API endpoint to enrich a list of GPS coordinates with address details.
-    Expects a JSON payload with a "coordinates" key containing a list of objects,
-    each with "latitude" and "longitude".
     """
     data = request.get_json()
     if not data or "coordinates" not in data:
@@ -17,13 +15,13 @@ def enrich_coords():
 
     coordinates = data["coordinates"]
     try:
-        enriched_data = geocoding_service.enrich_coordinates(coordinates)
+        enriched_data = geotagging_service.enrich_coordinates(coordinates)
         return jsonify(enriched_data)
     except Exception as e:
         return jsonify({"error": f"Failed to enrich coordinate data: {e}"}), 500
 
 
-@geocoding_bp.route("/geocoding/match-gpx", methods=["POST"])
+@geotagging_bp.route("/geotagging/match-gpx", methods=["POST"])
 def match_gpx():
     """
     Receives GPX file content and a list of image timestamps,
@@ -37,7 +35,7 @@ def match_gpx():
     files = data['files']
     
     try:
-        result = geocoding_service.match_photos_to_gpx(gpx_content, files)
+        result = geotagging_service.match_photos_to_gpx(gpx_content, files)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": "Failed to process GPX data"}), 500
