@@ -19,7 +19,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useSettings } from "./hooks/useSettings";
+import { useSettingsContext } from "context/SettingsContext";
 import { ExtensionRuleEditor } from "./components/ExtensionRuleEditor";
 import { CountryMappingEditor } from "./components/CountryMappingEditor";
 import { RequiredFieldsEditor } from "./components/RequiredFieldsEditor";
@@ -49,7 +49,7 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({
     settings,
     saveSettings,
     isLoading: isSettingsLoading,
-  } = useSettings();
+  } = useSettingsContext();
   const { showNotification } = useNotification();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -181,6 +181,7 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({
             sx={{ px: 2 }}
           >
             <Tab label="General" />
+            <Tab label="Geotagging" />
             <Tab label="Locations" />
             <Tab label="Renaming" />
             <Tab label="Analysis" />
@@ -216,12 +217,40 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({
           )}
         </TabPanel>
         <TabPanel value={currentTab} index={1}>
+          <Typography variant="subtitle2" gutterBottom>
+            GPX Track Matching
+          </Typography>
+          <TextField
+            fullWidth
+            type="number"
+            label="Time Threshold (seconds)"
+            value={localSettings.geotaggingSettings.gpxTimeThreshold}
+            onChange={(e) =>
+              handleFieldChange(
+                "geotaggingSettings",
+                "gpxTimeThreshold",
+                Number(e.target.value)
+              )
+            }
+            helperText="Only match a photo to the track if the time difference is less than this value."
+            margin="normal"
+            slotProps={{
+              input: {
+                inputProps: {
+                  min: 0,
+                  step: 1,
+                },
+              },
+            }}
+          />
+        </TabPanel>
+        <TabPanel value={currentTab} index={2}>
           <CountryMappingEditor
             mappings={localSettings.countryMappings || []}
             onChange={handleCountryMappingsChange}
           />
         </TabPanel>
-        <TabPanel value={currentTab} index={2}>
+        <TabPanel value={currentTab} index={3}>
           <Typography variant="subtitle2" gutterBottom>
             Rename Pattern
           </Typography>
@@ -241,7 +270,7 @@ export const SettingsManager: React.FC<SettingsManagerProps> = ({
             onChange={handleExtensionRulesChange}
           />
         </TabPanel>
-        <TabPanel value={currentTab} index={3}>
+        <TabPanel value={currentTab} index={4}>
           <RequiredFieldsEditor
             requiredFields={localSettings.appBehavior.requiredFields || []}
             onChange={handleRequiredFieldsChange}

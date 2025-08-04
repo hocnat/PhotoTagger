@@ -24,18 +24,19 @@ def enrich_coords():
 @geotagging_bp.route("/geotagging/match-gpx", methods=["POST"])
 def match_gpx():
     """
-    Receives GPX file content and a list of image timestamps,
+    Receives GPX file content, a list of image timestamps, and the time threshold,
     returns matched GPS coordinates for each image and a GeoJSON of the track.
     """
     data = request.get_json()
-    if not data or "gpxContent" not in data or "files" not in data:
-        return jsonify({"message": "Missing gpxContent or files in request"}), 400
+    if not data or "gpxContent" not in data or "files" not in data or "gpxTimeThreshold" not in data:
+        return jsonify({"message": "Missing gpxContent, files, or gpxTimeThreshold in request"}), 400
 
     gpx_content = data['gpxContent']
     files = data['files']
+    threshold = data['gpxTimeThreshold']
     
     try:
-        result = geotagging_service.match_photos_to_gpx(gpx_content, files)
+        result = geotagging_service.match_photos_to_gpx(gpx_content, files, threshold)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": "Failed to process GPX data"}), 500

@@ -17,6 +17,9 @@ DEFAULT_SETTINGS = {
             "LocationCreated",
         ],
     },
+    "geotaggingSettings": {
+        "gpxTimeThreshold": 10 # Threshold in seconds
+    },
     "renameSettings": {
         "pattern": "${DateTimeOriginal:%Y%m%d_%H%M%S}_${Title}",
         "extensionRules": [

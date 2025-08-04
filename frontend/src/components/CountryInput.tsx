@@ -1,5 +1,5 @@
 import { TextField, Autocomplete } from "@mui/material";
-import { useSettings } from "features/SettingsManager/hooks/useSettings";
+import { useSettingsContext } from "context/SettingsContext";
 import { CountryMapping } from "types";
 
 interface CountryInputProps {
@@ -17,7 +17,7 @@ const CountryInput: React.FC<CountryInputProps> = ({
   sx,
   disabled,
 }) => {
-  const { settings } = useSettings();
+  const { settings } = useSettingsContext();
   const countryMappings = settings?.countryMappings || [];
 
   const handleAutocompleteChange = (

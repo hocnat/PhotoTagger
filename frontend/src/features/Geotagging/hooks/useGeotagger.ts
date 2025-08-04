@@ -8,6 +8,7 @@ import {
   FileUpdatePayload,
 } from "types";
 import { useNotification } from "hooks/useNotification";
+import { useSettingsContext } from "context/SettingsContext";
 
 interface UseGeotaggerProps {
   gpxContent: string;
@@ -52,6 +53,7 @@ export const useGeotagger = ({
   const lastSelectedFilenameRef = useRef<string | null>(null);
 
   const { showNotification } = useNotification();
+  const { settings } = useSettingsContext();
   const orderedFilenames = useMemo(
     () => images.map((img) => img.filename),
     [images]
@@ -73,6 +75,8 @@ export const useGeotagger = ({
   }, [images]);
 
   useEffect(() => {
+    if (!settings) return;
+
     const fetchMatches = async () => {
       setIsLoading(true);
       setError(null);
@@ -104,6 +108,7 @@ export const useGeotagger = ({
         const result = await apiService.matchGpxTrack({
           gpxContent,
           files: filesToMatch,
+          gpxTimeThreshold: settings.geotaggingSettings.gpxTimeThreshold,
         });
         setMatchResult(result);
       } catch (err: any) {
@@ -117,31 +122,17 @@ export const useGeotagger = ({
       }
     };
     fetchMatches();
-  }, [gpxContent, images, showNotification, unmatchableFilenames]);
+  }, [gpxContent, images, showNotification, unmatchableFilenames, settings]);
 
   useEffect(() => {
-    if (!isAnythingSelected) {
-      setFormData(EMPTY_FORM_DATA);
-      return;
-    }
-    const firstSelected = orderedFilenames.find((f) =>
-      selectedFilenames.has(f)
-    );
-    if (!firstSelected) return;
-    const match = matchResult?.matches.find(
-      (m) => m.filename === firstSelected
-    );
-    if (!match?.coordinates) {
-      setFormData(EMPTY_FORM_DATA);
-      return;
-    }
-    const fetchGeocoding = async () => {
+    let isCancelled = false;
+    const fetchGeocoding = async (match: any) => {
       setIsFormBusy(true);
       try {
         const [enriched] = await apiService.enrichCoordinates([
           match.coordinates!,
         ]);
-        if (enriched) {
+        if (!isCancelled && enriched) {
           setFormData({
             Location: "",
             City: enriched.city,
@@ -151,13 +142,37 @@ export const useGeotagger = ({
           });
         }
       } catch (err) {
-        showNotification("Reverse geocoding failed.", "warning");
-        setFormData(EMPTY_FORM_DATA);
+        if (!isCancelled) {
+          showNotification("Reverse geocoding failed.", "warning");
+          setFormData(EMPTY_FORM_DATA);
+        }
       } finally {
-        setIsFormBusy(false);
+        if (!isCancelled) {
+          setIsFormBusy(false);
+        }
       }
     };
-    fetchGeocoding();
+
+    if (!isAnythingSelected) {
+      setFormData(EMPTY_FORM_DATA);
+    } else {
+      const firstSelected = orderedFilenames.find((f) =>
+        selectedFilenames.has(f)
+      );
+      if (firstSelected) {
+        const match = matchResult?.matches.find(
+          (m) => m.filename === firstSelected
+        );
+        if (match?.coordinates) {
+          fetchGeocoding(match);
+        } else {
+          setFormData(EMPTY_FORM_DATA);
+        }
+      }
+    }
+    return () => {
+      isCancelled = true;
+    };
   }, [
     selectedFilenames,
     matchResult,

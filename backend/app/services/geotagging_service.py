@@ -79,7 +79,7 @@ def enrich_coordinates(coordinates: List[Dict[str, float]]) -> List[Dict[str, An
     return enriched_locations
 
 
-def match_photos_to_gpx(gpx_content_str: str, photos: List[Dict[str, str]]) -> Dict[str, Any]:
+def match_photos_to_gpx(gpx_content_str: str, photos: List[Dict[str, str]], threshold_seconds: int) -> Dict[str, Any]:
     """
     Matches photos to the closest point in a GPX track based on timestamps,
     but only if the time difference is within a defined threshold.
@@ -107,7 +107,7 @@ def match_photos_to_gpx(gpx_content_str: str, photos: List[Dict[str, str]]) -> D
     if not track_points:
         return {"matches": [], "track": geojson_track}
 
-    threshold = timedelta(seconds=30)
+    threshold = timedelta(seconds=threshold_seconds)
     matches = []
 
     for photo in photos:

@@ -31,7 +31,7 @@ import {
   EnrichedCoordinate,
 } from "types";
 import { useNotification } from "hooks/useNotification";
-import { useSettings } from "features/SettingsManager/hooks/useSettings";
+import { useSettingsContext } from "context/SettingsContext";
 
 type ImportStep =
   | "url"
@@ -73,7 +73,7 @@ export const LocationImporterDialog: React.FC<LocationImporterDialogProps> = ({
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
 
   const { showNotification } = useNotification();
-  const { settings } = useSettings();
+  const { settings } = useSettingsContext();
 
   const getCountryCode = (countryName: string): string => {
     if (!countryName || !settings?.countryMappings) return "";

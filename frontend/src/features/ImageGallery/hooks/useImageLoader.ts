@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import * as apiService from "api/apiService";
-import { useSettings } from "features/SettingsManager/hooks/useSettings";
+import { useSettingsContext } from "context/SettingsContext";
 import { ApiError, ImageFile } from "types";
 
 interface ImageData {
@@ -21,7 +21,7 @@ export const useImageLoader = () => {
   const [folderInput, setFolderInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const { settings } = useSettings();
+  const { settings } = useSettingsContext();
 
   useEffect(() => {
     if (settings) {

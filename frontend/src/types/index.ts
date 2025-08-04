@@ -195,6 +195,7 @@ export interface EnrichedCoordinate extends GpsCoordinate {
  */
 export interface GpxMatchRequest {
   gpxContent: string;
+  gpxTimeThreshold: number;
   files: {
     filename: string;
     dateTime: string;
@@ -355,6 +356,9 @@ export interface AppSettings {
     fixedPath: string;
     lastOpenedFolder: string | null;
     requiredFields: string[];
+  };
+  geotaggingSettings: {
+    gpxTimeThreshold: number;
   };
   renameSettings: {
     pattern: string;
