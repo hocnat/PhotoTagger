@@ -15,6 +15,7 @@ interface ImageListItemProps {
   imageUrl: string;
   isSelected: boolean;
   isUnmatchable: boolean;
+  isProtected: boolean;
   match: ImageGpsMatch | undefined;
   onClick: (event: React.MouseEvent) => void;
 }
@@ -24,6 +25,7 @@ export const ImageListItem: React.FC<ImageListItemProps> = ({
   imageUrl,
   isSelected,
   isUnmatchable,
+  isProtected,
   match,
   onClick,
 }) => {
@@ -65,7 +67,11 @@ export const ImageListItem: React.FC<ImageListItemProps> = ({
           }
         />
         <ListItemIcon sx={{ minWidth: 32, justifyContent: "flex-end" }}>
-          {isUnmatchable ? (
+          {isProtected ? (
+            <Tooltip title="This image already has GPS data and will be protected from changes.">
+              <AppIcons.SUMMARY_WARNING color="info" fontSize="small" />
+            </Tooltip>
+          ) : isUnmatchable ? (
             <Tooltip title="Cannot be matched. Missing DateTimeOriginal or OffsetTimeOriginal.">
               <AppIcons.SUMMARY_WARNING color="warning" fontSize="small" />
             </Tooltip>

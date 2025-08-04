@@ -52,12 +52,21 @@ export const useGeotagger = ({
   >(new Map());
   const lastSelectedFilenameRef = useRef<string | null>(null);
 
+  const [protectedImageFormData, setProtectedImageFormData] =
+    useState<LocationPresetData | null>(null);
+
   const { showNotification } = useNotification();
   const { settings } = useSettingsContext();
   const orderedFilenames = useMemo(
     () => images.map((img) => img.filename),
     [images]
   );
+
+  const imageMap = useMemo(
+    () => new Map(images.map((img) => [img.filename, img])),
+    [images]
+  );
+
   const isAnythingSelected = selectedFilenames.size > 0;
   const hasChanges = stagedChanges.size > 0;
 
@@ -73,6 +82,25 @@ export const useGeotagger = ({
     });
     return filenames;
   }, [images]);
+
+  const protectedFilenames = useMemo(() => {
+    const filenames = new Set<string>();
+    images.forEach((image) => {
+      if (
+        image.metadata.LatitudeCreated?.value ||
+        image.metadata.LongitudeCreated?.value
+      ) {
+        filenames.add(image.filename);
+      }
+    });
+    return filenames;
+  }, [images]);
+
+  const isSelectionProtected = useMemo(() => {
+    if (selectedFilenames.size !== 1) return false;
+    const singleFilename = selectedFilenames.values().next().value;
+    return singleFilename ? protectedFilenames.has(singleFilename) : false;
+  }, [selectedFilenames, protectedFilenames]);
 
   useEffect(() => {
     if (!settings) return;
@@ -155,11 +183,27 @@ export const useGeotagger = ({
 
     if (!isAnythingSelected) {
       setFormData(EMPTY_FORM_DATA);
+      setProtectedImageFormData(null);
     } else {
       const firstSelected = orderedFilenames.find((f) =>
         selectedFilenames.has(f)
       );
       if (firstSelected) {
+        if (isSelectionProtected) {
+          const image = imageMap.get(firstSelected);
+          if (image) {
+            setProtectedImageFormData({
+              Location: image.metadata.LocationCreated?.value || "",
+              City: image.metadata.CityCreated?.value || "",
+              State: image.metadata.StateCreated?.value || "",
+              Country: image.metadata.CountryCreated?.value || "",
+              CountryCode: image.metadata.CountryCodeCreated?.value || "",
+            });
+          }
+        } else {
+          setProtectedImageFormData(null);
+        }
+
         const match = matchResult?.matches.find(
           (m) => m.filename === firstSelected
         );
@@ -170,6 +214,7 @@ export const useGeotagger = ({
         }
       }
     }
+
     return () => {
       isCancelled = true;
     };
@@ -179,42 +224,66 @@ export const useGeotagger = ({
     orderedFilenames,
     showNotification,
     isAnythingSelected,
+    isSelectionProtected,
+    imageMap,
   ]);
 
   const handleSelectionChange = useCallback(
     (event: React.MouseEvent, filename: string) => {
       const { shiftKey, ctrlKey, metaKey } = event;
-      const selectSingle = () => setSelectedFilenames(new Set([filename]));
-      const toggleSelection = () => {
-        setSelectedFilenames((prev) => {
-          const newSet = new Set(prev);
+
+      const getNextSelection = (): Set<string> => {
+        if (shiftKey) {
+          const lastSelected = lastSelectedFilenameRef.current;
+          if (!lastSelected) return new Set([filename]);
+
+          const startIndex = orderedFilenames.indexOf(lastSelected);
+          const endIndex = orderedFilenames.indexOf(filename);
+          if (startIndex === -1 || endIndex === -1) return new Set();
+
+          const start = Math.min(startIndex, endIndex);
+          const end = Math.max(startIndex, endIndex);
+          const inRangeFilenames = orderedFilenames.slice(start, end + 1);
+          return new Set([
+            ...Array.from(selectedFilenames),
+            ...inRangeFilenames,
+          ]);
+        }
+        if (ctrlKey || metaKey) {
+          const newSet = new Set(selectedFilenames);
           if (newSet.has(filename)) newSet.delete(filename);
           else newSet.add(filename);
           return newSet;
-        });
-      };
-      const rangeSelect = () => {
-        const lastSelected = lastSelectedFilenameRef.current;
-        if (!lastSelected) {
-          selectSingle();
-          return;
         }
-        const startIndex = orderedFilenames.indexOf(lastSelected);
-        const endIndex = orderedFilenames.indexOf(filename);
-        if (startIndex === -1 || endIndex === -1) return;
-        const start = Math.min(startIndex, endIndex);
-        const end = Math.max(startIndex, endIndex);
-        const inRangeFilenames = orderedFilenames.slice(start, end + 1);
-        setSelectedFilenames(
-          (prev) => new Set([...Array.from(prev), ...inRangeFilenames])
-        );
+        return new Set([filename]);
       };
-      if (shiftKey) rangeSelect();
-      else if (ctrlKey || metaKey) toggleSelection();
-      else selectSingle();
+
+      const intendedSelection = getNextSelection();
+
+      const isProtectedCount = Array.from(intendedSelection).filter((f) =>
+        protectedFilenames.has(f)
+      ).length;
+      const isUnprotectedCount = intendedSelection.size - isProtectedCount;
+
+      if (isProtectedCount > 0 && isUnprotectedCount > 0) {
+        showNotification(
+          "Cannot select protected and unprotected images at the same time.",
+          "error"
+        );
+        return;
+      }
+      if (isProtectedCount > 1) {
+        showNotification(
+          "Cannot select more than one protected image at a time.",
+          "error"
+        );
+        return;
+      }
+
+      setSelectedFilenames(intendedSelection);
       lastSelectedFilenameRef.current = filename;
     },
-    [orderedFilenames]
+    [orderedFilenames, selectedFilenames, protectedFilenames, showNotification]
   );
 
   const handleKeyDown = useCallback(
@@ -286,6 +355,9 @@ export const useGeotagger = ({
     const files_to_update: FileUpdatePayload[] = [];
     const imageMap = new Map(images.map((img) => [img.filename, img]));
     for (const [filename, newLocationData] of stagedChanges.entries()) {
+      if (protectedFilenames.has(filename)) {
+        continue;
+      }
       const imageFile = imageMap.get(filename);
       const gpsMatch = matchResult?.matches.find(
         (m) => m.filename === filename
@@ -308,15 +380,21 @@ export const useGeotagger = ({
         new_metadata,
       });
     }
+
     if (files_to_update.length === 0) {
       setIsSaving(false);
-      showNotification("No valid changes to save.", "info");
+      showNotification(
+        "No valid changes to save. (Files with existing GPS data are protected).",
+        "warning"
+      );
       return;
     }
+
     const payload: SaveMetadataPayload = {
       files_to_update,
       keywords_to_learn: [],
     };
+
     try {
       await apiService.saveMetadata(payload);
       showNotification("Geotagging data saved successfully.", "success");
@@ -345,10 +423,13 @@ export const useGeotagger = ({
       handleSelectionChange,
       handleKeyDown,
       isAnythingSelected,
+      isSelectionProtected,
       allMatches: matchResult?.matches || [],
       unmatchableFilenames,
+      protectedFilenames,
       isFormBusy,
       formData,
+      protectedImageFormData,
       handleFormFieldChange,
       handleApplyToSelection,
     },

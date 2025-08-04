@@ -43,6 +43,7 @@ const GeotaggingManagerContent: React.FC<GeotaggingManagerContentProps> = ({
 
   return (
     <>
+      {/* Column 1: Image List */}
       <Box
         sx={{
           width: "300px",
@@ -55,6 +56,7 @@ const GeotaggingManagerContent: React.FC<GeotaggingManagerContentProps> = ({
         <ImageListPanel images={images} getImageUrl={getImageUrl} />
       </Box>
 
+      {/* Column 2: Map (Flexible) */}
       <Box
         sx={{
           flexGrow: 1,
@@ -62,9 +64,10 @@ const GeotaggingManagerContent: React.FC<GeotaggingManagerContentProps> = ({
           position: "relative",
         }}
       >
-        <GeotaggingMap track={track} />
+        <GeotaggingMap track={track} images={images} />
       </Box>
 
+      {/* Column 3: Location Form */}
       <Box
         sx={{
           width: "350px",

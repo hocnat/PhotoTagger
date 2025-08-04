@@ -10,7 +10,7 @@ import L, { LatLngBounds, LatLngTuple } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Box } from "@mui/material";
 import { useGeotaggingContext } from "../context/GeotaggingContext";
-import { GpsCoordinate, ImageGpsMatch } from "types";
+import { GpsCoordinate, ImageGpsMatch, ImageFile } from "types";
 
 // Fix for a common Leaflet/React bug where marker icons don't show.
 // @ts-ignore - This is a well-known workaround for a Leaflet/Webpack issue.
@@ -32,35 +32,92 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-const MapViewUpdater: React.FC = () => {
+const greenIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+interface MapViewUpdaterProps {
+  images: ImageFile[];
+}
+
+const MapViewUpdater: React.FC<MapViewUpdaterProps> = ({ images }) => {
   const map = useMap();
-  const { allMatches, selectedFilenames } = useGeotaggingContext();
+  const { allMatches, selectedFilenames, isSelectionProtected } =
+    useGeotaggingContext();
+  const imageMap = useMemo(
+    () => new Map(images.map((img) => [img.filename, img])),
+    [images]
+  );
 
   useEffect(() => {
-    const selectedPoints = allMatches
-      .filter(
-        (m): m is ImageGpsMatch & { coordinates: GpsCoordinate } =>
-          selectedFilenames.has(m.filename) && !!m.coordinates
-      )
-      .map(
-        (m) => [m.coordinates.latitude, m.coordinates.longitude] as LatLngTuple
-      );
+    let pointsToBound: LatLngTuple[] = [];
 
-    if (selectedPoints.length > 0) {
-      const newBounds = new LatLngBounds(selectedPoints);
-      map.fitBounds(newBounds, { padding: [50, 50] });
+    if (isSelectionProtected && selectedFilenames.size === 1) {
+      const filename = selectedFilenames.values().next().value;
+      if (filename) {
+        // Case 1: A single protected file is selected. We need to bound both markers.
+        const image = imageMap.get(filename);
+        const match = allMatches.find((m) => m.filename === filename);
+
+        // Add the track's coordinate (red marker)
+        if (match?.coordinates) {
+          pointsToBound.push([
+            match.coordinates.latitude,
+            match.coordinates.longitude,
+          ]);
+        }
+
+        // Add the file's saved coordinate (green marker)
+        const lat = image?.metadata.LatitudeCreated?.value;
+        const lon = image?.metadata.LongitudeCreated?.value;
+        if (lat && lon) {
+          pointsToBound.push([parseFloat(lat), parseFloat(lon)]);
+        }
+      }
+    } else {
+      // Case 2: A normal selection of unprotected files. Bound all selected red markers.
+      pointsToBound = allMatches
+        .filter(
+          (m): m is ImageGpsMatch & { coordinates: GpsCoordinate } =>
+            selectedFilenames.has(m.filename) && !!m.coordinates
+        )
+        .map(
+          (m) =>
+            [m.coordinates.latitude, m.coordinates.longitude] as LatLngTuple
+        );
     }
-  }, [selectedFilenames, allMatches, map]);
+
+    if (pointsToBound.length > 0) {
+      const newBounds = new LatLngBounds(pointsToBound);
+      map.fitBounds(newBounds, { padding: [50, 50], maxZoom: 16 });
+    }
+  }, [selectedFilenames, allMatches, map, isSelectionProtected, imageMap]);
 
   return null;
 };
 
 interface GeotaggingMapProps {
   track: GeoJSON.LineString | null;
+  images: ImageFile[];
 }
 
-export const GeotaggingMap: React.FC<GeotaggingMapProps> = ({ track }) => {
-  const { allMatches, selectedFilenames } = useGeotaggingContext();
+export const GeotaggingMap: React.FC<GeotaggingMapProps> = ({
+  track,
+  images,
+}) => {
+  const { allMatches, selectedFilenames, isSelectionProtected } =
+    useGeotaggingContext();
+  const imageMap = useMemo(
+    () => new Map(images.map((img) => [img.filename, img])),
+    [images]
+  );
 
   const initialBounds = useMemo(() => {
     const points = allMatches
@@ -116,7 +173,27 @@ export const GeotaggingMap: React.FC<GeotaggingMapProps> = ({ track }) => {
             />
           );
         })}
-        <MapViewUpdater />
+        {isSelectionProtected &&
+          (() => {
+            const filename = selectedFilenames.values().next().value;
+            if (!filename) return null;
+
+            const image = imageMap.get(filename);
+            const lat = image?.metadata.LatitudeCreated?.value;
+            const lon = image?.metadata.LongitudeCreated?.value;
+            if (lat && lon) {
+              return (
+                <Marker
+                  key={`${filename}-protected`}
+                  position={[parseFloat(lat), parseFloat(lon)]}
+                  icon={greenIcon}
+                  zIndexOffset={2000}
+                />
+              );
+            }
+            return null;
+          })()}
+        <MapViewUpdater images={images} />
       </MapContainer>
     </Box>
   );

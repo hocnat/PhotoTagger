@@ -18,6 +18,7 @@ export const ImageListPanel: React.FC<ImageListPanelProps> = ({
     handleKeyDown,
     allMatches,
     unmatchableFilenames,
+    protectedFilenames,
   } = useGeotaggingContext();
 
   const matchesMap = new Map(
@@ -34,6 +35,7 @@ export const ImageListPanel: React.FC<ImageListPanelProps> = ({
             imageUrl={getImageUrl(image.filename)}
             isSelected={selectedFilenames.has(image.filename)}
             isUnmatchable={unmatchableFilenames.has(image.filename)}
+            isProtected={protectedFilenames.has(image.filename)}
             match={matchesMap.get(image.filename)}
             onClick={(event) => handleSelectionChange(event, image.filename)}
           />

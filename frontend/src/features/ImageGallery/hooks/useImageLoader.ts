@@ -82,6 +82,30 @@ export const useImageLoader = () => {
     [settings]
   );
 
+  /**
+   * Refreshes the metadata for a specific set of files and updates the main state.
+   * This is more efficient than reloading the entire folder after a save operation.
+   */
+  const refreshImageData = useCallback(async (filePaths: string[]) => {
+    if (filePaths.length === 0) return;
+
+    try {
+      const refreshedFiles = await apiService.getMetadataForFiles(filePaths);
+      const refreshedFilesMap = new Map(
+        refreshedFiles.map((file) => [file.filename, file])
+      );
+
+      setImageData((prevData) => ({
+        ...prevData,
+        files: prevData.files.map(
+          (file) => refreshedFilesMap.get(file.filename) || file
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to refresh image data:", error);
+    }
+  }, []);
+
   return {
     imageData,
     folderInput,
@@ -89,5 +113,6 @@ export const useImageLoader = () => {
     isLoading,
     error,
     loadImages,
+    refreshImageData,
   };
 };

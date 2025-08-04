@@ -57,8 +57,14 @@ const AppContent: React.FC = () => {
     []
   );
 
-  const { imageData, folderInput, setFolderInput, isLoading, loadImages } =
-    useImageLoaderContext();
+  const {
+    imageData,
+    folderInput,
+    setFolderInput,
+    isLoading,
+    loadImages,
+    refreshImageData,
+  } = useImageLoaderContext();
   const { selectedImages, setSelectedImages, selectSingleImage } =
     useImageSelectionContext();
   const {
@@ -118,9 +124,9 @@ const AppContent: React.FC = () => {
     setSelectedImages,
   ]);
 
-  const handleGenericSuccess = (updatedFilePaths: string[]) => {
-    setFolderInput((current) => current + "");
+  const handleGenericSuccess = async (updatedFilePaths: string[]) => {
     if (updatedFilePaths.length > 0) {
+      await refreshImageData(updatedFilePaths);
       runHealthCheck(updatedFilePaths, { isManualTrigger: false });
     }
   };
@@ -142,10 +148,14 @@ const AppContent: React.FC = () => {
     dialogProps: renameDialogProps,
   } = useRenameDialog({
     onRenameSuccess: (results: RenameFileResult[]) => {
+      // For renaming, a full folder reload is best, as filenames change.
       const renamedPaths = results
         .filter((r) => r.status === "Renamed")
         .map((r) => `${imageData.folder}\\${r.new}`);
-      handleGenericSuccess(renamedPaths);
+      if (renamedPaths.length > 0) {
+        setFolderInput((current) => current + ""); // Trigger full reload
+        runHealthCheck(renamedPaths, { isManualTrigger: false });
+      }
     },
   });
 

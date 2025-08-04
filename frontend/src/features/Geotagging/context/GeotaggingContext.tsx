@@ -8,14 +8,17 @@ interface GeotaggingContextType {
   handleSelectionChange: (event: React.MouseEvent, filename: string) => void;
   handleKeyDown: (event: React.KeyboardEvent) => void;
   isAnythingSelected: boolean;
+  isSelectionProtected: boolean;
 
   // Data state
   allMatches: ImageGpsMatch[];
-  unmatchableFilenames: Set<string>; // Set of filenames missing required metadata
+  unmatchableFilenames: Set<string>;
+  protectedFilenames: Set<string>;
 
   // Form state and actions
   isFormBusy: boolean;
   formData: LocationPresetData;
+  protectedImageFormData: LocationPresetData | null;
   handleFormFieldChange: (
     field: keyof LocationPresetData,
     value: string
