@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L, { LatLngExpression, LatLng } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Modal, Box, Typography, Button } from "@mui/material";
+import SearchControl from "./SearchControl";
 
 // Fix for a common Leaflet/React bug where marker icons don't show.
 // @ts-ignore - This is a well-known workaround for a Leaflet/Webpack issue.
@@ -110,6 +111,7 @@ const MapModal: React.FC<MapModalProps> = ({
             />
             <MapClickHandler onMapClick={setPosition} />
             {position && <Marker position={position} />}
+            <SearchControl onLocationFound={setPosition} />
           </MapContainer>
         </Box>
 
