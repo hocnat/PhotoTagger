@@ -184,8 +184,19 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleSaveSuccess = (updatedFilePaths: string[]) => {
+  const handlePanelClose = () => {
+    setIsDirty(false);
     setActivePanel(null);
+  };
+
+  const handleAttemptClosePanel = () => {
+    promptAction(() => {
+      handlePanelClose();
+    });
+  };
+
+  const handleSaveSuccess = (updatedFilePaths: string[]) => {
+    handlePanelClose();
     handleGenericSuccess(updatedFilePaths);
   };
 
@@ -273,7 +284,7 @@ const AppContent: React.FC = () => {
           variant="temporary"
           anchor="left"
           open={activePanel === "keywords"}
-          onClose={() => setActivePanel(null)}
+          onClose={handleAttemptClosePanel}
           sx={{
             width: "100%",
             flexShrink: 0,
@@ -284,14 +295,14 @@ const AppContent: React.FC = () => {
           }}
         >
           {activePanel === "keywords" && (
-            <KeywordManager onClose={() => setActivePanel(null)} />
+            <KeywordManager onClose={handleAttemptClosePanel} />
           )}
         </Drawer>
         <Drawer
           variant="temporary"
           anchor="left"
           open={activePanel === "locations"}
-          onClose={() => setActivePanel(null)}
+          onClose={handleAttemptClosePanel}
           sx={{
             width: "100%",
             flexShrink: 0,
@@ -302,7 +313,7 @@ const AppContent: React.FC = () => {
           }}
         >
           {activePanel === "locations" && (
-            <LocationPresetManager onClose={() => setActivePanel(null)} />
+            <LocationPresetManager onClose={handleAttemptClosePanel} />
           )}
         </Drawer>
         <Drawer
@@ -321,7 +332,7 @@ const AppContent: React.FC = () => {
               key={selectedImages.join("-")}
               folderPath={imageData.folder}
               getImageUrl={getImageUrl}
-              onClose={() => setActivePanel(null)}
+              onClose={handleAttemptClosePanel}
               onSaveSuccess={handleSaveSuccess}
             />
           )}
@@ -344,7 +355,7 @@ const AppContent: React.FC = () => {
               <GeotaggingManager
                 gpxContent={gpxFileContent}
                 images={imagesForGeotagging}
-                onClose={() => setActivePanel(null)}
+                onClose={handleAttemptClosePanel}
                 onSaveSuccess={handleSaveSuccess}
                 folderPath={imageData.folder!}
                 getImageUrl={getImageUrl}
@@ -353,7 +364,7 @@ const AppContent: React.FC = () => {
         </Drawer>
         <HealthCheckReport
           isOpen={activePanel === "healthReport"}
-          onClose={() => setActivePanel(null)}
+          onClose={handlePanelClose}
           reports={healthCheckReports}
           isLoading={isHealthChecking}
         />
@@ -372,7 +383,7 @@ const AppContent: React.FC = () => {
           variant="temporary"
           anchor="left"
           open={activePanel === "settings"}
-          onClose={() => setActivePanel(null)}
+          onClose={handleAttemptClosePanel}
           sx={{
             width: "100%",
             flexShrink: 0,
@@ -383,7 +394,7 @@ const AppContent: React.FC = () => {
           }}
         >
           {activePanel === "settings" && (
-            <SettingsManager onClose={() => setActivePanel(null)} />
+            <SettingsManager onClose={handleAttemptClosePanel} />
           )}
         </Drawer>
         <PromptDialog
