@@ -64,6 +64,7 @@ const AppContent: React.FC = () => {
     isLoading,
     loadImages,
     refreshImageData,
+    forceReload,
   } = useImageLoaderContext();
   const { selectedImages, setSelectedImages, selectSingleImage } =
     useImageSelectionContext();
@@ -131,6 +132,23 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleRenameSuccess = (results: RenameFileResult[]) => {
+    const renamedResults = results.filter((r) => r.status === "Renamed");
+    if (renamedResults.length === 0) return;
+
+    // Create a map from old filenames to new filenames.
+    const renameMap = new Map(renamedResults.map((r) => [r.original, r.new]));
+
+    // Update the selection to use the new filenames.
+    const newSelection = selectedImages.map(
+      (oldName) => renameMap.get(oldName) || oldName
+    );
+    setSelectedImages(newSelection);
+
+    // Trigger a full, reliable reload of the folder data.
+    forceReload();
+  };
+
   const { openGpxPicker } = useGpxFilePicker({
     onFileRead: (content) => {
       const selectedImageFiles = imageData.files.filter((f) =>
@@ -147,16 +165,7 @@ const AppContent: React.FC = () => {
     isRenamePreviewLoading,
     dialogProps: renameDialogProps,
   } = useRenameDialog({
-    onRenameSuccess: (results: RenameFileResult[]) => {
-      // For renaming, a full folder reload is best, as filenames change.
-      const renamedPaths = results
-        .filter((r) => r.status === "Renamed")
-        .map((r) => `${imageData.folder}\\${r.new}`);
-      if (renamedPaths.length > 0) {
-        setFolderInput((current) => current + ""); // Trigger full reload
-        runHealthCheck(renamedPaths, { isManualTrigger: false });
-      }
-    },
+    onRenameSuccess: handleRenameSuccess,
   });
 
   const {

@@ -106,6 +106,12 @@ export const useImageLoader = () => {
     }
   }, []);
 
+  const forceReload = useCallback(() => {
+    if (imageData.folder) {
+      loadImages(imageData.folder);
+    }
+  }, [imageData.folder, loadImages]);
+
   return {
     imageData,
     folderInput,
@@ -114,5 +120,6 @@ export const useImageLoader = () => {
     error,
     loadImages,
     refreshImageData,
+    forceReload,
   };
 };
