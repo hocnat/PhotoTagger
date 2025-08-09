@@ -1,11 +1,5 @@
-import { useState, useEffect } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-  useMap,
-} from "react-leaflet";
+import { useState, useEffect, useMemo } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L, { LatLngExpression, LatLng } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Modal, Box, Typography, Button } from "@mui/material";
@@ -24,16 +18,6 @@ interface MapClickHandlerProps {
 }
 const MapClickHandler: React.FC<MapClickHandlerProps> = ({ onMapClick }) => {
   useMapEvents({ click: (e) => onMapClick(e.latlng) });
-  return null;
-};
-
-interface ChangeViewProps {
-  center: LatLngExpression;
-  zoom: number;
-}
-const ChangeView: React.FC<ChangeViewProps> = ({ center, zoom }) => {
-  const map = useMap();
-  map.setView(center, zoom);
   return null;
 };
 
@@ -79,6 +63,14 @@ const MapModal: React.FC<MapModalProps> = ({
     }
   }, [isOpen, initialCoords]);
 
+  const initialMapState = useMemo(() => {
+    const center: LatLngExpression = initialCoords
+      ? [initialCoords.lat, initialCoords.lng]
+      : [51.505, -0.09];
+    const zoom = initialCoords ? 13 : 5;
+    return { center, zoom };
+  }, [initialCoords]);
+
   if (!isOpen) {
     return null;
   }
@@ -89,14 +81,6 @@ const MapModal: React.FC<MapModalProps> = ({
       onClose();
     }
   };
-
-  const mapCenter: LatLngExpression = position
-    ? [position.lat, position.lng]
-    : initialCoords
-    ? [initialCoords.lat, initialCoords.lng]
-    : [51.505, -0.09];
-
-  const mapZoom = position || initialCoords ? 13 : 5;
 
   return (
     <Modal open={isOpen} onClose={onClose} aria-labelledby="map-modal-title">
@@ -115,12 +99,11 @@ const MapModal: React.FC<MapModalProps> = ({
           }}
         >
           <MapContainer
-            center={mapCenter}
-            zoom={mapZoom}
+            center={initialMapState.center}
+            zoom={initialMapState.zoom}
             scrollWheelZoom={true}
             style={{ height: "100%", width: "100%" }}
           >
-            <ChangeView center={mapCenter} zoom={mapZoom} />
             <TileLayer
               attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
