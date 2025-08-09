@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper, Tooltip, Typography } from "@mui/material";
 import { HealthIndicatorIcons } from "features/HealthCheck/components/HealthIndicatorIcons";
 import { HealthReport, ImageFile } from "types";
 
@@ -36,76 +36,78 @@ const ImageGrid: React.FC<ImageGridProps> = ({
         )}`;
 
         return (
-          <Paper
-            elevation={isSelected ? 8 : 2}
-            key={imageName}
-            className={`image-card ${isSelected ? "selected" : ""}`.trim()}
-            id={`image-card-${index}`}
-            onClick={(e) => onImageClick(e, imageName, index)}
-            onDoubleClick={() => onImageDoubleClick(imageName)}
-            sx={{
-              position: "relative",
-              overflow: "hidden",
-              aspectRatio: "1 / 1",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Box
+          <Tooltip title={imageName} key={imageName}>
+            <Paper
+              elevation={isSelected ? 8 : 2}
+              key={imageName}
+              className={`image-card ${isSelected ? "selected" : ""}`.trim()}
+              id={`image-card-${index}`}
+              onClick={(e) => onImageClick(e, imageName, index)}
+              onDoubleClick={() => onImageDoubleClick(imageName)}
               sx={{
-                flexGrow: 1,
-                bgcolor: "grey.100",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                position: "relative",
                 overflow: "hidden",
-                m: "4px",
-                borderRadius: 1,
+                aspectRatio: "1 / 1",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
               <Box
-                component="img"
-                src={imageUrl}
-                alt={imageName}
                 sx={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "contain",
-                }}
-              />
-            </Box>
-
-            {reportChecks && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                  bgcolor: "rgba(255, 255, 255, 0.8)",
-                  p: 0.5,
-                  borderRadius: 1,
+                  flexGrow: 1,
+                  bgcolor: "grey.100",
                   display: "flex",
-                }}
-              >
-                <HealthIndicatorIcons checks={reportChecks} />
-              </Box>
-            )}
-
-            <Box sx={{ flexShrink: 0, px: 1, pb: 0.5, pt: 0.5 }}>
-              <Typography
-                variant="caption"
-                display="block"
-                align="center"
-                sx={{
-                  whiteSpace: "nowrap",
+                  alignItems: "center",
+                  justifyContent: "center",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  m: "4px",
+                  borderRadius: 1,
                 }}
               >
-                {imageName}
-              </Typography>
-            </Box>
-          </Paper>
+                <Box
+                  component="img"
+                  src={imageUrl}
+                  alt={imageName}
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              </Box>
+
+              {reportChecks && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    bgcolor: "rgba(255, 255, 255, 0.8)",
+                    p: 0.5,
+                    borderRadius: 1,
+                    display: "flex",
+                  }}
+                >
+                  <HealthIndicatorIcons checks={reportChecks} />
+                </Box>
+              )}
+
+              <Box sx={{ flexShrink: 0, px: 1, pb: 0.5, pt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  align="center"
+                  sx={{
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {imageName}
+                </Typography>
+              </Box>
+            </Paper>
+          </Tooltip>
         );
       })}
     </>
