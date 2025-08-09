@@ -65,17 +65,16 @@ export const useMetadataEditor = ({
   // A save is needed if the form has user-initiated changes OR if any
   // field is not consolidated across its underlying EXIF/XMP tags.
   const needsConsolidation = useMemo(() => {
-    if (!formState) return false;
-    for (const block of Object.values(formState)) {
-      if (!block) continue;
-      for (const field of Object.values(block)) {
-        if (field.status === "unique" && !field.isConsolidated) {
+    if (!imageFiles || imageFiles.length === 0) return false;
+    for (const file of imageFiles) {
+      for (const key in file.metadata) {
+        if (file.metadata[key]?.isConsolidated === false) {
           return true;
         }
       }
     }
     return false;
-  }, [formState]);
+  }, [imageFiles]);
 
   const isSaveable = hasChanges || needsConsolidation;
 
@@ -222,97 +221,204 @@ export const useMetadataEditor = ({
       .map((file) => {
         const new_metadata: { [key: string]: any } = {};
 
-        // This explicit block flattens the hierarchical form state back into the
-        // flat structure required by the backend API.
-        if (isFieldDirty("Content", "Title")) {
-          const field = formState.Content?.Title;
-          if (field?.status === "unique") new_metadata.Title = field.value;
+        // For each field, we check if it was user-edited OR if the specific
+        // file's field was not consolidated.
+
+        const titleField = formState.Content?.Title;
+        if (
+          isFieldDirty("Content", "Title") ||
+          file.metadata.Title?.isConsolidated === false
+        ) {
+          new_metadata.Title =
+            titleField?.status === "unique"
+              ? titleField.value
+              : file.metadata.Title?.value;
         }
-        if (isFieldDirty("Creator", "Creator")) {
-          const field = formState.Creator?.Creator;
-          if (field?.status === "unique") new_metadata.Creator = field.value;
+
+        const creatorField = formState.Creator?.Creator;
+        if (
+          isFieldDirty("Creator", "Creator") ||
+          file.metadata.Creator?.isConsolidated === false
+        ) {
+          new_metadata.Creator =
+            creatorField?.status === "unique"
+              ? creatorField.value
+              : file.metadata.Creator?.value;
         }
-        if (isFieldDirty("Creator", "Copyright")) {
-          const field = formState.Creator?.Copyright;
-          if (field?.status === "unique") new_metadata.Copyright = field.value;
+
+        const copyrightField = formState.Creator?.Copyright;
+        if (
+          isFieldDirty("Creator", "Copyright") ||
+          file.metadata.Copyright?.isConsolidated === false
+        ) {
+          new_metadata.Copyright =
+            copyrightField?.status === "unique"
+              ? copyrightField.value
+              : file.metadata.Copyright?.value;
         }
-        if (isFieldDirty("DateTime", "DateTimeOriginal")) {
-          const field = formState.DateTime?.DateTimeOriginal;
-          if (field?.status === "unique")
-            new_metadata.DateTimeOriginal = field.value;
+
+        const dateTimeOriginalField = formState.DateTime?.DateTimeOriginal;
+        if (
+          isFieldDirty("DateTime", "DateTimeOriginal") ||
+          file.metadata.DateTimeOriginal?.isConsolidated === false
+        ) {
+          new_metadata.DateTimeOriginal =
+            dateTimeOriginalField?.status === "unique"
+              ? dateTimeOriginalField.value
+              : file.metadata.DateTimeOriginal?.value;
         }
-        if (isFieldDirty("DateTime", "OffsetTimeOriginal")) {
-          const field = formState.DateTime?.OffsetTimeOriginal;
-          if (field?.status === "unique")
-            new_metadata.OffsetTimeOriginal = field.value;
+
+        const offsetTimeOriginalField = formState.DateTime?.OffsetTimeOriginal;
+        if (
+          isFieldDirty("DateTime", "OffsetTimeOriginal") ||
+          file.metadata.OffsetTimeOriginal?.isConsolidated === false
+        ) {
+          new_metadata.OffsetTimeOriginal =
+            offsetTimeOriginalField?.status === "unique"
+              ? offsetTimeOriginalField.value
+              : file.metadata.OffsetTimeOriginal?.value;
         }
-        if (isFieldDirty("LocationCreated", "Latitude")) {
-          const field = formState.LocationCreated?.Latitude;
-          if (field?.status === "unique")
-            new_metadata.LatitudeCreated = field.value;
+
+        const latCreatedField = formState.LocationCreated?.Latitude;
+        if (
+          isFieldDirty("LocationCreated", "Latitude") ||
+          file.metadata.LatitudeCreated?.isConsolidated === false
+        ) {
+          new_metadata.LatitudeCreated =
+            latCreatedField?.status === "unique"
+              ? latCreatedField.value
+              : file.metadata.LatitudeCreated?.value;
         }
-        if (isFieldDirty("LocationCreated", "Longitude")) {
-          const field = formState.LocationCreated?.Longitude;
-          if (field?.status === "unique")
-            new_metadata.LongitudeCreated = field.value;
+        const lonCreatedField = formState.LocationCreated?.Longitude;
+        if (
+          isFieldDirty("LocationCreated", "Longitude") ||
+          file.metadata.LongitudeCreated?.isConsolidated === false
+        ) {
+          new_metadata.LongitudeCreated =
+            lonCreatedField?.status === "unique"
+              ? lonCreatedField.value
+              : file.metadata.LongitudeCreated?.value;
         }
-        if (isFieldDirty("LocationCreated", "Location")) {
-          const field = formState.LocationCreated?.Location;
-          if (field?.status === "unique")
-            new_metadata.LocationCreated = field.value;
+        const locCreatedField = formState.LocationCreated?.Location;
+        if (
+          isFieldDirty("LocationCreated", "Location") ||
+          file.metadata.LocationCreated?.isConsolidated === false
+        ) {
+          new_metadata.LocationCreated =
+            locCreatedField?.status === "unique"
+              ? locCreatedField.value
+              : file.metadata.LocationCreated?.value;
         }
-        if (isFieldDirty("LocationCreated", "City")) {
-          const field = formState.LocationCreated?.City;
-          if (field?.status === "unique")
-            new_metadata.CityCreated = field.value;
+        const cityCreatedField = formState.LocationCreated?.City;
+        if (
+          isFieldDirty("LocationCreated", "City") ||
+          file.metadata.CityCreated?.isConsolidated === false
+        ) {
+          new_metadata.CityCreated =
+            cityCreatedField?.status === "unique"
+              ? cityCreatedField.value
+              : file.metadata.CityCreated?.value;
         }
-        if (isFieldDirty("LocationCreated", "State")) {
-          const field = formState.LocationCreated?.State;
-          if (field?.status === "unique")
-            new_metadata.StateCreated = field.value;
+        const stateCreatedField = formState.LocationCreated?.State;
+        if (
+          isFieldDirty("LocationCreated", "State") ||
+          file.metadata.StateCreated?.isConsolidated === false
+        ) {
+          new_metadata.StateCreated =
+            stateCreatedField?.status === "unique"
+              ? stateCreatedField.value
+              : file.metadata.StateCreated?.value;
         }
-        if (isFieldDirty("LocationCreated", "Country")) {
-          const field = formState.LocationCreated?.Country;
-          if (field?.status === "unique")
-            new_metadata.CountryCreated = field.value;
+        const countryCreatedField = formState.LocationCreated?.Country;
+        if (
+          isFieldDirty("LocationCreated", "Country") ||
+          file.metadata.CountryCreated?.isConsolidated === false
+        ) {
+          new_metadata.CountryCreated =
+            countryCreatedField?.status === "unique"
+              ? countryCreatedField.value
+              : file.metadata.CountryCreated?.value;
         }
-        if (isFieldDirty("LocationCreated", "CountryCode")) {
-          const field = formState.LocationCreated?.CountryCode;
-          if (field?.status === "unique")
-            new_metadata.CountryCodeCreated = field.value;
+        const countryCodeCreatedField = formState.LocationCreated?.CountryCode;
+        if (
+          isFieldDirty("LocationCreated", "CountryCode") ||
+          file.metadata.CountryCodeCreated?.isConsolidated === false
+        ) {
+          new_metadata.CountryCodeCreated =
+            countryCodeCreatedField?.status === "unique"
+              ? countryCodeCreatedField.value
+              : file.metadata.CountryCodeCreated?.value;
         }
-        if (isFieldDirty("LocationShown", "Latitude")) {
-          const field = formState.LocationShown?.Latitude;
-          if (field?.status === "unique")
-            new_metadata.LatitudeShown = field.value;
+
+        const latShownField = formState.LocationShown?.Latitude;
+        if (
+          isFieldDirty("LocationShown", "Latitude") ||
+          file.metadata.LatitudeShown?.isConsolidated === false
+        ) {
+          new_metadata.LatitudeShown =
+            latShownField?.status === "unique"
+              ? latShownField.value
+              : file.metadata.LatitudeShown?.value;
         }
-        if (isFieldDirty("LocationShown", "Longitude")) {
-          const field = formState.LocationShown?.Longitude;
-          if (field?.status === "unique")
-            new_metadata.LongitudeShown = field.value;
+        const lonShownField = formState.LocationShown?.Longitude;
+        if (
+          isFieldDirty("LocationShown", "Longitude") ||
+          file.metadata.LongitudeShown?.isConsolidated === false
+        ) {
+          new_metadata.LongitudeShown =
+            lonShownField?.status === "unique"
+              ? lonShownField.value
+              : file.metadata.LongitudeShown?.value;
         }
-        if (isFieldDirty("LocationShown", "Location")) {
-          const field = formState.LocationShown?.Location;
-          if (field?.status === "unique")
-            new_metadata.LocationShown = field.value;
+        const locShownField = formState.LocationShown?.Location;
+        if (
+          isFieldDirty("LocationShown", "Location") ||
+          file.metadata.LocationShown?.isConsolidated === false
+        ) {
+          new_metadata.LocationShown =
+            locShownField?.status === "unique"
+              ? locShownField.value
+              : file.metadata.LocationShown?.value;
         }
-        if (isFieldDirty("LocationShown", "City")) {
-          const field = formState.LocationShown?.City;
-          if (field?.status === "unique") new_metadata.CityShown = field.value;
+        const cityShownField = formState.LocationShown?.City;
+        if (
+          isFieldDirty("LocationShown", "City") ||
+          file.metadata.CityShown?.isConsolidated === false
+        ) {
+          new_metadata.CityShown =
+            cityShownField?.status === "unique"
+              ? cityShownField.value
+              : file.metadata.CityShown?.value;
         }
-        if (isFieldDirty("LocationShown", "State")) {
-          const field = formState.LocationShown?.State;
-          if (field?.status === "unique") new_metadata.StateShown = field.value;
+        const stateShownField = formState.LocationShown?.State;
+        if (
+          isFieldDirty("LocationShown", "State") ||
+          file.metadata.StateShown?.isConsolidated === false
+        ) {
+          new_metadata.StateShown =
+            stateShownField?.status === "unique"
+              ? stateShownField.value
+              : file.metadata.StateShown?.value;
         }
-        if (isFieldDirty("LocationShown", "Country")) {
-          const field = formState.LocationShown?.Country;
-          if (field?.status === "unique")
-            new_metadata.CountryShown = field.value;
+        const countryShownField = formState.LocationShown?.Country;
+        if (
+          isFieldDirty("LocationShown", "Country") ||
+          file.metadata.CountryShown?.isConsolidated === false
+        ) {
+          new_metadata.CountryShown =
+            countryShownField?.status === "unique"
+              ? countryShownField.value
+              : file.metadata.CountryShown?.value;
         }
-        if (isFieldDirty("LocationShown", "CountryCode")) {
-          const field = formState.LocationShown?.CountryCode;
-          if (field?.status === "unique")
-            new_metadata.CountryCodeShown = field.value;
+        const countryCodeShownField = formState.LocationShown?.CountryCode;
+        if (
+          isFieldDirty("LocationShown", "CountryCode") ||
+          file.metadata.CountryCodeShown?.isConsolidated === false
+        ) {
+          new_metadata.CountryCodeShown =
+            countryCodeShownField?.status === "unique"
+              ? countryCodeShownField.value
+              : file.metadata.CountryCodeShown?.value;
         }
 
         // Keywords are handled with special additive/subtractive logic.
@@ -327,6 +433,7 @@ export const useMetadataEditor = ({
           removedKeywords.forEach((kw) => finalKeywords.delete(kw));
           new_metadata["Keywords"] = Array.from(finalKeywords);
         }
+
         if (Object.keys(new_metadata).length > 0) {
           return {
             path: `${folderPath}\\${file.filename}`,
