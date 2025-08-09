@@ -132,6 +132,63 @@ export const useMetadataEditor = ({
     }
   }, [formState, originalFormState, handleFieldChange]);
 
+  // This new effect automatically enriches GPS coordinates with location details
+  // if the address fields are empty.
+  useEffect(() => {
+    if (!formState) return;
+
+    const processLocationBlock = async (
+      blockName: "LocationCreated" | "LocationShown"
+    ) => {
+      const locationBlock = formState[blockName];
+      if (!locationBlock) return;
+
+      const { Latitude, Longitude, City, State, Country } = locationBlock;
+
+      // Condition: Trigger only if we have unique coordinates but all address fields are empty.
+      const hasCoords =
+        Latitude.status === "unique" &&
+        Latitude.value &&
+        Longitude.status === "unique" &&
+        Longitude.value;
+      const hasEmptyAddress =
+        (City.status !== "unique" || !City.value) &&
+        (State.status !== "unique" || !State.value) &&
+        (Country.status !== "unique" || !Country.value);
+
+      if (hasCoords && hasEmptyAddress) {
+        try {
+          const [enriched] = await apiService.enrichCoordinates([
+            {
+              latitude: parseFloat(Latitude.value),
+              longitude: parseFloat(Longitude.value),
+            },
+          ]);
+
+          if (enriched) {
+            // Use handleFieldChange to update each field individually.
+            // This correctly marks them as dirty and preserves consolidation status.
+            handleFieldChange(blockName, "City", enriched.city);
+            handleFieldChange(blockName, "State", enriched.state);
+            handleFieldChange(blockName, "Country", enriched.country);
+            handleFieldChange(blockName, "CountryCode", enriched.countryCode);
+          }
+        } catch (error) {
+          showNotification("Could not auto-fetch location details.", "warning");
+          console.error("Auto-enrichment failed:", error);
+        }
+      }
+    };
+
+    processLocationBlock("LocationCreated");
+    processLocationBlock("LocationShown");
+  }, [
+    formState?.LocationCreated,
+    formState?.LocationShown,
+    handleFieldChange,
+    showNotification,
+  ]);
+
   // A memoized calculation to determine if there is anything to save.
   // A save is needed if the form has user-initiated changes OR if any
   // field is not consolidated across its underlying EXIF/XMP tags.
