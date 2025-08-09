@@ -61,6 +61,65 @@ export const useMetadataEditor = ({
     setIsDirty(hasChanges);
   }, [hasChanges, setIsDirty]);
 
+  /**
+   * A generic handler to update a single field within a block of the form state.
+   * This is the primary updater function called by UI components.
+   */
+  const handleFieldChange = useCallback(
+    <T extends keyof FormState>(
+      blockName: T,
+      fieldName: keyof FormState[T],
+      newValue: any
+    ) => {
+      setFormState((prevState) => {
+        const block = prevState[blockName];
+        if (!block) return prevState;
+        const field = (block as any)[fieldName];
+        if (field === undefined) return prevState;
+        // When a user edits a field, it becomes a 'unique' value. We preserve its
+        // consolidation status if it was already unique.
+        const newField = {
+          status: "unique" as const,
+          value: newValue,
+          isConsolidated:
+            field.status === "unique" ? field.isConsolidated : true,
+        };
+        return {
+          ...prevState,
+          [blockName]: { ...block, [fieldName]: newField },
+        };
+      });
+    },
+    [setFormState]
+  );
+
+  // This new effect automatically generates the copyright string when the
+  // creator or date changes, and only if the copyright field is currently empty.
+  useEffect(() => {
+    if (!formState) return;
+
+    const creator = formState.Creator?.Creator;
+    const dateTime = formState.DateTime?.DateTimeOriginal;
+    const copyright = formState.Creator?.Copyright;
+
+    // Proceed only if creator and date have unique values and copyright is empty.
+    if (
+      creator?.status === "unique" &&
+      creator.value &&
+      dateTime?.status === "unique" &&
+      dateTime.value &&
+      (copyright?.status !== "unique" || !copyright.value)
+    ) {
+      // Extract the year from the date string (e.g., "2024:09:07...")
+      const year = dateTime.value.substring(0, 4);
+      if (year) {
+        const newCopyright = `© ${year} ${creator.value}`;
+        // Programmatically update the form state for the copyright field.
+        handleFieldChange("Creator", "Copyright", newCopyright);
+      }
+    }
+  }, [formState, handleFieldChange]);
+
   // A memoized calculation to determine if there is anything to save.
   // A save is needed if the form has user-initiated changes OR if any
   // field is not consolidated across its underlying EXIF/XMP tags.
@@ -94,38 +153,6 @@ export const useMetadataEditor = ({
       return JSON.stringify(currentField) !== JSON.stringify(originalField);
     },
     [formState, originalFormState]
-  );
-
-  /**
-   * A generic handler to update a single field within a block of the form state.
-   * This is the primary updater function called by UI components.
-   */
-  const handleFieldChange = useCallback(
-    <T extends keyof FormState>(
-      blockName: T,
-      fieldName: keyof FormState[T],
-      newValue: any
-    ) => {
-      setFormState((prevState) => {
-        const block = prevState[blockName];
-        if (!block) return prevState;
-        const field = (block as any)[fieldName];
-        if (field === undefined) return prevState;
-        // When a user edits a field, it becomes a 'unique' value. We preserve its
-        // consolidation status if it was already unique.
-        const newField = {
-          status: "unique" as const,
-          value: newValue,
-          isConsolidated:
-            field.status === "unique" ? field.isConsolidated : true,
-        };
-        return {
-          ...prevState,
-          [blockName]: { ...block, [fieldName]: newField },
-        };
-      });
-    },
-    [setFormState]
   );
 
   /**
