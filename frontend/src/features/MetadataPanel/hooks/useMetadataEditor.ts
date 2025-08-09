@@ -93,32 +93,44 @@ export const useMetadataEditor = ({
     [setFormState]
   );
 
-  // This new effect automatically generates the copyright string when the
-  // creator or date changes, and only if the copyright field is currently empty.
+  // This effect automatically generates the copyright string. It will only act if the
+  // original loaded copyright value was empty or mixed, preserving any custom copyright
+  // that was loaded from the file.
   useEffect(() => {
-    if (!formState) return;
+    if (!formState || !originalFormState) return;
+
+    const originalCopyright = originalFormState.Creator?.Copyright;
+    // Guard clause: If the original data had a unique, non-empty copyright,
+    // we respect it and never auto-generate anything.
+    if (originalCopyright?.status === "unique" && originalCopyright.value) {
+      return;
+    }
 
     const creator = formState.Creator?.Creator;
     const dateTime = formState.DateTime?.DateTimeOriginal;
-    const copyright = formState.Creator?.Copyright;
 
-    // Proceed only if creator and date have unique values and copyright is empty.
+    // Proceed to generate only if the original copyright was empty/mixed AND
+    // we have a valid creator and date to work with.
     if (
       creator?.status === "unique" &&
       creator.value &&
       dateTime?.status === "unique" &&
-      dateTime.value &&
-      (copyright?.status !== "unique" || !copyright.value)
+      dateTime.value
     ) {
-      // Extract the year from the date string (e.g., "2024:09:07...")
       const year = dateTime.value.substring(0, 4);
       if (year) {
         const newCopyright = `© ${year} ${creator.value}`;
-        // Programmatically update the form state for the copyright field.
-        handleFieldChange("Creator", "Copyright", newCopyright);
+
+        const currentCopyrightField = formState.Creator?.Copyright;
+        if (
+          currentCopyrightField?.status !== "unique" ||
+          currentCopyrightField.value !== newCopyright
+        ) {
+          handleFieldChange("Creator", "Copyright", newCopyright);
+        }
       }
     }
-  }, [formState, handleFieldChange]);
+  }, [formState, originalFormState, handleFieldChange]);
 
   // A memoized calculation to determine if there is anything to save.
   // A save is needed if the form has user-initiated changes OR if any
