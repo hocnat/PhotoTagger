@@ -62,7 +62,7 @@ TAG_MAP = {
         "group": "Location Created",
         "sources": {
             "XMP-iptcExt:LocationCreatedGPSLatitude": {"write_mode": "always"},
-            "XMP-exif:GPSLatitude": {"write_mode": "if_exists"},
+            "Composite:GPSLatitude": {"write_mode": "if_exists"}, # XMP-exif:GPSLatitude + XMP-exif:GPSLatitudeRef
         },
         "read_format": "#",
         "handler": "simple",
@@ -72,7 +72,7 @@ TAG_MAP = {
         "group": "Location Created",
         "sources": {
             "XMP-iptcExt:LocationCreatedGPSLongitude": {"write_mode": "always"},
-            "XMP-exif:GPSLongitude": {"write_mode": "if_exists"},
+            "Composite:GPSLongitude": {"write_mode": "if_exists"}, # XMP-exif:GPSLongitude + XMP-exif:GPSLongitudeRef
         },
         "read_format": "#",
         "handler": "simple",
