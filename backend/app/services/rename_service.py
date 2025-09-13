@@ -57,7 +57,7 @@ def generate_filename_from_pattern(
             )
 
         sanitized_base = re.sub(r'[\\/*?:"<>|]', "", new_filename_base).replace(
-            " ", "_"
+            " ", ""
         )
         return sanitized_base, None
     except subprocess.CalledProcessError:
