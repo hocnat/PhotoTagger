@@ -16,7 +16,6 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import MapIcon from "@mui/icons-material/Map";
 import MoreTimeIcon from "@mui/icons-material/MoreTime";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import PlaceIcon from "@mui/icons-material/Place";
 import PublicIcon from "@mui/icons-material/Public";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -37,7 +36,6 @@ import ZoomOutIcon from "@mui/icons-material/ZoomOut";
  */
 export const AppIcons = {
   // --- General & Toolbar Actions ---
-  APP: PhotoLibraryIcon,
   LOAD: FolderOpenIcon,
   SETTINGS: SettingsIcon,
   SEARCH: SearchIcon,

@@ -7,6 +7,7 @@ import {
   Tooltip,
   Divider,
   CircularProgress,
+  Box,
 } from "@mui/material";
 import { AppIcons } from "config/AppIcons";
 import { useAppContext } from "context/AppContext";
@@ -26,7 +27,16 @@ export const MainAppBar: React.FC = () => {
   return (
     <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.appBar }}>
       <Toolbar>
-        <AppIcons.APP sx={{ mr: 2 }} />
+        <Box
+          component="img"
+          src="/logo.png"
+          alt="PhotoTagger Logo"
+          sx={{
+            mr: 2,
+            height: 32,
+            width: 32,
+          }}
+        />
         <Typography variant="h6" component="div">
           PhotoTagger
         </Typography>
